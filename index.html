@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0E1116">
+<title>Daily Sync</title>
+<style>
+  :root{
+    --bg:#0E1116;
+    --card:#161B23;
+    --card-2:#1C232E;
+    --line:#28303D;
+    --text:#E8ECF2;
+    --muted:#8B96A5;
+    --accent:#7FA6F0;
+    --todo:#8B96A5;
+    --todo-dim:rgba(139,150,165,.14);
+    --doing:#F5C044;
+    --doing-dim:rgba(245,192,68,.14);
+    --done:#4ED6A7;
+    --done-dim:rgba(78,214,167,.14);
+    --danger:#F07A7A;
+    --danger-dim:rgba(240,122,122,.13);
+    --radius:14px;
+    --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:var(--bg);color:var(--text);font-family:var(--sans);-webkit-font-smoothing:antialiased}
+  body{max-width:720px;margin:0 auto;
+    padding:calc(20px + env(safe-area-inset-top)) calc(16px + env(safe-area-inset-right)) calc(40px + env(safe-area-inset-bottom)) calc(16px + env(safe-area-inset-left));}
+  button,input,textarea{font-family:inherit;color:inherit}
+  button{cursor:pointer}
+
+  header{display:flex;align-items:flex-start;gap:10px;margin-bottom:6px}
+  header .titles{flex:1}
+  h1{font-size:22px;font-weight:700;letter-spacing:-.01em}
+  header .sub{color:var(--muted);font-size:13px;margin-top:2px}
+  .who{display:flex;gap:6px;background:var(--card);border:1px solid var(--line);border-radius:99px;padding:3px}
+  .who button{background:transparent;border:none;border-radius:99px;padding:6px 12px;font-size:12.5px;font-weight:600;color:var(--muted)}
+  .who button.active{background:var(--accent);color:#0E1116}
+
+  .banner{color:var(--doing);font-size:12.5px;margin:10px 0 16px;padding:8px 12px;background:var(--doing-dim);border-radius:10px;display:none}
+  .banner.show{display:block}
+  .status-line{color:var(--muted);font-size:12px;margin-bottom:16px;display:flex;align-items:center;gap:6px}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--muted)}
+  .dot.ok{background:var(--done)}
+  .dot.err{background:var(--danger)}
+
+  .setup{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:20px;margin-top:20px;font-size:13.5px;line-height:1.6}
+  .setup h2{font-size:16px;margin-bottom:10px}
+  .setup code{background:var(--card-2);padding:2px 6px;border-radius:6px;font-size:12.5px}
+  .setup ol{margin:10px 0 0 18px}
+
+  form.add{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:14px;margin-bottom:22px}
+  form.add input[type=text]{width:100%;background:var(--card-2);border:1px solid var(--line);border-radius:10px;
+    padding:12px;font-size:15px;color:var(--text)}
+  form.add input[type=text]:focus{outline:2px solid var(--accent);border-color:transparent}
+  .add-row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center}
+  .chip-group{display:flex;gap:6px}
+  .chip{background:var(--card-2);border:1px solid var(--line);border-radius:99px;padding:7px 12px;font-size:12.5px;color:var(--muted)}
+  .chip.active{border-color:var(--accent);color:var(--accent);background:rgba(127,166,240,.12)}
+  .add-row input[type=date]{background:var(--card-2);border:1px solid var(--line);border-radius:10px;padding:7px 10px;font-size:12.5px;color:var(--text)}
+  .notes-toggle{background:transparent;border:1px dashed var(--line);border-radius:10px;padding:7px 10px;font-size:12.5px;color:var(--muted)}
+  form.add textarea{width:100%;background:var(--card-2);border:1px solid var(--line);border-radius:10px;
+    padding:10px;font-size:13.5px;color:var(--text);margin-top:10px;min-height:60px;resize:vertical;display:none}
+  form.add textarea.show{display:block}
+  .add-submit{margin-left:auto;background:var(--accent);color:#0E1116;border:none;border-radius:10px;
+    padding:9px 18px;font-size:13.5px;font-weight:700}
+
+  .col{margin-bottom:26px}
+  .col-head{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+  .col-head .swatch{width:8px;height:8px;border-radius:50%}
+  .col-head h3{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700}
+  .col-head .count{color:var(--muted);font-size:12px}
+  .empty{color:var(--muted);font-size:13px;padding:10px 2px}
+
+  .task{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:12px 14px;margin-bottom:8px}
+  .task-top{display:flex;align-items:flex-start;gap:10px}
+  .status-btn{flex-shrink:0;width:22px;height:22px;border-radius:50%;border:2px solid var(--todo);background:transparent;margin-top:1px}
+  .status-btn.doing{border-color:var(--doing);background:var(--doing-dim)}
+  .status-btn.done{border-color:var(--done);background:var(--done)}
+  .status-btn.done::after{content:'✓';display:block;color:#0E1116;font-size:13px;line-height:1;font-weight:700}
+  .task-body{flex:1;min-width:0}
+  .task-title{font-size:14.5px;line-height:1.4;background:transparent;border:none;width:100%;color:var(--text)}
+  .task.done .task-title{color:var(--muted);text-decoration:line-through}
+  .task-meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+  .badge{font-size:11px;padding:3px 8px;border-radius:99px;background:var(--card-2);color:var(--muted)}
+  .badge.assignee{color:var(--accent)}
+  .badge.due{color:var(--doing)}
+  .badge.overdue{color:var(--danger);background:var(--danger-dim)}
+  .task-actions{display:flex;gap:6px;flex-shrink:0}
+  .icon-btn{background:transparent;border:none;color:var(--muted);font-size:14px;padding:4px 6px;border-radius:6px}
+  .icon-btn:hover{color:var(--text)}
+  .task-notes{font-size:13px;color:var(--muted);margin-top:8px;padding-top:8px;border-top:1px solid var(--line);white-space:pre-wrap}
+
+  .earlier-toggle{background:transparent;border:none;color:var(--muted);font-size:12.5px;padding:6px 2px;text-decoration:underline}
+  .earlier{display:none}
+  .earlier.show{display:block}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="titles">
+    <h1>Daily Sync</h1>
+    <div class="sub" id="dateSub"></div>
+  </div>
+  <div class="who" id="whoToggle">
+    <button data-who="">Anyone</button>
+    <button data-who="mary">Mary</button>
+    <button data-who="evan">Evan</button>
+  </div>
+</header>
+
+<div class="status-line"><span class="dot" id="connDot"></span><span id="connText">Connecting…</span></div>
+<div class="banner" id="carryBanner"></div>
+
+<div id="setupNotice" class="setup" style="display:none">
+  <h2>One-time setup needed</h2>
+  <p>This app needs a Supabase project to store tasks. Open <code>index.html</code> and:</p>
+  <ol>
+    <li>Create a free project at <code>supabase.com</code></li>
+    <li>Run <code>supabase-setup.sql</code> (in this folder) in its SQL Editor</li>
+    <li>Copy your Project URL and anon public key into the <code>SUPABASE_URL</code> / <code>SUPABASE_ANON_KEY</code> constants near the top of the script</li>
+  </ol>
+</div>
+
+<form class="add" id="addForm">
+  <input type="text" id="titleInput" placeholder="Add a task…" autocomplete="off">
+  <div class="add-row">
+    <div class="chip-group" id="assigneeChips">
+      <button type="button" class="chip" data-assignee="">Unassigned</button>
+      <button type="button" class="chip" data-assignee="mary">Mary</button>
+      <button type="button" class="chip" data-assignee="evan">Evan</button>
+      <button type="button" class="chip" data-assignee="both">Both</button>
+    </div>
+    <input type="date" id="dueInput">
+    <button type="button" class="notes-toggle" id="notesToggleBtn">+ note</button>
+    <button type="submit" class="add-submit">Add</button>
+  </div>
+  <textarea id="notesInput" placeholder="Notes / blockers…"></textarea>
+</form>
+
+<div class="col" id="colDoing">
+  <div class="col-head"><span class="swatch" style="background:var(--doing)"></span><h3>In Progress</h3><span class="count"></span></div>
+  <div class="list"></div>
+</div>
+
+<div class="col" id="colTodo">
+  <div class="col-head"><span class="swatch" style="background:var(--todo)"></span><h3>To Do</h3><span class="count"></span></div>
+  <div class="list"></div>
+</div>
+
+<div class="col" id="colDone">
+  <div class="col-head"><span class="swatch" style="background:var(--done)"></span><h3>Done</h3><span class="count"></span></div>
+  <div class="list"></div>
+  <button class="earlier-toggle" id="earlierToggle" style="display:none">Show earlier</button>
+  <div class="earlier" id="earlierList"></div>
+</div>
+
+<script type="module">
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.110.9';
+
+const SUPABASE_URL = 'YOUR_SUPABASE_URL';
+const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+
+const configured = SUPABASE_URL !== 'YOUR_SUPABASE_URL' && SUPABASE_ANON_KEY !== 'YOUR_SUPABASE_ANON_KEY';
+const setupNotice = document.getElementById('setupNotice');
+if (!configured) {
+  setupNotice.style.display = 'block';
+  document.getElementById('connText').textContent = 'Not configured';
+}
+
+const sb = configured ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+
+const dateSub = document.getElementById('dateSub');
+const connDot = document.getElementById('connDot');
+const connText = document.getElementById('connText');
+const carryBanner = document.getElementById('carryBanner');
+const whoToggle = document.getElementById('whoToggle');
+const addForm = document.getElementById('addForm');
+const titleInput = document.getElementById('titleInput');
+const dueInput = document.getElementById('dueInput');
+const notesInput = document.getElementById('notesInput');
+const notesToggleBtn = document.getElementById('notesToggleBtn');
+const assigneeChips = document.getElementById('assigneeChips');
+const earlierToggle = document.getElementById('earlierToggle');
+const earlierList = document.getElementById('earlierList');
+
+const todayStr = () => new Date().toISOString().slice(0, 10);
+dateSub.textContent = new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
+
+let who = localStorage.getItem('daily-sync-who') || '';
+let newAssignee = '';
+let tasks = [];
+
+function setWho(val) {
+  who = val;
+  localStorage.setItem('daily-sync-who', val);
+  [...whoToggle.children].forEach(b => b.classList.toggle('active', b.dataset.who === val));
+  render();
+}
+whoToggle.addEventListener('click', e => {
+  const btn = e.target.closest('button[data-who]');
+  if (btn) setWho(btn.dataset.who);
+});
+setWho(who);
+
+assigneeChips.addEventListener('click', e => {
+  const btn = e.target.closest('.chip');
+  if (!btn) return;
+  newAssignee = btn.dataset.assignee;
+  [...assigneeChips.children].forEach(c => c.classList.toggle('active', c === btn));
+});
+
+notesToggleBtn.addEventListener('click', () => {
+  notesInput.classList.toggle('show');
+});
+
+function assigneeLabel(a) {
+  return { mary: 'Mary', evan: 'Evan', both: 'Both' }[a] || '';
+}
+
+function dueBadge(task) {
+  if (!task.due_date) return '';
+  const due = new Date(task.due_date + 'T00:00:00');
+  const isOverdue = task.status !== 'done' && due < new Date(todayStr() + 'T00:00:00');
+  const isToday = task.due_date === todayStr();
+  const label = due.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  return `<span class="badge due${isOverdue ? ' overdue' : ''}">${isOverdue ? '⚠ ' : ''}${isToday ? 'Today' : label}</span>`;
+}
+
+function taskEl(task) {
+  const div = document.createElement('div');
+  div.className = 'task' + (task.status === 'done' ? ' done' : '');
+  div.dataset.id = task.id;
+  const notesHtml = task.notes ? `<div class="task-notes">${escapeHtml(task.notes)}</div>` : '';
+  div.innerHTML = `
+    <div class="task-top">
+      <button class="status-btn ${task.status === 'todo' ? '' : task.status}" title="Change status"></button>
+      <div class="task-body">
+        <input class="task-title" value="${escapeAttr(task.title)}">
+        <div class="task-meta">
+          ${task.assignee ? `<span class="badge assignee">${assigneeLabel(task.assignee)}</span>` : ''}
+          ${dueBadge(task)}
+        </div>
+        ${notesHtml}
+      </div>
+      <div class="task-actions">
+        <button class="icon-btn" data-action="delete" title="Delete">✕</button>
+      </div>
+    </div>
+  `;
+  return div;
+}
+
+function escapeHtml(s) { return s.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c])); }
+function escapeAttr(s) { return s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+
+function render() {
+  const visible = who ? tasks.filter(t => t.assignee === who || t.assignee === 'both') : tasks;
+
+  const doing = visible.filter(t => t.status === 'doing');
+  const todo = visible.filter(t => t.status === 'todo');
+  const done = visible.filter(t => t.status === 'done').sort((a, b) => (b.completed_at || '').localeCompare(a.completed_at || ''));
+  const doneToday = done.filter(t => (t.completed_at || '').slice(0, 10) === todayStr());
+  const doneEarlier = done.filter(t => (t.completed_at || '').slice(0, 10) !== todayStr());
+
+  fillCol('colDoing', doing);
+  fillCol('colTodo', todo);
+  fillCol('colDone', doneToday);
+
+  earlierList.innerHTML = '';
+  doneEarlier.forEach(t => earlierList.appendChild(taskEl(t)));
+  earlierToggle.style.display = doneEarlier.length ? 'block' : 'none';
+  earlierToggle.textContent = earlierList.classList.contains('show')
+    ? `Hide earlier (${doneEarlier.length})`
+    : `Show earlier (${doneEarlier.length})`;
+
+  const carried = visible.filter(t => t.status !== 'done' && t.created_at && t.created_at.slice(0, 10) !== todayStr());
+  if (carried.length) {
+    carryBanner.textContent = `${carried.length} task${carried.length === 1 ? '' : 's'} carried over from a previous sync`;
+    carryBanner.classList.add('show');
+  } else {
+    carryBanner.classList.remove('show');
+  }
+}
+
+function fillCol(colId, list) {
+  const col = document.getElementById(colId);
+  const listEl = col.querySelector('.list');
+  const countEl = col.querySelector('.count');
+  countEl.textContent = list.length || '';
+  listEl.innerHTML = '';
+  if (!list.length) {
+    listEl.innerHTML = '<div class="empty">Nothing here</div>';
+    return;
+  }
+  list.forEach(t => listEl.appendChild(taskEl(t)));
+}
+
+earlierToggle.addEventListener('click', () => {
+  earlierList.classList.toggle('show');
+  const count = earlierList.children.length;
+  earlierToggle.textContent = earlierList.classList.contains('show')
+    ? `Hide earlier (${count})`
+    : `Show earlier (${count})`;
+});
+
+document.body.addEventListener('click', e => {
+  const statusBtn = e.target.closest('.status-btn');
+  if (statusBtn) {
+    const id = statusBtn.closest('.task').dataset.id;
+    cycleStatus(id);
+    return;
+  }
+  const delBtn = e.target.closest('[data-action="delete"]');
+  if (delBtn) {
+    const id = delBtn.closest('.task').dataset.id;
+    if (confirm('Delete this task?')) deleteTask(id);
+    return;
+  }
+});
+
+document.body.addEventListener('change', e => {
+  if (e.target.classList.contains('task-title')) {
+    const id = e.target.closest('.task').dataset.id;
+    updateTask(id, { title: e.target.value.trim() || 'Untitled' });
+  }
+});
+
+addForm.addEventListener('submit', async e => {
+  e.preventDefault();
+  const title = titleInput.value.trim();
+  if (!title) return;
+  await addTask({
+    title,
+    assignee: newAssignee || null,
+    due_date: dueInput.value || null,
+    notes: notesInput.value.trim() || null,
+    status: 'todo',
+  });
+  titleInput.value = '';
+  dueInput.value = '';
+  notesInput.value = '';
+  notesInput.classList.remove('show');
+  newAssignee = '';
+  [...assigneeChips.children].forEach(c => c.classList.remove('active'));
+  titleInput.focus();
+});
+
+async function fetchTasks() {
+  const { data, error } = await sb.from('tasks').select('*').order('created_at', { ascending: true });
+  if (error) { setConn(false, error.message); return; }
+  tasks = data;
+  setConn(true);
+  render();
+}
+
+async function addTask(fields) {
+  const { error } = await sb.from('tasks').insert(fields);
+  if (error) alert(error.message);
+}
+
+async function updateTask(id, fields) {
+  const { error } = await sb.from('tasks').update(fields).eq('id', id);
+  if (error) alert(error.message);
+}
+
+function cycleStatus(id) {
+  const task = tasks.find(t => t.id === id);
+  if (!task) return;
+  const next = { todo: 'doing', doing: 'done', done: 'todo' }[task.status];
+  const fields = { status: next };
+  fields.completed_at = next === 'done' ? new Date().toISOString() : null;
+  updateTask(id, fields);
+}
+
+async function deleteTask(id) {
+  const { error } = await sb.from('tasks').delete().eq('id', id);
+  if (error) alert(error.message);
+}
+
+function setConn(ok, errMsg) {
+  connDot.className = 'dot ' + (ok ? 'ok' : 'err');
+  connText.textContent = ok ? 'Synced' : (errMsg || 'Connection error');
+}
+
+if (configured) {
+  fetchTasks();
+  sb.channel('tasks-changes')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, fetchTasks)
+    .subscribe();
+}
+</script>
+</body>
+</html>
+
