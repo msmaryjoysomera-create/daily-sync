@@ -1,4 +1,4 @@
-# Daily Sync
+# Sync Up
 
 A shared task tracker for Mary & Evan's daily sync. Single-file app, no login -- anyone with the link can view and edit.
 
