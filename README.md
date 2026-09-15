@@ -17,4 +17,3 @@ A shared task tracker for Mary & Evan's daily sync. Single-file app, no login --
 - Optional assignee (Mary / Evan / Both), due date, and notes per task
 - Live updates via Supabase Realtime -- useful when you're both looking at it during the call
 - "Anyone / Mary / Evan" filter (local preference only, stored in your browser -- not a login)
-
