@@ -3,27 +3,31 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="theme-color" content="#0E1116">
-<title>Daily Sync</title>
+<meta name="theme-color" content="#FAF9F6">
+<title>Daily Sync — Columbia Cabinets</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg:#0E1116;
-    --card:#161B23;
-    --card-2:#1C232E;
-    --line:#28303D;
-    --text:#E8ECF2;
-    --muted:#8B96A5;
-    --accent:#7FA6F0;
-    --todo:#8B96A5;
-    --todo-dim:rgba(139,150,165,.14);
-    --doing:#F5C044;
-    --doing-dim:rgba(245,192,68,.14);
-    --done:#4ED6A7;
-    --done-dim:rgba(78,214,167,.14);
-    --danger:#F07A7A;
-    --danger-dim:rgba(240,122,122,.13);
+    --bg:#FAF9F6;
+    --card:#FFFFFF;
+    --card-2:#F4F1EA;
+    --line:#E5DFD3;
+    --text:#211C18;
+    --muted:#8A8175;
+    --accent:#A6192E;
+    --accent-dim:rgba(166,25,46,.09);
+    --todo:#A69C8C;
+    --todo-dim:rgba(166,156,140,.16);
+    --doing:#B0740E;
+    --doing-dim:rgba(176,116,14,.12);
+    --done:#3F8F5F;
+    --done-dim:rgba(63,143,95,.13);
+    --danger:#C0392B;
+    --danger-dim:rgba(192,57,43,.11);
     --radius:14px;
     --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+    --serif:'Playfair Display',Georgia,serif;
   }
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{background:var(--bg);color:var(--text);font-family:var(--sans);-webkit-font-smoothing:antialiased}
@@ -32,13 +36,21 @@
   button,input,textarea{font-family:inherit;color:inherit}
   button{cursor:pointer}
 
-  header{display:flex;align-items:flex-start;gap:10px;margin-bottom:6px}
-  header .titles{flex:1}
-  h1{font-size:22px;font-weight:700;letter-spacing:-.01em}
-  header .sub{color:var(--muted);font-size:13px;margin-top:2px}
+  header{display:flex;align-items:center;justify-content:space-between;gap:10px;
+    padding-bottom:16px;margin-bottom:16px;border-bottom:1px solid var(--line)}
+  .brand{display:flex;align-items:center;gap:10px}
+  .logo-mark{width:32px;height:32px;flex-shrink:0}
+  .logo-c{fill:none;stroke-width:6}
+  .logo-c-1{stroke:#161310;stroke-dasharray:85.2 15.4;stroke-dashoffset:92.9}
+  .logo-c-2{stroke:var(--accent);stroke-dasharray:69.2 12.5;stroke-dashoffset:75.5}
+  .wordmark{font-family:var(--serif);color:var(--accent);font-size:16px;letter-spacing:.02em;white-space:nowrap;font-weight:700}
+  .wordmark span{font-size:.68em;letter-spacing:.03em}
+  .titles{margin-bottom:18px}
+  h1{font-size:21px;font-weight:700;letter-spacing:-.01em;font-family:var(--serif);color:var(--text)}
+  .titles .sub{color:var(--muted);font-size:13px;margin-top:2px}
   .who{display:flex;gap:6px;background:var(--card);border:1px solid var(--line);border-radius:99px;padding:3px}
   .who button{background:transparent;border:none;border-radius:99px;padding:6px 12px;font-size:12.5px;font-weight:600;color:var(--muted)}
-  .who button.active{background:var(--accent);color:#0E1116}
+  .who button.active{background:var(--accent);color:#FFFFFF}
 
   .banner{color:var(--doing);font-size:12.5px;margin:10px 0 16px;padding:8px 12px;background:var(--doing-dim);border-radius:10px;display:none}
   .banner.show{display:block}
@@ -47,25 +59,25 @@
   .dot.ok{background:var(--done)}
   .dot.err{background:var(--danger)}
 
-  .setup{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:20px;margin-top:20px;font-size:13.5px;line-height:1.6}
+  .setup{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:20px;margin-top:20px;font-size:13.5px;line-height:1.6;box-shadow:0 1px 3px rgba(30,20,10,.04)}
   .setup h2{font-size:16px;margin-bottom:10px}
   .setup code{background:var(--card-2);padding:2px 6px;border-radius:6px;font-size:12.5px}
   .setup ol{margin:10px 0 0 18px}
 
-  form.add{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:14px;margin-bottom:22px}
+  form.add{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:14px;margin-bottom:22px;box-shadow:0 1px 3px rgba(30,20,10,.04)}
   form.add input[type=text]{width:100%;background:var(--card-2);border:1px solid var(--line);border-radius:10px;
     padding:12px;font-size:15px;color:var(--text)}
   form.add input[type=text]:focus{outline:2px solid var(--accent);border-color:transparent}
   .add-row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center}
   .chip-group{display:flex;gap:6px}
   .chip{background:var(--card-2);border:1px solid var(--line);border-radius:99px;padding:7px 12px;font-size:12.5px;color:var(--muted)}
-  .chip.active{border-color:var(--accent);color:var(--accent);background:rgba(127,166,240,.12)}
+  .chip.active{border-color:var(--accent);color:var(--accent);background:var(--accent-dim)}
   .add-row input[type=date]{background:var(--card-2);border:1px solid var(--line);border-radius:10px;padding:7px 10px;font-size:12.5px;color:var(--text)}
   .notes-toggle{background:transparent;border:1px dashed var(--line);border-radius:10px;padding:7px 10px;font-size:12.5px;color:var(--muted)}
   form.add textarea{width:100%;background:var(--card-2);border:1px solid var(--line);border-radius:10px;
     padding:10px;font-size:13.5px;color:var(--text);margin-top:10px;min-height:60px;resize:vertical;display:none}
   form.add textarea.show{display:block}
-  .add-submit{margin-left:auto;background:var(--accent);color:#0E1116;border:none;border-radius:10px;
+  .add-submit{margin-left:auto;background:var(--accent);color:#FFFFFF;border:none;border-radius:10px;
     padding:9px 18px;font-size:13.5px;font-weight:700}
 
   .col{margin-bottom:26px}
@@ -75,12 +87,12 @@
   .col-head .count{color:var(--muted);font-size:12px}
   .empty{color:var(--muted);font-size:13px;padding:10px 2px}
 
-  .task{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:12px 14px;margin-bottom:8px}
+  .task{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:12px 14px;margin-bottom:8px;box-shadow:0 1px 2px rgba(30,20,10,.03)}
   .task-top{display:flex;align-items:flex-start;gap:10px}
   .status-btn{flex-shrink:0;width:22px;height:22px;border-radius:50%;border:2px solid var(--todo);background:transparent;margin-top:1px}
   .status-btn.doing{border-color:var(--doing);background:var(--doing-dim)}
   .status-btn.done{border-color:var(--done);background:var(--done)}
-  .status-btn.done::after{content:'✓';display:block;color:#0E1116;font-size:13px;line-height:1;font-weight:700}
+  .status-btn.done::after{content:'✓';display:block;color:#FFFFFF;font-size:13px;line-height:1;font-weight:700}
   .task-body{flex:1;min-width:0}
   .task-title{font-size:14.5px;line-height:1.4;background:transparent;border:none;width:100%;color:var(--text)}
   .task.done .task-title{color:var(--muted);text-decoration:line-through}
@@ -102,9 +114,12 @@
 <body>
 
 <header>
-  <div class="titles">
-    <h1>Daily Sync</h1>
-    <div class="sub" id="dateSub"></div>
+  <div class="brand">
+    <svg class="logo-mark" viewBox="0 0 56 56" aria-hidden="true">
+      <circle class="logo-c logo-c-1" cx="22" cy="28" r="16"></circle>
+      <circle class="logo-c logo-c-2" cx="32" cy="28" r="13"></circle>
+    </svg>
+    <div class="wordmark">C<span>olumbia</span> C<span>abinets</span></div>
   </div>
   <div class="who" id="whoToggle">
     <button data-who="">Anyone</button>
@@ -112,6 +127,11 @@
     <button data-who="evan">Evan</button>
   </div>
 </header>
+
+<div class="titles">
+  <h1>Daily Sync</h1>
+  <div class="sub" id="dateSub"></div>
+</div>
 
 <div class="status-line"><span class="dot" id="connDot"></span><span id="connText">Connecting…</span></div>
 <div class="banner" id="carryBanner"></div>
