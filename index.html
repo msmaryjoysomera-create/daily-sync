@@ -73,7 +73,7 @@
 
   .col{margin-bottom:26px}
   .col-head{display:flex;align-items:center;gap:8px;margin-bottom:10px}
-  .col-head .swatch{width:8px;height:8px;border-radius:50%}
+  .col-head .swatch{width:8px;height:8px;border-radius:50%;background:var(--accent)}
   .col-head h3{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700}
   .col-head .count{color:var(--muted);font-size:12px}
   .empty{color:var(--muted);font-size:13px;padding:10px 2px}
@@ -87,20 +87,19 @@
   .task-body{flex:1;min-width:0}
   .task-title{font-size:14.5px;line-height:1.4;background:transparent;border:none;width:100%;color:var(--text)}
   .task.done .task-title{color:var(--muted);text-decoration:line-through}
-  .task-meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+  .task-meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;align-items:center}
   .badge{font-size:11px;padding:3px 8px;border-radius:99px;background:var(--card-2);color:var(--muted)}
   .badge.assignee{color:var(--accent)}
-  .badge.tag{color:var(--text);border:1px solid var(--line);background:var(--card)}
   .badge.due{color:var(--doing)}
   .badge.overdue{color:var(--danger);background:var(--danger-dim)}
+  .tag-move{background:var(--card-2);border:1px solid var(--line);border-radius:99px;padding:3px 8px;font-size:11px;color:var(--muted)}
   .task-actions{display:flex;gap:6px;flex-shrink:0}
   .icon-btn{background:transparent;border:none;color:var(--muted);font-size:14px;padding:4px 6px;border-radius:6px}
   .icon-btn:hover{color:var(--text)}
-  .task-notes{font-size:13px;color:var(--muted);margin-top:8px;padding-top:8px;border-top:1px solid var(--line);white-space:pre-wrap}
-
-  .earlier-toggle{background:transparent;border:none;color:var(--muted);font-size:12.5px;padding:6px 2px;text-decoration:underline}
-  .earlier{display:none}
-  .earlier.show{display:block}
+  .task-notes-edit{width:100%;font-size:13px;color:var(--muted);margin-top:8px;padding-top:8px;border:none;border-top:1px solid var(--line);
+    background:transparent;font-family:inherit;resize:vertical;min-height:20px;white-space:pre-wrap}
+  .task-notes-edit:focus{color:var(--text);outline:none}
+  .task-notes-edit::placeholder{color:var(--muted)}
 
   .review-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:12px 16px;margin-bottom:22px;box-shadow:0 1px 3px rgba(30,20,10,.04)}
   .review-card h3{font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700;margin-bottom:8px}
@@ -155,22 +154,7 @@
   <textarea id="notesInput" placeholder="Notes / blockers…"></textarea>
 </form>
 
-<div class="col" id="colDoing">
-  <div class="col-head"><span class="swatch" style="background:var(--doing)"></span><h3>In Progress</h3><span class="count"></span></div>
-  <div class="list"></div>
-</div>
-
-<div class="col" id="colTodo">
-  <div class="col-head"><span class="swatch" style="background:var(--todo)"></span><h3>To Do</h3><span class="count"></span></div>
-  <div class="list"></div>
-</div>
-
-<div class="col" id="colDone">
-  <div class="col-head"><span class="swatch" style="background:var(--done)"></span><h3>Done</h3><span class="count"></span></div>
-  <div class="list"></div>
-  <button class="earlier-toggle" id="earlierToggle" style="display:none">Show earlier</button>
-  <div class="earlier" id="earlierList"></div>
-</div>
+<div id="board"></div>
 
 <script type="module">
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.110.9';
@@ -197,8 +181,7 @@ const titleInput = document.getElementById('titleInput');
 const dueInput = document.getElementById('dueInput');
 const notesInput = document.getElementById('notesInput');
 const notesToggleBtn = document.getElementById('notesToggleBtn');
-const earlierToggle = document.getElementById('earlierToggle');
-const earlierList = document.getElementById('earlierList');
+const board = document.getElementById('board');
 const reviewList = document.getElementById('reviewList');
 const tagSelect = document.getElementById('tagSelect');
 
@@ -246,22 +229,27 @@ function dueBadge(task) {
   return `<span class="badge due${isOverdue ? ' overdue' : ''}">${isOverdue ? '⚠ ' : ''}${isToday ? 'Today' : label}</span>`;
 }
 
+function tagMoveOptions(task) {
+  const opts = ['<option value="">Untagged</option>']
+    .concat(TAG_OPTIONS.map(t => `<option value="${escapeAttr(t)}"${task.tag === t ? ' selected' : ''}>${escapeHtml(t)}</option>`));
+  return opts.join('');
+}
+
 function taskEl(task) {
   const div = document.createElement('div');
   div.className = 'task' + (task.status === 'done' ? ' done' : '');
   div.dataset.id = task.id;
-  const notesHtml = task.notes ? `<div class="task-notes">${escapeHtml(task.notes)}</div>` : '';
   div.innerHTML = `
     <div class="task-top">
       <button class="status-btn ${task.status === 'todo' ? '' : task.status}" title="Change status"></button>
       <div class="task-body">
         <input class="task-title" value="${escapeAttr(task.title)}">
         <div class="task-meta">
-          ${task.tag ? `<span class="badge tag">${escapeHtml(task.tag)}</span>` : ''}
           ${task.assignee ? `<span class="badge assignee">${assigneeLabel(task.assignee)}</span>` : ''}
           ${dueBadge(task)}
+          <select class="tag-move" title="Move to category">${tagMoveOptions(task)}</select>
         </div>
-        ${notesHtml}
+        <textarea class="task-notes-edit" placeholder="+ Add a note…" rows="1">${escapeHtml(task.notes || '')}</textarea>
       </div>
       <div class="task-actions">
         <button class="icon-btn" data-action="delete" title="Delete">✕</button>
@@ -277,22 +265,23 @@ function escapeAttr(s) { return s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': 
 function render() {
   const visible = who ? tasks.filter(t => t.assignee === who) : tasks;
 
-  const doing = visible.filter(t => t.status === 'doing');
-  const todo = visible.filter(t => t.status === 'todo');
-  const done = visible.filter(t => t.status === 'done').sort((a, b) => (b.completed_at || '').localeCompare(a.completed_at || ''));
-  const doneToday = done.filter(t => (t.completed_at || '').slice(0, 10) === todayStr());
-  const doneEarlier = done.filter(t => (t.completed_at || '').slice(0, 10) !== todayStr());
+  const byTag = new Map();
+  visible.forEach(t => {
+    const key = t.tag || '';
+    if (!byTag.has(key)) byTag.set(key, []);
+    byTag.get(key).push(t);
+  });
 
-  fillCol('colDoing', doing);
-  fillCol('colTodo', todo);
-  fillCol('colDone', doneToday);
+  const orderedKeys = TAG_OPTIONS.filter(t => byTag.has(t));
+  if (byTag.has('')) orderedKeys.push('');
 
-  earlierList.innerHTML = '';
-  doneEarlier.forEach(t => earlierList.appendChild(taskEl(t)));
-  earlierToggle.style.display = doneEarlier.length ? 'block' : 'none';
-  earlierToggle.textContent = earlierList.classList.contains('show')
-    ? `Hide earlier (${doneEarlier.length})`
-    : `Show earlier (${doneEarlier.length})`;
+  board.innerHTML = '';
+  if (!orderedKeys.length) {
+    board.innerHTML = '<div class="empty">Nothing here yet</div>';
+  }
+  orderedKeys.forEach(key => {
+    board.appendChild(tagSectionEl(key, byTag.get(key)));
+  });
 
   const carried = visible.filter(t => t.status !== 'done' && t.created_at && t.created_at.slice(0, 10) !== todayStr());
   if (carried.length) {
@@ -303,26 +292,16 @@ function render() {
   }
 }
 
-function fillCol(colId, list) {
-  const col = document.getElementById(colId);
-  const listEl = col.querySelector('.list');
-  const countEl = col.querySelector('.count');
-  countEl.textContent = list.length || '';
-  listEl.innerHTML = '';
-  if (!list.length) {
-    listEl.innerHTML = '<div class="empty">Nothing here</div>';
-    return;
-  }
-  list.forEach(t => listEl.appendChild(taskEl(t)));
+function tagSectionEl(key, list) {
+  const div = document.createElement('div');
+  div.className = 'col';
+  const sorted = [...list].sort((a, b) =>
+    (a.status === 'done') - (b.status === 'done') || a.created_at.localeCompare(b.created_at));
+  div.innerHTML = `<div class="col-head"><span class="swatch"></span><h3>${escapeHtml(key || 'Untagged')}</h3><span class="count">${list.length}</span></div><div class="list"></div>`;
+  const listEl = div.querySelector('.list');
+  sorted.forEach(t => listEl.appendChild(taskEl(t)));
+  return div;
 }
-
-earlierToggle.addEventListener('click', () => {
-  earlierList.classList.toggle('show');
-  const count = earlierList.children.length;
-  earlierToggle.textContent = earlierList.classList.contains('show')
-    ? `Hide earlier (${count})`
-    : `Show earlier (${count})`;
-});
 
 document.body.addEventListener('click', e => {
   const statusBtn = e.target.closest('.status-btn');
@@ -343,6 +322,12 @@ document.body.addEventListener('change', e => {
   if (e.target.classList.contains('task-title')) {
     const id = e.target.closest('.task').dataset.id;
     updateTask(id, { title: e.target.value.trim() || 'Untitled' });
+  } else if (e.target.classList.contains('tag-move')) {
+    const id = e.target.closest('.task').dataset.id;
+    updateTask(id, { tag: e.target.value || null });
+  } else if (e.target.classList.contains('task-notes-edit')) {
+    const id = e.target.closest('.task').dataset.id;
+    updateTask(id, { notes: e.target.value.trim() || null });
   }
 });
 
