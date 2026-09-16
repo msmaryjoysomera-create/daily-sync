@@ -66,6 +66,7 @@
   .chip{background:var(--card-2);border:1px solid var(--line);border-radius:99px;padding:7px 12px;font-size:12.5px;color:var(--muted)}
   .chip.active{border-color:var(--accent);color:var(--accent);background:var(--accent-dim)}
   .add-row input[type=date]{background:var(--card-2);border:1px solid var(--line);border-radius:10px;padding:7px 10px;font-size:12.5px;color:var(--text)}
+  .tag-select{background:var(--card-2);border:1px solid var(--line);border-radius:10px;padding:7px 10px;font-size:12.5px;color:var(--text);max-width:150px}
   .notes-toggle{background:transparent;border:1px dashed var(--line);border-radius:10px;padding:7px 10px;font-size:12.5px;color:var(--muted)}
   form.add textarea{width:100%;background:var(--card-2);border:1px solid var(--line);border-radius:10px;
     padding:10px;font-size:13.5px;color:var(--text);margin-top:10px;min-height:60px;resize:vertical;display:none}
@@ -92,6 +93,7 @@
   .task-meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
   .badge{font-size:11px;padding:3px 8px;border-radius:99px;background:var(--card-2);color:var(--muted)}
   .badge.assignee{color:var(--accent)}
+  .badge.tag{color:var(--text);border:1px solid var(--line);background:var(--card)}
   .badge.due{color:var(--doing)}
   .badge.overdue{color:var(--danger);background:var(--danger-dim)}
   .task-actions{display:flex;gap:6px;flex-shrink:0}
@@ -120,9 +122,8 @@
     <div class="sub" id="dateSub"></div>
   </div>
   <div class="who" id="whoToggle">
-    <button data-who="">Anyone</button>
     <button data-who="mary">Mary</button>
-    <button data-who="evan">Evan</button>
+    <button data-who="sarah">Sarah</button>
   </div>
 </header>
 
@@ -150,9 +151,12 @@
     <div class="chip-group" id="assigneeChips">
       <button type="button" class="chip" data-assignee="">Unassigned</button>
       <button type="button" class="chip" data-assignee="mary">Mary</button>
-      <button type="button" class="chip" data-assignee="evan">Evan</button>
+      <button type="button" class="chip" data-assignee="sarah">Sarah</button>
       <button type="button" class="chip" data-assignee="both">Both</button>
     </div>
+    <select id="tagSelect" class="tag-select">
+      <option value="">No tag</option>
+    </select>
     <input type="date" id="dueInput">
     <button type="button" class="notes-toggle" id="notesToggleBtn">+ note</button>
     <button type="submit" class="add-submit">Add</button>
@@ -206,8 +210,16 @@ const assigneeChips = document.getElementById('assigneeChips');
 const earlierToggle = document.getElementById('earlierToggle');
 const earlierList = document.getElementById('earlierList');
 const reviewList = document.getElementById('reviewList');
+const tagSelect = document.getElementById('tagSelect');
 
 const REVIEW_ITEMS = ['Calendar', 'Tasks', 'Tasks – Completed', 'Inbox', 'Text Messages', 'Photos'];
+const TAG_OPTIONS = ['Hot Topics', 'Non-Urgent', 'Follow Up', 'Schedule Pending', 'Mary - Open Items', 'Orders/Deliveries', 'Returns/Credits', 'Appointments', 'Dinner Reservations', 'Deliverables'];
+TAG_OPTIONS.forEach(tag => {
+  const opt = document.createElement('option');
+  opt.value = tag;
+  opt.textContent = tag;
+  tagSelect.appendChild(opt);
+});
 
 const todayStr = () => new Date().toISOString().slice(0, 10);
 dateSub.textContent = new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
@@ -224,7 +236,7 @@ function setWho(val) {
 }
 whoToggle.addEventListener('click', e => {
   const btn = e.target.closest('button[data-who]');
-  if (btn) setWho(btn.dataset.who);
+  if (btn) setWho(who === btn.dataset.who ? '' : btn.dataset.who);
 });
 setWho(who);
 
@@ -240,7 +252,7 @@ notesToggleBtn.addEventListener('click', () => {
 });
 
 function assigneeLabel(a) {
-  return { mary: 'Mary', evan: 'Evan', both: 'Both' }[a] || '';
+  return { mary: 'Mary', sarah: 'Sarah', both: 'Both' }[a] || '';
 }
 
 function dueBadge(task) {
@@ -263,6 +275,7 @@ function taskEl(task) {
       <div class="task-body">
         <input class="task-title" value="${escapeAttr(task.title)}">
         <div class="task-meta">
+          ${task.tag ? `<span class="badge tag">${escapeHtml(task.tag)}</span>` : ''}
           ${task.assignee ? `<span class="badge assignee">${assigneeLabel(task.assignee)}</span>` : ''}
           ${dueBadge(task)}
         </div>
@@ -358,11 +371,13 @@ addForm.addEventListener('submit', async e => {
   await addTask({
     title,
     assignee: newAssignee || null,
+    tag: tagSelect.value || null,
     due_date: dueInput.value || null,
     notes: notesInput.value.trim() || null,
     status: 'todo',
   });
   titleInput.value = '';
+  tagSelect.value = '';
   dueInput.value = '';
   notesInput.value = '';
   notesInput.classList.remove('show');

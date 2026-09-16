@@ -1,6 +1,6 @@
 # Sync Up
 
-A shared task tracker for Mary & Evan's daily sync. Single-file app, no login -- anyone with the link can view and edit.
+A shared task tracker for Mary & Sarah's daily sync. Single-file app, no login -- anyone with the link can view and edit.
 
 ## Setup
 
@@ -8,12 +8,13 @@ A shared task tracker for Mary & Evan's daily sync. Single-file app, no login --
 2. In the Supabase SQL Editor, run supabase-setup.sql.
 3. In your project's API settings, copy the Project URL and anon public key.
 4. Open index.html and set SUPABASE_URL and SUPABASE_ANON_KEY near the top of the script block.
-5. Open index.html in a browser (or host it as a static site) and share the link with Evan.
+5. Open index.html in a browser (or host it as a static site) and share the link with Sarah.
 
 ## Features
 
+- Daily Review checklist (Calendar, Tasks, Inbox, etc.) shared between Mary and Sarah, resets each day
 - Task list grouped by To Do / In Progress / Done
 - Unfinished tasks automatically carry over between syncs (no extra step)
-- Optional assignee (Mary / Evan / Both), due date, and notes per task
+- Optional assignee (Mary / Sarah / Both), tag, due date, and notes per task
 - Live updates via Supabase Realtime -- useful when you're both looking at it during the call
-- "Anyone / Mary / Evan" filter (local preference only, stored in your browser -- not a login)
+- "Mary / Sarah" filter (local preference only, stored in your browser -- not a login)

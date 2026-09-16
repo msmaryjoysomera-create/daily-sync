@@ -7,6 +7,7 @@ create table tasks (
   id           uuid primary key default gen_random_uuid(),
   title        text not null,
   assignee     text,
+  tag          text,
   status       text not null default 'todo',
   notes        text,
   due_date     date,
@@ -21,7 +22,7 @@ create policy "anon full access" on tasks for all using (true) with check (true)
 alter publication supabase_realtime add table tasks;
 
 -- Daily Review checklist (Calendar, Tasks, Inbox, etc.) -- checked state
--- per calendar day, shared between Mary and Evan, resets each new day.
+-- per calendar day, shared between Mary and Sarah, resets each new day.
 create table daily_review (
   day date not null,
   item text not null,
