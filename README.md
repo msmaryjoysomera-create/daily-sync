@@ -13,7 +13,8 @@ A shared task tracker for Mary & Sarah's daily sync. Single-file app, no login -
 ## Features
 
 - Daily Review checklist (Calendar, Tasks, Inbox, etc.) shared between Mary and Sarah, resets each day
-- Tasks grouped by category (Hot Topics, Follow Up, Non-Urgent, etc.) instead of a status board; drag a task by its grip handle to move it to a different category
+- Tasks grouped by category, shown as a 2-column board on wider screens (1 column on mobile); drag a task by its grip handle to move it to a different category
+- Categories aren't fixed -- type a new tag when adding a task and it becomes its own category; existing tags autocomplete via suggestions
 - Completed tasks collect in their own "Done" section, out of the way of active categories
 - Search bar filters tasks by title or notes across all categories as you type
 - Task title and notes are editable inline, right on the card

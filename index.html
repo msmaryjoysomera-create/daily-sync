@@ -30,7 +30,7 @@
   }
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{background:var(--bg);color:var(--text);font-family:var(--sans);-webkit-font-smoothing:antialiased}
-  body{max-width:720px;margin:0 auto;
+  body{max-width:980px;margin:0 auto;
     padding:calc(20px + env(safe-area-inset-top)) calc(16px + env(safe-area-inset-right)) calc(40px + env(safe-area-inset-bottom)) calc(16px + env(safe-area-inset-left));}
   button,input,textarea{font-family:inherit;color:inherit}
   button{cursor:pointer}
@@ -77,7 +77,11 @@
   .search-input::placeholder{color:var(--muted)}
   .search-input::-webkit-search-cancel-button{cursor:pointer}
 
-  .col{margin-bottom:26px}
+  #board{column-count:1;column-gap:20px}
+  @media (min-width:640px){
+    #board{column-count:2}
+  }
+  .col{margin-bottom:26px;break-inside:avoid}
   .col-head{display:flex;align-items:center;gap:8px;margin-bottom:10px}
   .col-head .swatch{width:8px;height:8px;border-radius:50%;background:var(--accent)}
   .col-head h3{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700}
@@ -153,9 +157,8 @@
 <form class="add" id="addForm">
   <input type="text" id="titleInput" placeholder="Add a task…" autocomplete="off">
   <div class="add-row">
-    <select id="tagSelect" class="tag-select">
-      <option value="">No tag</option>
-    </select>
+    <input type="text" id="tagInput" class="tag-select" list="tagOptions" placeholder="Tag (optional)" autocomplete="off">
+    <datalist id="tagOptions"></datalist>
     <input type="date" id="dueInput">
     <button type="button" class="notes-toggle" id="notesToggleBtn">+ note</button>
     <button type="submit" class="add-submit">Add</button>
@@ -194,17 +197,18 @@ const notesInput = document.getElementById('notesInput');
 const notesToggleBtn = document.getElementById('notesToggleBtn');
 const board = document.getElementById('board');
 const reviewList = document.getElementById('reviewList');
-const tagSelect = document.getElementById('tagSelect');
+const tagInput = document.getElementById('tagInput');
+const tagOptionsList = document.getElementById('tagOptions');
 const searchInput = document.getElementById('searchInput');
 
 const REVIEW_ITEMS = ['Calendar', 'Tasks', 'Tasks – Completed', 'Inbox', 'Text Messages', 'Photos'];
 const TAG_OPTIONS = ['Hot Topics', 'Non-Urgent', 'Follow Up', 'Schedule Pending', 'Mary - Open Items', 'Orders/Deliveries', 'Returns/Credits', 'Appointments', 'Dinner Reservations', 'Deliverables'];
-TAG_OPTIONS.forEach(tag => {
-  const opt = document.createElement('option');
-  opt.value = tag;
-  opt.textContent = tag;
-  tagSelect.appendChild(opt);
-});
+
+function updateTagOptions() {
+  const custom = tasks.map(t => t.tag).filter(Boolean);
+  const all = [...new Set([...TAG_OPTIONS, ...custom])];
+  tagOptionsList.innerHTML = all.map(t => `<option value="${escapeAttr(t)}"></option>`).join('');
+}
 
 const todayStr = () => new Date().toISOString().slice(0, 10);
 dateSub.textContent = new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
@@ -212,6 +216,7 @@ dateSub.textContent = new Date().toLocaleDateString(undefined, { weekday: 'long'
 let who = localStorage.getItem('daily-sync-who') || '';
 let search = '';
 let tasks = [];
+updateTagOptions();
 
 searchInput.addEventListener('input', () => {
   search = searchInput.value.trim().toLowerCase();
@@ -290,6 +295,8 @@ function render() {
   });
 
   const orderedKeys = TAG_OPTIONS.filter(t => byTag.has(t));
+  const customKeys = [...byTag.keys()].filter(k => k !== '' && !TAG_OPTIONS.includes(k)).sort();
+  orderedKeys.push(...customKeys);
   if (byTag.has('')) orderedKeys.push('');
 
   board.innerHTML = '';
@@ -391,13 +398,13 @@ addForm.addEventListener('submit', async e => {
   await addTask({
     title,
     assignee: who || null,
-    tag: tagSelect.value || null,
+    tag: tagInput.value.trim() || null,
     due_date: dueInput.value || null,
     notes: notesInput.value.trim() || null,
     status: 'todo',
   });
   titleInput.value = '';
-  tagSelect.value = '';
+  tagInput.value = '';
   dueInput.value = '';
   notesInput.value = '';
   notesInput.classList.remove('show');
@@ -433,6 +440,7 @@ async function fetchTasks() {
   if (error) { setConn(false, error.message); return; }
   tasks = data;
   setConn(true);
+  updateTagOptions();
   render();
 }
 
