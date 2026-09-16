@@ -62,9 +62,6 @@
     padding:12px;font-size:15px;color:var(--text)}
   form.add input[type=text]:focus{outline:2px solid var(--accent);border-color:transparent}
   .add-row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center}
-  .chip-group{display:flex;gap:6px}
-  .chip{background:var(--card-2);border:1px solid var(--line);border-radius:99px;padding:7px 12px;font-size:12.5px;color:var(--muted)}
-  .chip.active{border-color:var(--accent);color:var(--accent);background:var(--accent-dim)}
   .add-row input[type=date]{background:var(--card-2);border:1px solid var(--line);border-radius:10px;padding:7px 10px;font-size:12.5px;color:var(--text)}
   .tag-select{background:var(--card-2);border:1px solid var(--line);border-radius:10px;padding:7px 10px;font-size:12.5px;color:var(--text);max-width:150px}
   .notes-toggle{background:transparent;border:1px dashed var(--line);border-radius:10px;padding:7px 10px;font-size:12.5px;color:var(--muted)}
@@ -105,11 +102,11 @@
   .earlier{display:none}
   .earlier.show{display:block}
 
-  .review-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;margin-bottom:22px;box-shadow:0 1px 3px rgba(30,20,10,.04)}
-  .review-card h3{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700;margin-bottom:12px}
-  .review-list{display:flex;flex-direction:column;gap:11px}
-  .review-item{display:flex;align-items:center;gap:10px;font-size:14.5px;color:var(--text);cursor:pointer}
-  .review-item input[type=checkbox]{width:18px;height:18px;accent-color:var(--accent);cursor:pointer;flex-shrink:0}
+  .review-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:12px 16px;margin-bottom:22px;box-shadow:0 1px 3px rgba(30,20,10,.04)}
+  .review-card h3{font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700;margin-bottom:8px}
+  .review-list{display:grid;grid-template-columns:1fr 1fr;gap:6px 14px}
+  .review-item{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--text);cursor:pointer}
+  .review-item input[type=checkbox]{width:15px;height:15px;accent-color:var(--accent);cursor:pointer;flex-shrink:0}
   .review-item.checked span{color:var(--muted);text-decoration:line-through}
 </style>
 </head>
@@ -148,12 +145,6 @@
 <form class="add" id="addForm">
   <input type="text" id="titleInput" placeholder="Add a task…" autocomplete="off">
   <div class="add-row">
-    <div class="chip-group" id="assigneeChips">
-      <button type="button" class="chip" data-assignee="">Unassigned</button>
-      <button type="button" class="chip" data-assignee="mary">Mary</button>
-      <button type="button" class="chip" data-assignee="sarah">Sarah</button>
-      <button type="button" class="chip" data-assignee="both">Both</button>
-    </div>
     <select id="tagSelect" class="tag-select">
       <option value="">No tag</option>
     </select>
@@ -206,7 +197,6 @@ const titleInput = document.getElementById('titleInput');
 const dueInput = document.getElementById('dueInput');
 const notesInput = document.getElementById('notesInput');
 const notesToggleBtn = document.getElementById('notesToggleBtn');
-const assigneeChips = document.getElementById('assigneeChips');
 const earlierToggle = document.getElementById('earlierToggle');
 const earlierList = document.getElementById('earlierList');
 const reviewList = document.getElementById('reviewList');
@@ -225,7 +215,6 @@ const todayStr = () => new Date().toISOString().slice(0, 10);
 dateSub.textContent = new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
 
 let who = localStorage.getItem('daily-sync-who') || '';
-let newAssignee = '';
 let tasks = [];
 
 function setWho(val) {
@@ -240,19 +229,12 @@ whoToggle.addEventListener('click', e => {
 });
 setWho(who);
 
-assigneeChips.addEventListener('click', e => {
-  const btn = e.target.closest('.chip');
-  if (!btn) return;
-  newAssignee = btn.dataset.assignee;
-  [...assigneeChips.children].forEach(c => c.classList.toggle('active', c === btn));
-});
-
 notesToggleBtn.addEventListener('click', () => {
   notesInput.classList.toggle('show');
 });
 
 function assigneeLabel(a) {
-  return { mary: 'Mary', sarah: 'Sarah', both: 'Both' }[a] || '';
+  return { mary: 'Mary', sarah: 'Sarah' }[a] || '';
 }
 
 function dueBadge(task) {
@@ -293,7 +275,7 @@ function escapeHtml(s) { return s.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '
 function escapeAttr(s) { return s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
 
 function render() {
-  const visible = who ? tasks.filter(t => t.assignee === who || t.assignee === 'both') : tasks;
+  const visible = who ? tasks.filter(t => t.assignee === who) : tasks;
 
   const doing = visible.filter(t => t.status === 'doing');
   const todo = visible.filter(t => t.status === 'todo');
@@ -370,7 +352,7 @@ addForm.addEventListener('submit', async e => {
   if (!title) return;
   await addTask({
     title,
-    assignee: newAssignee || null,
+    assignee: who || null,
     tag: tagSelect.value || null,
     due_date: dueInput.value || null,
     notes: notesInput.value.trim() || null,
@@ -381,8 +363,6 @@ addForm.addEventListener('submit', async e => {
   dueInput.value = '';
   notesInput.value = '';
   notesInput.classList.remove('show');
-  newAssignee = '';
-  [...assigneeChips.children].forEach(c => c.classList.remove('active'));
   titleInput.focus();
 });
 
