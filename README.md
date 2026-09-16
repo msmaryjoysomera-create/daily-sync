@@ -14,8 +14,9 @@ A shared task tracker for Mary & Sarah's daily sync. Single-file app, no login -
 
 - Daily Review checklist (Calendar, Tasks, Inbox, etc.) shared between Mary and Sarah, resets each day
 - Tasks grouped by category (Hot Topics, Follow Up, Non-Urgent, etc.) instead of a status board; move a task to a different category anytime with the dropdown on its card
+- Completed tasks collect in their own "Done" section, out of the way of active categories
 - Task title and notes are editable inline, right on the card
 - Unfinished tasks automatically carry over between syncs (no extra step)
-- Optional due date per task
+- Optional due date per task, with a badge that turns red once it's overdue
 - Live updates via Supabase Realtime -- useful when you're both looking at it during the call
 - "Mary / Sarah" toggle (local preference only, stored in your browser -- not a login): selecting a name both filters the view and assigns any new task you add to that person; tap the active name again to go back to viewing everyone
