@@ -85,6 +85,8 @@
   .empty{color:var(--muted);font-size:13px;padding:10px 2px}
 
   .task{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:12px 14px;margin-bottom:8px;box-shadow:0 1px 2px rgba(30,20,10,.03)}
+  .task[draggable="true"]{cursor:grab}
+  .task.dragging{opacity:.4}
   .task-top{display:flex;align-items:flex-start;gap:10px}
   .status-btn{flex-shrink:0;width:22px;height:22px;border-radius:50%;border:2px solid var(--todo);background:transparent;margin-top:1px}
   .status-btn.doing{border-color:var(--doing);background:var(--doing-dim)}
@@ -95,11 +97,12 @@
   .task.done .task-title{color:var(--muted);text-decoration:line-through}
   .task-meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;align-items:center}
   .badge{font-size:11px;padding:3px 8px;border-radius:99px;background:var(--card-2);color:var(--muted)}
-  .badge.assignee{color:var(--accent)}
   .badge.due{color:var(--doing)}
   .badge.overdue{color:var(--danger);background:var(--danger-dim)}
-  .tag-move{background:var(--card-2);border:1px solid var(--line);border-radius:99px;padding:3px 8px;font-size:11px;color:var(--muted)}
-  .task-actions{display:flex;gap:6px;flex-shrink:0}
+  .task-actions{display:flex;gap:8px;flex-shrink:0;align-items:center}
+  .drag-handle{color:var(--muted);font-size:15px;cursor:grab;user-select:none}
+  .list{border-radius:var(--radius);transition:background .1s}
+  .list.drag-over{background:var(--accent-dim)}
   .icon-btn{background:transparent;border:none;color:var(--muted);font-size:14px;padding:4px 6px;border-radius:6px}
   .icon-btn:hover{color:var(--text)}
   .task-notes-edit{width:100%;font-size:13px;color:var(--muted);margin-top:8px;padding-top:8px;border:none;border-top:1px solid var(--line);
@@ -231,10 +234,6 @@ notesToggleBtn.addEventListener('click', () => {
   notesInput.classList.toggle('show');
 });
 
-function assigneeLabel(a) {
-  return { mary: 'Mary', sarah: 'Sarah' }[a] || '';
-}
-
 function dueBadge(task) {
   if (!task.due_date) return '';
   const due = new Date(task.due_date + 'T00:00:00');
@@ -244,29 +243,24 @@ function dueBadge(task) {
   return `<span class="badge due${isOverdue ? ' overdue' : ''}">${isOverdue ? '⚠ ' : ''}${isToday ? 'Today' : label}</span>`;
 }
 
-function tagMoveOptions(task) {
-  const opts = ['<option value="">Untagged</option>']
-    .concat(TAG_OPTIONS.map(t => `<option value="${escapeAttr(t)}"${task.tag === t ? ' selected' : ''}>${escapeHtml(t)}</option>`));
-  return opts.join('');
-}
-
 function taskEl(task) {
   const div = document.createElement('div');
+  const draggable = task.status !== 'done';
   div.className = 'task' + (task.status === 'done' ? ' done' : '');
   div.dataset.id = task.id;
+  if (draggable) div.draggable = true;
   div.innerHTML = `
     <div class="task-top">
       <button class="status-btn ${task.status === 'todo' ? '' : task.status}" title="Change status"></button>
       <div class="task-body">
         <input class="task-title" value="${escapeAttr(task.title)}">
         <div class="task-meta">
-          ${task.assignee ? `<span class="badge assignee">${assigneeLabel(task.assignee)}</span>` : ''}
           ${dueBadge(task)}
-          <select class="tag-move" title="Move to category">${tagMoveOptions(task)}</select>
         </div>
         <textarea class="task-notes-edit" placeholder="+ Add a note…" rows="1">${escapeHtml(task.notes || '')}</textarea>
       </div>
       <div class="task-actions">
+        ${draggable ? '<span class="drag-handle" title="Drag to move to another category">⠿</span>' : ''}
         <button class="icon-btn" data-action="delete" title="Delete">✕</button>
       </div>
     </div>
@@ -303,10 +297,10 @@ function render() {
     board.innerHTML = `<div class="empty">${search ? 'No matching tasks' : 'Nothing here yet'}</div>`;
   }
   orderedKeys.forEach(key => {
-    board.appendChild(tagSectionEl(key, byTag.get(key)));
+    board.appendChild(tagSectionEl(key, byTag.get(key), { droppable: true }));
   });
   if (done.length) {
-    board.appendChild(tagSectionEl('Done', done, true));
+    board.appendChild(tagSectionEl('Done', done, { presorted: true }));
   }
 
   const carried = visible.filter(t => t.status !== 'done' && t.created_at && t.created_at.slice(0, 10) !== todayStr());
@@ -318,11 +312,13 @@ function render() {
   }
 }
 
-function tagSectionEl(key, list, presorted) {
+function tagSectionEl(key, list, opts) {
+  opts = opts || {};
   const div = document.createElement('div');
   div.className = 'col';
-  const sorted = presorted ? list : [...list].sort((a, b) => a.created_at.localeCompare(b.created_at));
-  div.innerHTML = `<div class="col-head"><span class="swatch"></span><h3>${escapeHtml(key || 'Untagged')}</h3><span class="count">${list.length}</span></div><div class="list"></div>`;
+  const sorted = opts.presorted ? list : [...list].sort((a, b) => a.created_at.localeCompare(b.created_at));
+  const dropAttr = opts.droppable ? ` data-tag-target="${escapeAttr(key)}"` : '';
+  div.innerHTML = `<div class="col-head"><span class="swatch"></span><h3>${escapeHtml(key || 'Untagged')}</h3><span class="count">${list.length}</span></div><div class="list"${dropAttr}></div>`;
   const listEl = div.querySelector('.list');
   sorted.forEach(t => listEl.appendChild(taskEl(t)));
   return div;
@@ -347,13 +343,45 @@ document.body.addEventListener('change', e => {
   if (e.target.classList.contains('task-title')) {
     const id = e.target.closest('.task').dataset.id;
     updateTask(id, { title: e.target.value.trim() || 'Untitled' });
-  } else if (e.target.classList.contains('tag-move')) {
-    const id = e.target.closest('.task').dataset.id;
-    updateTask(id, { tag: e.target.value || null });
   } else if (e.target.classList.contains('task-notes-edit')) {
     const id = e.target.closest('.task').dataset.id;
     updateTask(id, { notes: e.target.value.trim() || null });
   }
+});
+
+board.addEventListener('dragstart', e => {
+  const taskDiv = e.target.closest('.task');
+  if (!taskDiv) return;
+  e.dataTransfer.setData('text/plain', taskDiv.dataset.id);
+  e.dataTransfer.effectAllowed = 'move';
+  taskDiv.classList.add('dragging');
+});
+
+board.addEventListener('dragend', e => {
+  const taskDiv = e.target.closest('.task');
+  if (taskDiv) taskDiv.classList.remove('dragging');
+});
+
+board.addEventListener('dragover', e => {
+  const list = e.target.closest('.list[data-tag-target]');
+  if (!list) return;
+  e.preventDefault();
+  list.classList.add('drag-over');
+});
+
+board.addEventListener('dragleave', e => {
+  const list = e.target.closest('.list[data-tag-target]');
+  if (list) list.classList.remove('drag-over');
+});
+
+board.addEventListener('drop', e => {
+  const list = e.target.closest('.list[data-tag-target]');
+  if (!list) return;
+  e.preventDefault();
+  list.classList.remove('drag-over');
+  const id = e.dataTransfer.getData('text/plain');
+  if (!id) return;
+  updateTask(id, { tag: list.dataset.tagTarget || null });
 });
 
 addForm.addEventListener('submit', async e => {
