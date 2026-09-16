@@ -18,6 +18,7 @@ A shared task tracker for Mary & Sarah's daily sync. Single-file app, no login -
 - Completed tasks collect in their own "Done" section, out of the way of active categories
 - Search bar filters tasks by title or notes across all categories as you type
 - Task title and notes are editable inline, right on the card
+- Attach photos to a task with the + button on its card (auto-resized before upload); tap a thumbnail to view full-size
 - Unfinished tasks automatically carry over between syncs (no extra step)
 - Optional due date per task, with a badge that turns red once it's overdue
 - Live updates via Supabase Realtime -- useful when you're both looking at it during the call

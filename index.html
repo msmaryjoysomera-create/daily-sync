@@ -114,6 +114,16 @@
   .task-notes-edit:focus{color:var(--text);outline:none}
   .task-notes-edit::placeholder{color:var(--muted)}
 
+  .photo-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+  .photo-thumb{position:relative;width:52px;height:52px;border-radius:8px;overflow:hidden;border:1px solid var(--line);flex-shrink:0}
+  .photo-thumb img{width:100%;height:100%;object-fit:cover;display:block;cursor:pointer}
+  .photo-thumb .photo-remove{position:absolute;top:1px;right:1px;background:rgba(0,0,0,.55);color:#fff;border:none;
+    border-radius:50%;width:15px;height:15px;font-size:9px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
+  .photo-add-btn{width:52px;height:52px;border-radius:8px;border:1px dashed var(--line);background:var(--card-2);color:var(--muted);
+    font-size:18px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+  .photo-add-btn.uploading{opacity:.5;pointer-events:none}
+  .photo-input{display:none}
+
   .review-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:12px 16px;margin-bottom:22px;box-shadow:0 1px 3px rgba(30,20,10,.04)}
   .review-card h3{font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700;margin-bottom:8px}
   .review-list{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:repeat(3,auto);grid-auto-flow:column;gap:6px 14px}
@@ -216,7 +226,12 @@ dateSub.textContent = new Date().toLocaleDateString(undefined, { weekday: 'long'
 let who = localStorage.getItem('daily-sync-who') || '';
 let search = '';
 let tasks = [];
+let photos = [];
 updateTagOptions();
+
+function photosFor(taskId) {
+  return photos.filter(p => p.task_id === taskId);
+}
 
 searchInput.addEventListener('input', () => {
   search = searchInput.value.trim().toLowerCase();
@@ -248,6 +263,24 @@ function dueBadge(task) {
   return `<span class="badge due${isOverdue ? ' overdue' : ''}">${isOverdue ? '⚠ ' : ''}${isToday ? 'Today' : label}</span>`;
 }
 
+function photoRowHtml(taskId) {
+  const pics = photosFor(taskId);
+  const thumbs = pics.map(p => `
+    <div class="photo-thumb">
+      <img src="${escapeAttr(p.url)}" data-action="view-photo">
+      <button type="button" class="photo-remove" data-action="delete-photo" data-photo-id="${p.id}" title="Remove photo">✕</button>
+    </div>
+  `).join('');
+  return `
+    <div class="photo-row" data-task-id="${taskId}">
+      ${thumbs}
+      <label class="photo-add-btn" title="Add photo">+
+        <input type="file" accept="image/*" class="photo-input" data-action="upload-photo">
+      </label>
+    </div>
+  `;
+}
+
 function taskEl(task) {
   const div = document.createElement('div');
   const draggable = task.status !== 'done';
@@ -263,6 +296,7 @@ function taskEl(task) {
           ${dueBadge(task)}
         </div>
         <textarea class="task-notes-edit" placeholder="+ Add a note…" rows="1">${escapeHtml(task.notes || '')}</textarea>
+        ${photoRowHtml(task.id)}
       </div>
       <div class="task-actions">
         ${draggable ? '<span class="drag-handle" title="Drag to move to another category">⠿</span>' : ''}
@@ -344,6 +378,17 @@ document.body.addEventListener('click', e => {
     if (confirm('Delete this task?')) deleteTask(id);
     return;
   }
+  const viewPhoto = e.target.closest('[data-action="view-photo"]');
+  if (viewPhoto) {
+    window.open(viewPhoto.src, '_blank');
+    return;
+  }
+  const delPhotoBtn = e.target.closest('[data-action="delete-photo"]');
+  if (delPhotoBtn) {
+    const photo = photos.find(p => p.id === delPhotoBtn.dataset.photoId);
+    if (photo && confirm('Remove this photo?')) deletePhoto(photo);
+    return;
+  }
 });
 
 document.body.addEventListener('change', e => {
@@ -353,6 +398,14 @@ document.body.addEventListener('change', e => {
   } else if (e.target.classList.contains('task-notes-edit')) {
     const id = e.target.closest('.task').dataset.id;
     updateTask(id, { notes: e.target.value.trim() || null });
+  } else if (e.target.classList.contains('photo-input')) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const taskId = e.target.closest('.photo-row').dataset.taskId;
+    const addBtn = e.target.closest('.photo-add-btn');
+    addBtn.classList.add('uploading');
+    uploadPhoto(taskId, file).finally(() => addBtn.classList.remove('uploading'));
+    e.target.value = '';
   }
 });
 
@@ -473,12 +526,68 @@ function setConn(ok, errMsg) {
   connText.textContent = ok ? 'Synced' : (errMsg || 'Connection error');
 }
 
+function resizeImage(file, maxDim, quality) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > maxDim || height > maxDim) {
+          if (width > height) { height = Math.round(height * maxDim / width); width = maxDim; }
+          else { width = Math.round(width * maxDim / height); height = maxDim; }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+        canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('Could not process image')), 'image/jpeg', quality);
+      };
+      img.onerror = () => reject(new Error('Could not read image'));
+      img.src = reader.result;
+    };
+    reader.onerror = () => reject(new Error('Could not read file'));
+    reader.readAsDataURL(file);
+  });
+}
+
+async function fetchPhotos() {
+  const { data, error } = await sb.from('task_photos').select('*').order('created_at', { ascending: true });
+  if (error) { console.error(error); return; }
+  photos = data;
+  render();
+}
+
+async function uploadPhoto(taskId, file) {
+  let blob;
+  try {
+    blob = await resizeImage(file, 1600, 0.82);
+  } catch (err) {
+    alert(err.message);
+    return;
+  }
+  const path = `${taskId}/${Date.now()}-${Math.random().toString(36).slice(2)}.jpg`;
+  const { error: upErr } = await sb.storage.from('task-photos').upload(path, blob, { contentType: 'image/jpeg' });
+  if (upErr) { alert(upErr.message); return; }
+  const { data: urlData } = sb.storage.from('task-photos').getPublicUrl(path);
+  const { error: insErr } = await sb.from('task_photos').insert({ task_id: taskId, url: urlData.publicUrl, path });
+  if (insErr) alert(insErr.message);
+}
+
+async function deletePhoto(photo) {
+  await sb.storage.from('task-photos').remove([photo.path]);
+  const { error } = await sb.from('task_photos').delete().eq('id', photo.id);
+  if (error) alert(error.message);
+}
+
 if (configured) {
   fetchTasks();
   fetchReviewState();
+  fetchPhotos();
   sb.channel('app-changes')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, fetchTasks)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'daily_review' }, fetchReviewState)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'task_photos' }, fetchPhotos)
     .subscribe();
 }
 </script>

@@ -36,3 +36,29 @@ create policy "anon full access" on daily_review for all using (true) with check
 
 alter publication supabase_realtime add table daily_review;
 
+-- Photos attached to tasks. Files live in a public storage bucket
+-- (resized/compressed client-side before upload); this table just
+-- tracks which photos belong to which task.
+insert into storage.buckets (id, name, public)
+values ('task-photos', 'task-photos', true)
+on conflict (id) do nothing;
+
+create policy "anon full access to task-photos"
+on storage.objects for all
+using (bucket_id = 'task-photos')
+with check (bucket_id = 'task-photos');
+
+create table task_photos (
+  id         uuid primary key default gen_random_uuid(),
+  task_id    uuid not null references tasks(id) on delete cascade,
+  url        text not null,
+  path       text not null,
+  created_at timestamptz not null default now()
+);
+
+alter table task_photos enable row level security;
+
+create policy "anon full access" on task_photos for all using (true) with check (true);
+
+alter publication supabase_realtime add table task_photos;
+
