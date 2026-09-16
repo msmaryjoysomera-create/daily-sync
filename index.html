@@ -102,6 +102,13 @@
   .earlier-toggle{background:transparent;border:none;color:var(--muted);font-size:12.5px;padding:6px 2px;text-decoration:underline}
   .earlier{display:none}
   .earlier.show{display:block}
+
+  .review-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;margin-bottom:22px;box-shadow:0 1px 3px rgba(30,20,10,.04)}
+  .review-card h3{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700;margin-bottom:12px}
+  .review-list{display:flex;flex-direction:column;gap:11px}
+  .review-item{display:flex;align-items:center;gap:10px;font-size:14.5px;color:var(--text);cursor:pointer}
+  .review-item input[type=checkbox]{width:18px;height:18px;accent-color:var(--accent);cursor:pointer;flex-shrink:0}
+  .review-item.checked span{color:var(--muted);text-decoration:line-through}
 </style>
 </head>
 <body>
@@ -121,6 +128,11 @@
 
 <div class="status-line"><span class="dot" id="connDot"></span><span id="connText">Connecting…</span></div>
 <div class="banner" id="carryBanner"></div>
+
+<div class="review-card">
+  <h3>Daily Review</h3>
+  <div class="review-list" id="reviewList"></div>
+</div>
 
 <div id="setupNotice" class="setup" style="display:none">
   <h2>One-time setup needed</h2>
@@ -193,6 +205,9 @@ const notesToggleBtn = document.getElementById('notesToggleBtn');
 const assigneeChips = document.getElementById('assigneeChips');
 const earlierToggle = document.getElementById('earlierToggle');
 const earlierList = document.getElementById('earlierList');
+const reviewList = document.getElementById('reviewList');
+
+const REVIEW_ITEMS = ['Calendar', 'Tasks', 'Tasks – Completed', 'Inbox', 'Text Messages', 'Photos'];
 
 const todayStr = () => new Date().toISOString().slice(0, 10);
 dateSub.textContent = new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
@@ -356,6 +371,30 @@ addForm.addEventListener('submit', async e => {
   titleInput.focus();
 });
 
+function renderReviewItems(checkedSet) {
+  reviewList.innerHTML = '';
+  REVIEW_ITEMS.forEach(item => {
+    const label = document.createElement('label');
+    label.className = 'review-item' + (checkedSet.has(item) ? ' checked' : '');
+    const checked = checkedSet.has(item);
+    label.innerHTML = `<input type="checkbox" ${checked ? 'checked' : ''}><span>${escapeHtml(item)}</span>`;
+    label.querySelector('input').addEventListener('change', e => toggleReviewItem(item, e.target.checked));
+    reviewList.appendChild(label);
+  });
+}
+
+async function fetchReviewState() {
+  const { data, error } = await sb.from('daily_review').select('*').eq('day', todayStr());
+  if (error) { console.error(error); return; }
+  const checkedSet = new Set(data.filter(r => r.checked).map(r => r.item));
+  renderReviewItems(checkedSet);
+}
+
+async function toggleReviewItem(item, checked) {
+  const { error } = await sb.from('daily_review').upsert({ day: todayStr(), item, checked });
+  if (error) alert(error.message);
+}
+
 async function fetchTasks() {
   const { data, error } = await sb.from('tasks').select('*').order('created_at', { ascending: true });
   if (error) { setConn(false, error.message); return; }
@@ -395,8 +434,10 @@ function setConn(ok, errMsg) {
 
 if (configured) {
   fetchTasks();
-  sb.channel('tasks-changes')
+  fetchReviewState();
+  sb.channel('app-changes')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, fetchTasks)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'daily_review' }, fetchReviewState)
     .subscribe();
 }
 </script>

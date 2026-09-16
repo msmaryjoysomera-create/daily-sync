@@ -20,3 +20,18 @@ create policy "anon full access" on tasks for all using (true) with check (true)
 
 alter publication supabase_realtime add table tasks;
 
+-- Daily Review checklist (Calendar, Tasks, Inbox, etc.) -- checked state
+-- per calendar day, shared between Mary and Evan, resets each new day.
+create table daily_review (
+  day date not null,
+  item text not null,
+  checked boolean not null default false,
+  primary key (day, item)
+);
+
+alter table daily_review enable row level security;
+
+create policy "anon full access" on daily_review for all using (true) with check (true);
+
+alter publication supabase_realtime add table daily_review;
+
