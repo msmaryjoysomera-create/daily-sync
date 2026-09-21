@@ -169,7 +169,7 @@
 <div class="banner unread" id="unreadBanner"></div>
 <div class="banner" id="carryBanner"></div>
 
-<div class="review-card">
+<div class="review-card" id="reviewCard">
   <h3>Daily Review</h3>
   <div class="review-list" id="reviewList"></div>
 </div>
@@ -221,6 +221,7 @@ const connDot = document.getElementById('connDot');
 const connText = document.getElementById('connText');
 const carryBanner = document.getElementById('carryBanner');
 const unreadBanner = document.getElementById('unreadBanner');
+const reviewCard = document.getElementById('reviewCard');
 const printBtn = document.getElementById('printBtn');
 const whoToggle = document.getElementById('whoToggle');
 const addForm = document.getElementById('addForm');
@@ -285,6 +286,7 @@ function setWho(val) {
   localStorage.setItem('daily-sync-who', val);
   [...whoToggle.children].forEach(b => b.classList.toggle('active', b.dataset.who === val));
   recurToggleBtn.style.display = val === 'mary' ? '' : 'none';
+  reviewCard.style.display = val === 'sarah' ? 'none' : '';
   render();
 }
 whoToggle.addEventListener('click', e => {
