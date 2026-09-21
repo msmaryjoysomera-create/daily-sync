@@ -12,14 +12,19 @@ A shared task tracker for Mary & Sarah's daily sync. Single-file app, no login -
 
 ## Features
 
-- Daily Review checklist (Calendar, Tasks, Inbox, etc.) shared between Mary and Sarah, resets each day
-- Tasks grouped by category, shown as a 2-column board on wider screens (1 column on mobile); drag a task by its grip handle to move it to a different category
-- Categories aren't fixed -- type a new tag when adding a task and it becomes its own category; existing tags autocomplete via suggestions
-- Completed tasks collect in their own "Done" section, out of the way of active categories
-- Search bar filters tasks by title or notes across all categories as you type
+- "Mary / Sarah" toggle (local preference only, stored in your browser -- not a login): selecting a name both filters the view and assigns any new task you add to that person. Until a name is chosen, the board is hidden behind a prompt to pick one.
+- **Mary's view** is the full board: tasks grouped by category, shown as a 2-column board on wider screens (1 column on mobile); drag a task by its grip handle to move it to a different category. Categories aren't fixed -- type a new tag when adding a task and it becomes its own category; existing tags autocomplete via suggestions.
+  - Pin a task with the 📌 button to keep it at the top of its category
+  - Mark a task "↻ Daily" when adding it to have it automatically reset to To Do each day, even after it's checked off
+  - Each task shows a small "Updated Xh ago" / "Completed by Mary" line
+  - Completed tasks collect in a "Done" section; anything older than 3 days collapses behind a "Show N older completed" link
+- **Sarah's view** is a simpler To Do / In Progress / Done list (no categories, pinning, or recurring) -- her day-to-day is more straightforward, so it stays out of the way
+- Search bar filters tasks by title or notes as you type
 - Task title and notes are editable inline, right on the card
-- Attach photos to a task with the + button on its card (auto-resized before upload); tap a thumbnail to view full-size
+- Attach photos to a task with the "+ Add a photo" control on its card (auto-resized before upload); tap a thumbnail to view full-size
 - Unfinished tasks automatically carry over between syncs (no extra step)
 - Optional due date per task, with a badge that turns red once it's overdue
+- A banner flags tasks updated since your last visit to the app
+- Print / export button for a clean printable copy of the board
+- Daily Review checklist (Calendar, Tasks, Inbox, etc.) shared between Mary and Sarah, resets each day
 - Live updates via Supabase Realtime -- useful when you're both looking at it during the call
-- "Mary / Sarah" toggle (local preference only, stored in your browser -- not a login): selecting a name both filters the view and assigns any new task you add to that person; tap the active name again to go back to viewing everyone

@@ -47,7 +47,10 @@
 
   .banner{color:var(--doing);font-size:12.5px;margin:10px 0 16px;padding:8px 12px;background:var(--doing-dim);border-radius:10px;display:none}
   .banner.show{display:block}
+  .banner.unread{color:var(--accent);background:var(--accent-dim)}
   .status-line{color:var(--muted);font-size:12px;margin-bottom:16px;display:flex;align-items:center;gap:6px}
+  .print-btn{margin-left:auto;background:transparent;border:1px solid var(--line);border-radius:8px;padding:4px 10px;font-size:12px;color:var(--muted)}
+  .print-btn:hover{color:var(--text)}
   .dot{width:7px;height:7px;border-radius:50%;background:var(--muted)}
   .dot.ok{background:var(--done)}
   .dot.err{background:var(--danger)}
@@ -65,6 +68,7 @@
   .add-row input[type=date]{background:var(--card-2);border:1px solid var(--line);border-radius:10px;padding:7px 10px;font-size:12.5px;color:var(--text)}
   .tag-select{background:var(--card-2);border:1px solid var(--line);border-radius:10px;padding:7px 10px;font-size:12.5px;color:var(--text);max-width:150px}
   .notes-toggle{background:transparent;border:1px dashed var(--line);border-radius:10px;padding:7px 10px;font-size:12.5px;color:var(--muted)}
+  .recur-toggle.active{background:var(--accent-dim);border-color:var(--accent);color:var(--accent)}
   form.add textarea{width:100%;background:var(--card-2);border:1px solid var(--line);border-radius:10px;
     padding:10px;font-size:13.5px;color:var(--text);margin-top:10px;min-height:60px;resize:vertical;display:none}
   form.add textarea.show{display:block}
@@ -109,6 +113,12 @@
   .list.drag-over{background:var(--accent-dim)}
   .icon-btn{background:transparent;border:none;color:var(--muted);font-size:14px;padding:4px 6px;border-radius:6px}
   .icon-btn:hover{color:var(--text)}
+  .icon-btn.active{color:var(--accent)}
+  .task.pinned{border-left:3px solid var(--accent)}
+  .task-history{font-size:11px;color:var(--muted);margin-top:8px}
+  .badge.recur{color:var(--accent)}
+  .archive-toggle{font-size:12px;color:var(--muted);cursor:pointer;padding:8px 2px 2px;text-align:center}
+  .archive-toggle:hover{color:var(--text)}
   .task-notes-edit{width:100%;font-size:13px;color:var(--muted);margin-top:8px;padding-top:8px;border:none;border-top:1px solid var(--line);
     background:transparent;font-family:inherit;resize:vertical;min-height:20px;white-space:pre-wrap}
   .task-notes-edit:focus{color:var(--text);outline:none}
@@ -131,6 +141,14 @@
   .review-item{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--text);cursor:pointer}
   .review-item input[type=checkbox]{width:15px;height:15px;accent-color:var(--accent);cursor:pointer;flex-shrink:0}
   .review-item.checked span{color:var(--muted);text-decoration:line-through}
+
+  @media print {
+    .status-line, form.add, .search-input, .who, .banner { display:none; }
+    #board { column-count:1 !important; }
+    .task-actions, .photo-add-row { display:none; }
+    .task { box-shadow:none; border:1px solid #ccc; break-inside:avoid; }
+    body { padding:0; max-width:100%; }
+  }
 </style>
 </head>
 <body>
@@ -147,7 +165,8 @@
   </div>
 </header>
 
-<div class="status-line"><span class="dot" id="connDot"></span><span id="connText">Connecting…</span></div>
+<div class="status-line"><span class="dot" id="connDot"></span><span id="connText">Connecting…</span><button type="button" id="printBtn" class="print-btn" title="Print or export">🖨 Print</button></div>
+<div class="banner unread" id="unreadBanner"></div>
 <div class="banner" id="carryBanner"></div>
 
 <div class="review-card">
@@ -172,6 +191,7 @@
     <datalist id="tagOptions"></datalist>
     <input type="date" id="dueInput">
     <button type="button" class="notes-toggle" id="notesToggleBtn">+ note</button>
+    <button type="button" class="notes-toggle recur-toggle" id="recurToggleBtn" title="Repeat this task every day">↻ Daily</button>
     <button type="submit" class="add-submit">Add</button>
   </div>
   <textarea id="notesInput" placeholder="Notes / blockers…"></textarea>
@@ -200,12 +220,15 @@ const dateSub = document.getElementById('dateSub');
 const connDot = document.getElementById('connDot');
 const connText = document.getElementById('connText');
 const carryBanner = document.getElementById('carryBanner');
+const unreadBanner = document.getElementById('unreadBanner');
+const printBtn = document.getElementById('printBtn');
 const whoToggle = document.getElementById('whoToggle');
 const addForm = document.getElementById('addForm');
 const titleInput = document.getElementById('titleInput');
 const dueInput = document.getElementById('dueInput');
 const notesInput = document.getElementById('notesInput');
 const notesToggleBtn = document.getElementById('notesToggleBtn');
+const recurToggleBtn = document.getElementById('recurToggleBtn');
 const board = document.getElementById('board');
 const reviewList = document.getElementById('reviewList');
 const tagInput = document.getElementById('tagInput');
@@ -228,7 +251,25 @@ let who = localStorage.getItem('daily-sync-who') || '';
 let search = '';
 let tasks = [];
 let photos = [];
+let showArchived = false;
+let firstLoad = true;
+let recurActive = false;
 updateTagOptions();
+
+const nameFor = v => v === 'mary' ? 'Mary' : v === 'sarah' ? 'Sarah' : v;
+
+function timeAgo(iso) {
+  if (!iso) return '';
+  const diff = Date.now() - new Date(iso).getTime();
+  const min = Math.floor(diff / 60000);
+  if (min < 1) return 'just now';
+  if (min < 60) return `${min}m ago`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr}h ago`;
+  const day = Math.floor(hr / 24);
+  if (day < 7) return `${day}d ago`;
+  return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
 
 function photosFor(taskId) {
   return photos.filter(p => p.task_id === taskId);
@@ -243,6 +284,7 @@ function setWho(val) {
   who = val;
   localStorage.setItem('daily-sync-who', val);
   [...whoToggle.children].forEach(b => b.classList.toggle('active', b.dataset.who === val));
+  recurToggleBtn.style.display = val === 'mary' ? '' : 'none';
   render();
 }
 whoToggle.addEventListener('click', e => {
@@ -254,6 +296,13 @@ setWho(who);
 notesToggleBtn.addEventListener('click', () => {
   notesInput.classList.toggle('show');
 });
+
+recurToggleBtn.addEventListener('click', () => {
+  recurActive = !recurActive;
+  recurToggleBtn.classList.toggle('active', recurActive);
+});
+
+printBtn.addEventListener('click', () => window.print());
 
 function dueBadge(task) {
   if (!task.due_date) return '';
@@ -285,9 +334,12 @@ function photoRowHtml(taskId) {
 function taskEl(task) {
   const div = document.createElement('div');
   const draggable = task.status !== 'done';
-  div.className = 'task' + (task.status === 'done' ? ' done' : '');
+  div.className = 'task' + (task.status === 'done' ? ' done' : '') + (task.pinned ? ' pinned' : '');
   div.dataset.id = task.id;
   if (draggable) div.draggable = true;
+  const historyLine = task.status === 'done'
+    ? `Completed${task.completed_by ? ' by ' + escapeHtml(nameFor(task.completed_by)) : ''} · ${timeAgo(task.completed_at)}`
+    : `Updated ${timeAgo(task.updated_at || task.created_at)}`;
   div.innerHTML = `
     <div class="task-top">
       <button class="status-btn ${task.status === 'todo' ? '' : task.status}" title="Change status"></button>
@@ -295,12 +347,39 @@ function taskEl(task) {
         <input class="task-title" value="${escapeAttr(task.title)}">
         <div class="task-meta">
           ${dueBadge(task)}
+          ${task.recurring ? '<span class="badge recur" title="Repeats daily">↻ Daily</span>' : ''}
+        </div>
+        <textarea class="task-notes-edit" placeholder="+ Add a note…" rows="1">${escapeHtml(task.notes || '')}</textarea>
+        ${photoRowHtml(task.id)}
+        <div class="task-history">${historyLine}</div>
+      </div>
+      <div class="task-actions">
+        <button class="icon-btn pin-btn${task.pinned ? ' active' : ''}" data-action="pin" title="${task.pinned ? 'Unpin' : 'Pin to top'}">📌</button>
+        ${draggable ? '<span class="drag-handle" title="Drag to move to another category">⠿</span>' : ''}
+        <button class="icon-btn" data-action="delete" title="Delete">✕</button>
+      </div>
+    </div>
+  `;
+  return div;
+}
+
+function basicTaskEl(task) {
+  const div = document.createElement('div');
+  div.className = 'task' + (task.status === 'done' ? ' done' : '');
+  div.dataset.id = task.id;
+  div.innerHTML = `
+    <div class="task-top">
+      <button class="status-btn ${task.status === 'todo' ? '' : task.status}" title="Change status"></button>
+      <div class="task-body">
+        <input class="task-title" value="${escapeAttr(task.title)}">
+        <div class="task-meta">
+          ${dueBadge(task)}
+          ${task.tag ? `<span class="badge">${escapeHtml(task.tag)}</span>` : ''}
         </div>
         <textarea class="task-notes-edit" placeholder="+ Add a note…" rows="1">${escapeHtml(task.notes || '')}</textarea>
         ${photoRowHtml(task.id)}
       </div>
       <div class="task-actions">
-        ${draggable ? '<span class="drag-handle" title="Drag to move to another category">⠿</span>' : ''}
         <button class="icon-btn" data-action="delete" title="Delete">✕</button>
       </div>
     </div>
@@ -311,6 +390,8 @@ function taskEl(task) {
 function escapeHtml(s) { return s.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c])); }
 function escapeAttr(s) { return s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
 
+const ARCHIVE_DAYS = 3;
+
 function render() {
   let visible = who ? tasks.filter(t => t.assignee === who) : tasks;
   if (search) {
@@ -318,9 +399,36 @@ function render() {
       t.title.toLowerCase().includes(search) || (t.notes || '').toLowerCase().includes(search));
   }
 
+  board.innerHTML = '';
+
+  if (!who) {
+    board.innerHTML = `<div class="empty">Choose Mary or Sarah above to view tasks</div>`;
+    carryBanner.classList.remove('show');
+    return;
+  }
+
+  if (who === 'sarah') {
+    renderBasicBoard(visible, search);
+  } else {
+    renderTagBoard(visible, search);
+  }
+
+  const carried = visible.filter(t => t.status !== 'done' && t.created_at && t.created_at.slice(0, 10) !== todayStr());
+  if (carried.length) {
+    carryBanner.textContent = `${carried.length} task${carried.length === 1 ? '' : 's'} carried over from a previous sync`;
+    carryBanner.classList.add('show');
+  } else {
+    carryBanner.classList.remove('show');
+  }
+}
+
+function renderTagBoard(visible, search) {
   const active = visible.filter(t => t.status !== 'done');
-  const done = visible.filter(t => t.status === 'done')
+  const doneAll = visible.filter(t => t.status === 'done')
     .sort((a, b) => (b.completed_at || '').localeCompare(a.completed_at || ''));
+  const archiveCutoff = new Date(Date.now() - ARCHIVE_DAYS * 24 * 60 * 60 * 1000).toISOString();
+  const doneOlder = doneAll.filter(t => (t.completed_at || '') < archiveCutoff);
+  const doneToShow = showArchived ? doneAll : doneAll.filter(t => (t.completed_at || '') >= archiveCutoff);
 
   const byTag = new Map();
   active.forEach(t => {
@@ -334,23 +442,17 @@ function render() {
   orderedKeys.push(...customKeys);
   if (byTag.has('')) orderedKeys.push('');
 
-  board.innerHTML = '';
-  if (!orderedKeys.length && !done.length) {
+  if (!orderedKeys.length && !doneAll.length) {
     board.innerHTML = `<div class="empty">${search ? 'No matching tasks' : 'Nothing here yet'}</div>`;
   }
   orderedKeys.forEach(key => {
     board.appendChild(tagSectionEl(key, byTag.get(key), { droppable: true }));
   });
-  if (done.length) {
-    board.appendChild(tagSectionEl('Done', done, { presorted: true }));
-  }
-
-  const carried = visible.filter(t => t.status !== 'done' && t.created_at && t.created_at.slice(0, 10) !== todayStr());
-  if (carried.length) {
-    carryBanner.textContent = `${carried.length} task${carried.length === 1 ? '' : 's'} carried over from a previous sync`;
-    carryBanner.classList.add('show');
-  } else {
-    carryBanner.classList.remove('show');
+  if (doneAll.length) {
+    const footer = doneOlder.length
+      ? `<div class="archive-toggle" data-action="toggle-archive">${showArchived ? 'Hide older completed' : `Show ${doneOlder.length} older completed`}</div>`
+      : '';
+    board.appendChild(tagSectionEl('Done', doneToShow, { presorted: true, footer }));
   }
 }
 
@@ -358,12 +460,42 @@ function tagSectionEl(key, list, opts) {
   opts = opts || {};
   const div = document.createElement('div');
   div.className = 'col';
-  const sorted = opts.presorted ? list : [...list].sort((a, b) => a.created_at.localeCompare(b.created_at));
+  const sorted = opts.presorted
+    ? list
+    : [...list].sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || a.created_at.localeCompare(b.created_at));
   const dropAttr = opts.droppable ? ` data-tag-target="${escapeAttr(key)}"` : '';
-  div.innerHTML = `<div class="col-head"><span class="swatch"></span><h3>${escapeHtml(key || 'Untagged')}</h3><span class="count">${list.length}</span></div><div class="list"${dropAttr}></div>`;
+  div.innerHTML = `<div class="col-head"><span class="swatch"></span><h3>${escapeHtml(key || 'Untagged')}</h3><span class="count">${list.length}</span></div><div class="list"${dropAttr}></div>${opts.footer || ''}`;
   const listEl = div.querySelector('.list');
   sorted.forEach(t => listEl.appendChild(taskEl(t)));
   return div;
+}
+
+function renderBasicBoard(visible, search) {
+  const cols = [
+    { key: 'todo', label: 'To Do' },
+    { key: 'doing', label: 'In Progress' },
+    { key: 'done', label: 'Done' },
+  ];
+  if (!visible.length) {
+    board.innerHTML = `<div class="empty">${search ? 'No matching tasks' : 'Nothing here yet'}</div>`;
+    return;
+  }
+  cols.forEach(col => {
+    const list = visible.filter(t => t.status === col.key)
+      .sort((a, b) => col.key === 'done'
+        ? (b.completed_at || '').localeCompare(a.completed_at || '')
+        : a.created_at.localeCompare(b.created_at));
+    const div = document.createElement('div');
+    div.className = 'col';
+    div.innerHTML = `<div class="col-head"><span class="swatch"></span><h3>${col.label}</h3><span class="count">${list.length}</span></div><div class="list"></div>`;
+    const listEl = div.querySelector('.list');
+    if (!list.length) {
+      listEl.innerHTML = '<div class="empty">Nothing here</div>';
+    } else {
+      list.forEach(t => listEl.appendChild(basicTaskEl(t)));
+    }
+    board.appendChild(div);
+  });
 }
 
 document.body.addEventListener('click', e => {
@@ -371,6 +503,13 @@ document.body.addEventListener('click', e => {
   if (statusBtn) {
     const id = statusBtn.closest('.task').dataset.id;
     cycleStatus(id);
+    return;
+  }
+  const pinBtn = e.target.closest('[data-action="pin"]');
+  if (pinBtn) {
+    const id = pinBtn.closest('.task').dataset.id;
+    const task = tasks.find(t => t.id === id);
+    if (task) updateTask(id, { pinned: !task.pinned });
     return;
   }
   const delBtn = e.target.closest('[data-action="delete"]');
@@ -388,6 +527,12 @@ document.body.addEventListener('click', e => {
   if (delPhotoBtn) {
     const photo = photos.find(p => p.id === delPhotoBtn.dataset.photoId);
     if (photo && confirm('Remove this photo?')) deletePhoto(photo);
+    return;
+  }
+  const archiveToggle = e.target.closest('[data-action="toggle-archive"]');
+  if (archiveToggle) {
+    showArchived = !showArchived;
+    render();
     return;
   }
 });
@@ -456,12 +601,15 @@ addForm.addEventListener('submit', async e => {
     due_date: dueInput.value || null,
     notes: notesInput.value.trim() || null,
     status: 'todo',
+    recurring: recurActive,
   });
   titleInput.value = '';
   tagInput.value = '';
   dueInput.value = '';
   notesInput.value = '';
   notesInput.classList.remove('show');
+  recurActive = false;
+  recurToggleBtn.classList.remove('active');
   titleInput.focus();
 });
 
@@ -495,7 +643,32 @@ async function fetchTasks() {
   tasks = data;
   setConn(true);
   updateTagOptions();
+  if (firstLoad) {
+    firstLoad = false;
+    checkUnread();
+    resetRecurring();
+  }
   render();
+}
+
+function checkUnread() {
+  const lastSeen = localStorage.getItem('daily-sync-last-seen');
+  if (lastSeen) {
+    const changed = tasks.filter(t => t.updated_at && t.updated_at > lastSeen);
+    if (changed.length) {
+      unreadBanner.textContent = `${changed.length} task${changed.length === 1 ? '' : 's'} updated since your last visit`;
+      unreadBanner.classList.add('show');
+    }
+  }
+  localStorage.setItem('daily-sync-last-seen', new Date().toISOString());
+}
+
+async function resetRecurring() {
+  const today = todayStr();
+  const toReset = tasks.filter(t => t.recurring && t.status === 'done' && (!t.completed_at || t.completed_at.slice(0, 10) !== today));
+  for (const t of toReset) {
+    await updateTask(t.id, { status: 'todo', completed_at: null, completed_by: null });
+  }
 }
 
 async function addTask(fields) {
@@ -504,7 +677,7 @@ async function addTask(fields) {
 }
 
 async function updateTask(id, fields) {
-  const { error } = await sb.from('tasks').update(fields).eq('id', id);
+  const { error } = await sb.from('tasks').update({ ...fields, updated_at: new Date().toISOString() }).eq('id', id);
   if (error) alert(error.message);
 }
 
@@ -514,6 +687,7 @@ function cycleStatus(id) {
   const next = { todo: 'doing', doing: 'done', done: 'todo' }[task.status];
   const fields = { status: next };
   fields.completed_at = next === 'done' ? new Date().toISOString() : null;
+  fields.completed_by = next === 'done' ? (who || null) : null;
   updateTask(id, fields);
 }
 

@@ -62,3 +62,10 @@ create policy "anon full access" on task_photos for all using (true) with check 
 
 alter publication supabase_realtime add table task_photos;
 
+-- Task history (who/when), recurring tasks, and pinning -- Mary's board only;
+-- Sarah's simpler To Do / In Progress / Done view doesn't surface these.
+alter table tasks add column if not exists updated_at timestamptz not null default now();
+alter table tasks add column if not exists completed_by text;
+alter table tasks add column if not exists recurring boolean not null default false;
+alter table tasks add column if not exists pinned boolean not null default false;
+
