@@ -214,7 +214,14 @@ if (!configured) {
   document.getElementById('connText').textContent = 'Not configured';
 }
 
-const sb = configured ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+// No login in this app -- disable Supabase's auth session handling entirely.
+// It otherwise persists a session and coordinates refreshes across tabs via
+// a browser lock; if a crashed/stale tab ever left that lock held, every
+// new tab hangs on "Connecting..." forever waiting for it (private/incognito
+// windows dodge this because they always start with a clean lock state).
+const sb = configured ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+}) : null;
 
 const dateSub = document.getElementById('dateSub');
 const connDot = document.getElementById('connDot');
