@@ -49,6 +49,8 @@
   .banner.show{display:block}
   .banner.unread{color:var(--accent);background:var(--accent-dim)}
   .status-line{color:var(--muted);font-size:12px;margin-bottom:16px;display:flex;align-items:center;gap:6px}
+  #connDot,#connText{cursor:pointer}
+  #connText:hover{color:var(--text);text-decoration:underline}
   .print-btn{margin-left:auto;background:transparent;border:1px solid var(--line);border-radius:8px;padding:4px 10px;font-size:12px;color:var(--muted)}
   .print-btn:hover{color:var(--text)}
   .dot{width:7px;height:7px;border-radius:50%;background:var(--muted)}
@@ -234,6 +236,16 @@ const sb = configured ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
 const dateSub = document.getElementById('dateSub');
 const connDot = document.getElementById('connDot');
 const connText = document.getElementById('connText');
+
+function retryConnection() {
+  connText.textContent = 'Connecting…';
+  connDot.className = 'dot';
+  fetchTasks();
+  fetchReviewState();
+  fetchPhotos();
+}
+connDot.addEventListener('click', retryConnection);
+connText.addEventListener('click', retryConnection);
 const carryBanner = document.getElementById('carryBanner');
 const unreadBanner = document.getElementById('unreadBanner');
 const reviewCard = document.getElementById('reviewCard');
@@ -642,8 +654,18 @@ function renderReviewItems(checkedSet) {
   });
 }
 
+function withTimeout(promise, ms) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error('Connection timed out — click to retry')), ms)),
+  ]);
+}
+
 async function fetchReviewState() {
-  const { data, error } = await sb.from('daily_review').select('*').eq('day', todayStr());
+  let data, error;
+  try {
+    ({ data, error } = await withTimeout(sb.from('daily_review').select('*').eq('day', todayStr()), 10000));
+  } catch (err) { console.error(err); return; }
   if (error) { console.error(error); return; }
   const checkedSet = new Set(data.filter(r => r.checked).map(r => r.item));
   renderReviewItems(checkedSet);
@@ -655,7 +677,13 @@ async function toggleReviewItem(item, checked) {
 }
 
 async function fetchTasks() {
-  const { data, error } = await sb.from('tasks').select('*').order('created_at', { ascending: true });
+  let data, error;
+  try {
+    ({ data, error } = await withTimeout(sb.from('tasks').select('*').order('created_at', { ascending: true }), 10000));
+  } catch (err) {
+    setConn(false, err.message);
+    return;
+  }
   if (error) { setConn(false, error.message); return; }
   tasks = data;
   setConn(true);
@@ -744,7 +772,10 @@ function resizeImage(file, maxDim, quality) {
 }
 
 async function fetchPhotos() {
-  const { data, error } = await sb.from('task_photos').select('*').order('created_at', { ascending: true });
+  let data, error;
+  try {
+    ({ data, error } = await withTimeout(sb.from('task_photos').select('*').order('created_at', { ascending: true }), 10000));
+  } catch (err) { console.error(err); return; }
   if (error) { console.error(error); return; }
   photos = data;
   render();
