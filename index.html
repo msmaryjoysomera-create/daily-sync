@@ -204,7 +204,16 @@
 <div id="board"></div>
 
 <script type="module">
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.110.9';
+// Grabbed before anything else so a failure below can still show on the page.
+const connDot = document.getElementById('connDot');
+const connText = document.getElementById('connText');
+
+function withTimeout(promise, ms) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error('Connection timed out — click to retry')), ms)),
+  ]);
+}
 
 const SUPABASE_URL = 'https://aighvqegtxgpvltwosmn.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFpZ2h2cWVndHhncHZsdHdvc21uIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk0Nzc5OTMsImV4cCI6MjEwNTA1Mzk5M30.HakqVLbQpRZQ8VNbkqja74lDiw_jWB4D4fuYB8JfEso';
@@ -213,7 +222,24 @@ const configured = SUPABASE_URL !== 'YOUR_SUPABASE_URL' && SUPABASE_ANON_KEY !==
 const setupNotice = document.getElementById('setupNotice');
 if (!configured) {
   setupNotice.style.display = 'block';
-  document.getElementById('connText').textContent = 'Not configured';
+  connText.textContent = 'Not configured';
+}
+
+// A plain top-of-file `import` can't be wrapped in try/catch -- if the CDN
+// request hangs or fails, nothing after it would ever run, including the
+// fetch timeouts below, leaving the page stuck on "Connecting..." with no
+// way to tell why. Loading it dynamically, with its own timeout, means a
+// failure here becomes a visible, clickable-to-retry message instead.
+let createClient;
+if (configured) {
+  try {
+    ({ createClient } = await withTimeout(import('https://esm.sh/@supabase/supabase-js@2.110.9'), 10000));
+  } catch (err) {
+    connText.textContent = err.message.includes('timed out')
+      ? 'Could not load required code — click to retry'
+      : `Failed to load required code: ${err.message}`;
+    connDot.className = 'dot err';
+  }
 }
 
 // No login in this app -- disable Supabase's auth session handling entirely.
@@ -224,7 +250,7 @@ if (!configured) {
 // skips that mechanism altogether, which is safe since there's no session
 // to coordinate. Private/incognito windows dodged this only because they
 // always start with a clean lock state.
-const sb = configured ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+const sb = (configured && createClient) ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
     persistSession: false,
     autoRefreshToken: false,
@@ -234,10 +260,9 @@ const sb = configured ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
 }) : null;
 
 const dateSub = document.getElementById('dateSub');
-const connDot = document.getElementById('connDot');
-const connText = document.getElementById('connText');
 
 function retryConnection() {
+  if (!sb) { location.reload(); return; }
   connText.textContent = 'Connecting…';
   connDot.className = 'dot';
   fetchTasks();
@@ -654,13 +679,6 @@ function renderReviewItems(checkedSet) {
   });
 }
 
-function withTimeout(promise, ms) {
-  return Promise.race([
-    promise,
-    new Promise((_, reject) => setTimeout(() => reject(new Error('Connection timed out — click to retry')), ms)),
-  ]);
-}
-
 async function fetchReviewState() {
   let data, error;
   try {
@@ -803,7 +821,7 @@ async function deletePhoto(photo) {
   if (error) alert(error.message);
 }
 
-if (configured) {
+if (sb) {
   fetchTasks();
   fetchReviewState();
   fetchPhotos();
