@@ -167,7 +167,7 @@
   </div>
 </header>
 
-<div class="status-line"><span class="dot" id="connDot"></span><span id="connText">Connecting…</span><button type="button" id="printBtn" class="print-btn" title="Print or export">🖨 Print</button></div>
+<div class="status-line"><span class="dot" id="connDot"></span><span id="connText">Connecting…</span><span id="liveClock" style="color:#bbb;font-size:10px;margin-left:6px"></span><button type="button" id="printBtn" class="print-btn" title="Print or export">🖨 Print</button></div>
 <div class="banner unread" id="unreadBanner"></div>
 <div class="banner" id="carryBanner"></div>
 
@@ -207,6 +207,18 @@
 // Grabbed before anything else so a failure below can still show on the page.
 const connDot = document.getElementById('connDot');
 const connText = document.getElementById('connText');
+
+// Temporary diagnostic: a running clock, independent of everything else in
+// this file, so it's obvious at a glance whether this page is truly live
+// and executing right now, vs. a frozen/cached copy from before. Safe to
+// remove once the "stuck on Connecting..." issue is confirmed fixed.
+const liveClock = document.getElementById('liveClock');
+if (liveClock) {
+  const BUILD = 'build 2026-09-22t2';
+  setInterval(() => {
+    liveClock.textContent = `${BUILD} · ${new Date().toLocaleTimeString()}`;
+  }, 1000);
+}
 
 function withTimeout(promise, ms) {
   return Promise.race([
