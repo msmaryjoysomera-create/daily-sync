@@ -28,3 +28,14 @@ A shared task tracker for Mary & Sarah's daily sync. Single-file app, no login -
 - Print / export button for a clean printable copy of the board
 - Daily Review checklist (Calendar, Tasks, Inbox, etc.) shared between Mary and Sarah, resets each day
 - Live updates via Supabase Realtime -- useful when you're both looking at it during the call
+
+## Adding tasks from Claude
+
+Sarah can add tasks straight from a Claude chat -- e.g. "add a task for Mary to follow up with Adria about the template" -- without opening the app. This works via a small custom Claude connector (a remote MCP server at `/api/mcp`, deployed alongside the app on Vercel) that can add and list tasks on the same shared board.
+
+To set it up in Claude (one-time, per person who wants to use it):
+1. In Claude's settings, find **Connectors** (or **Custom Connectors**) and add a new one.
+2. Set the URL to `https://daily-sync-woad.vercel.app/api/mcp`.
+3. No login/API key needed -- it uses the same open, no-auth model as the rest of the app.
+
+Once added, just ask Claude in chat to add, or list, a task and it'll show up live on the board.
