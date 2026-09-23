@@ -233,7 +233,7 @@ if (!configured) {
 let createClient;
 if (configured) {
   try {
-    ({ createClient } = await withTimeout(import('https://esm.sh/@supabase/supabase-js@2.110.9'), 10000));
+    ({ createClient } = await withTimeout(import('https://esm.sh/@supabase/supabase-js@2.117.1'), 10000));
   } catch (err) {
     connText.textContent = err.message.includes('timed out')
       ? 'Could not load required code — click to retry'
@@ -242,20 +242,13 @@ if (configured) {
   }
 }
 
-// No login in this app -- disable Supabase's auth session handling entirely.
-// persistSession:false alone doesn't stop it: GoTrueClient still tries to
-// acquire a navigator.locks lock to coordinate refreshes across tabs, and a
-// stuck/undreleased lock (a known issue in Supabase's auth library) leaves
-// every new tab hanging on "Connecting..." forever. Passing a no-op `lock`
-// skips that mechanism altogether, which is safe since there's no session
-// to coordinate. Private/incognito windows dodged this only because they
-// always start with a clean lock state.
+// No login in this app -- disable Supabase's auth session handling entirely,
+// since there's no session to persist or refresh.
 const sb = (configured && createClient) ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
     persistSession: false,
     autoRefreshToken: false,
     detectSessionInUrl: false,
-    lock: (name, acquireTimeout, fn) => fn(),
   },
 }) : null;
 
