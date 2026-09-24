@@ -26,8 +26,8 @@ const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
 
 const TOOLS = [
   {
-    name: 'add_task',
-    description: `Add a task to the "Sync Up" shared board -- Columbia Cabinets' daily task tracker for Mary and Sarah. Use this when asked to add, create, or note down a task, reminder, or follow-up for Mary or Sarah. Existing categories on the board: ${TAG_OPTIONS.join(', ')}. Reuse one of these exactly when it clearly fits, instead of inventing a new one.`,
+    name: 'sync_up_add_task',
+    description: `Add a task to "Sync Up" -- Columbia Cabinets' own daily task tracker/checklist app for Mary and Sarah (not Salesforce, not a CRM, not any other task/to-do system). Use this specifically when asked to add something "to Sync Up" or "to the board", or when no other task system is named and the context is clearly Mary/Sarah's daily sync. Existing categories on the board: ${TAG_OPTIONS.join(', ')}. Reuse one of these exactly when it clearly fits, instead of inventing a new one.`,
     inputSchema: {
       type: 'object',
       properties: {
@@ -41,8 +41,8 @@ const TOOLS = [
     },
   },
   {
-    name: 'list_tasks',
-    description: 'List current open (not-done) tasks on the Sync Up board, optionally filtered to one person.',
+    name: 'sync_up_list_tasks',
+    description: 'List current open (not-done) tasks on "Sync Up" -- Columbia Cabinets\' own daily task tracker for Mary and Sarah (not Salesforce, not a CRM). Optionally filtered to one person.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -57,7 +57,7 @@ function personName(v) {
 }
 
 async function callTool(name, args) {
-  if (name === 'add_task') {
+  if (name === 'sync_up_add_task') {
     const title = (args?.title || '').trim();
     if (!title) return { content: [{ type: 'text', text: 'A task title is required.' }], isError: true };
 
@@ -79,7 +79,7 @@ async function callTool(name, args) {
     return { content: [{ type: 'text', text: bits.join(' ') + '.' }] };
   }
 
-  if (name === 'list_tasks') {
+  if (name === 'sync_up_list_tasks') {
     let q = sb.from('tasks').select('title,tag,assignee,due_date,status').neq('status', 'done').order('created_at', { ascending: true });
     if (args?.assignee) q = q.eq('assignee', args.assignee);
     const { data, error } = await q;
