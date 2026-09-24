@@ -119,6 +119,7 @@
   .task.pinned{border-left:3px solid var(--accent)}
   .task-history{font-size:11px;color:var(--muted);margin-top:8px}
   .badge.recur{color:var(--accent)}
+  .badge.claude{color:#6B5CE0;background:rgba(107,92,224,.1)}
   .archive-toggle{font-size:12px;color:var(--muted);cursor:pointer;padding:8px 2px 2px;text-align:center}
   .archive-toggle:hover{color:var(--text)}
   .task-notes-edit{width:100%;font-size:13px;color:var(--muted);margin-top:8px;padding-top:8px;border:none;border-top:1px solid var(--line);
@@ -395,6 +396,7 @@ function taskEl(task) {
         <div class="task-meta">
           ${dueBadge(task)}
           ${task.recurring ? '<span class="badge recur" title="Repeats daily">↻ Daily</span>' : ''}
+          ${task.source === 'claude' ? '<span class="badge claude" title="Added via Claude">✳ via Claude</span>' : ''}
         </div>
         <textarea class="task-notes-edit" placeholder="+ Add a note…" rows="1">${escapeHtml(task.notes || '')}</textarea>
         ${photoRowHtml(task.id)}
@@ -422,6 +424,7 @@ function basicTaskEl(task) {
         <div class="task-meta">
           ${dueBadge(task)}
           ${task.tag ? `<span class="badge">${escapeHtml(task.tag)}</span>` : ''}
+          ${task.source === 'claude' ? '<span class="badge claude" title="Added via Claude">✳ via Claude</span>' : ''}
         </div>
         <textarea class="task-notes-edit" placeholder="+ Add a note…" rows="1">${escapeHtml(task.notes || '')}</textarea>
         ${photoRowHtml(task.id)}

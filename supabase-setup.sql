@@ -69,3 +69,7 @@ alter table tasks add column if not exists completed_by text;
 alter table tasks add column if not exists recurring boolean not null default false;
 alter table tasks add column if not exists pinned boolean not null default false;
 
+-- Where a task came from -- null/omitted means added in the app itself;
+-- 'claude' means added via the Claude connector (api/mcp.js).
+alter table tasks add column if not exists source text;
+

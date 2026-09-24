@@ -68,6 +68,7 @@ async function callTool(name, args) {
       due_date: args.due_date || null,
       notes: args.notes ? String(args.notes).trim() : null,
       status: 'todo',
+      source: 'claude',
     }).select().single();
     if (error) return { content: [{ type: 'text', text: `Couldn't add the task: ${error.message}` }], isError: true };
 
