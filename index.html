@@ -126,6 +126,7 @@
     background:transparent;font-family:inherit;resize:vertical;min-height:20px;white-space:pre-wrap}
   .task-notes-edit:focus{color:var(--text);outline:none}
   .task-notes-edit::placeholder{color:var(--muted)}
+  .task-notes-edit.hidden{display:none}
 
   .photo-row{margin-top:8px}
   .photo-thumbs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
@@ -133,10 +134,17 @@
   .photo-thumb img{width:100%;height:100%;object-fit:cover;display:block;cursor:pointer}
   .photo-thumb .photo-remove{position:absolute;top:1px;right:1px;background:rgba(0,0,0,.55);color:#fff;border:none;
     border-radius:50%;width:15px;height:15px;font-size:9px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
-  .photo-add-row{display:block;width:100%;font-size:13px;color:var(--muted);padding-top:8px;border-top:1px solid var(--line);cursor:pointer}
-  .photo-add-row:hover{color:var(--text)}
-  .photo-add-row.uploading{opacity:.5;pointer-events:none}
+  .photo-add-row{display:none}
   .photo-input{display:none}
+
+  .meatball-wrap{position:relative}
+  .meatball-btn.uploading{opacity:.4;pointer-events:none}
+  .meatball-menu{display:none;position:absolute;top:100%;right:0;margin-top:4px;background:var(--card);
+    border:1px solid var(--line);border-radius:10px;box-shadow:0 4px 14px rgba(30,20,10,.14);padding:4px;min-width:140px;z-index:5}
+  .meatball-wrap.open .meatball-menu{display:block}
+  .meatball-item{display:block;width:100%;text-align:left;background:transparent;border:none;padding:8px 10px;
+    font-size:13px;color:var(--text);border-radius:6px;cursor:pointer}
+  .meatball-item:hover{background:var(--card-2)}
 
   .review-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:12px 16px;margin-bottom:22px;box-shadow:0 1px 3px rgba(30,20,10,.04)}
   .review-card h3{font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700;margin-bottom:8px}
@@ -379,6 +387,18 @@ function photoRowHtml(taskId) {
   `;
 }
 
+function meatballHtml() {
+  return `
+    <div class="meatball-wrap">
+      <button class="icon-btn meatball-btn" data-action="meatball" title="More">⋯</button>
+      <div class="meatball-menu">
+        <button type="button" class="meatball-item" data-action="add-note">Add a note</button>
+        <button type="button" class="meatball-item" data-action="add-photo">Add a photo</button>
+      </div>
+    </div>
+  `;
+}
+
 function taskEl(task) {
   const div = document.createElement('div');
   const draggable = task.status !== 'done';
@@ -398,7 +418,7 @@ function taskEl(task) {
           ${task.recurring ? '<span class="badge recur" title="Repeats daily">↻ Daily</span>' : ''}
           ${task.source === 'claude' ? '<span class="badge claude" title="Added via Claude">✳ via Claude</span>' : ''}
         </div>
-        <textarea class="task-notes-edit" placeholder="+ Add a note…" rows="1">${escapeHtml(task.notes || '')}</textarea>
+        <textarea class="task-notes-edit${task.notes ? '' : ' hidden'}" placeholder="+ Add a note…" rows="1">${escapeHtml(task.notes || '')}</textarea>
         ${photoRowHtml(task.id)}
         <div class="task-history">${historyLine}</div>
       </div>
@@ -406,6 +426,7 @@ function taskEl(task) {
         <button class="icon-btn pin-btn${task.pinned ? ' active' : ''}" data-action="pin" title="${task.pinned ? 'Unpin' : 'Pin to top'}">📌</button>
         ${draggable ? '<span class="drag-handle" title="Drag to move to another category">⠿</span>' : ''}
         <button class="icon-btn" data-action="delete" title="Delete">✕</button>
+        ${meatballHtml()}
       </div>
     </div>
   `;
@@ -426,11 +447,12 @@ function basicTaskEl(task) {
           ${task.tag ? `<span class="badge">${escapeHtml(task.tag)}</span>` : ''}
           ${task.source === 'claude' ? '<span class="badge claude" title="Added via Claude">✳ via Claude</span>' : ''}
         </div>
-        <textarea class="task-notes-edit" placeholder="+ Add a note…" rows="1">${escapeHtml(task.notes || '')}</textarea>
+        <textarea class="task-notes-edit${task.notes ? '' : ' hidden'}" placeholder="+ Add a note…" rows="1">${escapeHtml(task.notes || '')}</textarea>
         ${photoRowHtml(task.id)}
       </div>
       <div class="task-actions">
         <button class="icon-btn" data-action="delete" title="Delete">✕</button>
+        ${meatballHtml()}
       </div>
     </div>
   `;
@@ -549,6 +571,25 @@ function renderBasicBoard(visible, search) {
 }
 
 document.body.addEventListener('click', e => {
+  const meatballBtn = e.target.closest('[data-action="meatball"]');
+  const keepOpen = meatballBtn ? meatballBtn.closest('.meatball-wrap') : null;
+  document.querySelectorAll('.meatball-wrap.open').forEach(w => { if (w !== keepOpen) w.classList.remove('open'); });
+  if (meatballBtn) {
+    keepOpen.classList.toggle('open');
+    return;
+  }
+  const addNoteBtn = e.target.closest('[data-action="add-note"]');
+  if (addNoteBtn) {
+    const textarea = addNoteBtn.closest('.task').querySelector('.task-notes-edit');
+    textarea.classList.remove('hidden');
+    textarea.focus();
+    return;
+  }
+  const addPhotoBtn = e.target.closest('[data-action="add-photo"]');
+  if (addPhotoBtn) {
+    addPhotoBtn.closest('.task').querySelector('.photo-input').click();
+    return;
+  }
   const statusBtn = e.target.closest('.status-btn');
   if (statusBtn) {
     const id = statusBtn.closest('.task').dataset.id;
@@ -598,9 +639,9 @@ document.body.addEventListener('change', e => {
     const file = e.target.files[0];
     if (!file) return;
     const taskId = e.target.closest('.photo-row').dataset.taskId;
-    const addBtn = e.target.closest('.photo-add-row');
-    addBtn.classList.add('uploading');
-    uploadPhoto(taskId, file).finally(() => addBtn.classList.remove('uploading'));
+    const meatballBtn = e.target.closest('.task').querySelector('.meatball-btn');
+    if (meatballBtn) meatballBtn.classList.add('uploading');
+    uploadPhoto(taskId, file).finally(() => { if (meatballBtn) meatballBtn.classList.remove('uploading'); });
     e.target.value = '';
   }
 });
