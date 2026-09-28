@@ -73,3 +73,21 @@ alter table tasks add column if not exists pinned boolean not null default false
 -- 'claude' means added via the Claude connector (api/mcp.js).
 alter table tasks add column if not exists source text;
 
+-- Sticky Wall: freeform sticky notes, per profile (Mary's / Sarah's), not
+-- tied to any task.
+create table sticky_notes (
+  id         uuid primary key default gen_random_uuid(),
+  assignee   text,
+  title      text,
+  body       text,
+  color      text not null default '#FCE8A8',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+alter table sticky_notes enable row level security;
+
+create policy "anon full access" on sticky_notes for all using (true) with check (true);
+
+alter publication supabase_realtime add table sticky_notes;
+
