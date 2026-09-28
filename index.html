@@ -443,8 +443,6 @@ function basicTaskEl(task) {
       <div class="task-body">
         <input class="task-title" value="${escapeAttr(task.title)}">
         <div class="task-meta">
-          ${dueBadge(task)}
-          ${task.tag ? `<span class="badge">${escapeHtml(task.tag)}</span>` : ''}
           ${task.source === 'claude' ? '<span class="badge claude" title="Added via Claude">✳ via Claude</span>' : ''}
         </div>
         <textarea class="task-notes-edit${task.notes ? '' : ' hidden'}" placeholder="+ Add a note…" rows="1">${escapeHtml(task.notes || '')}</textarea>
