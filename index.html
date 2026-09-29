@@ -73,7 +73,8 @@
     padding:8px;font-size:14px;font-weight:600;color:var(--text);text-align:left}
   .nav-item:hover{background:var(--card-2)}
   .nav-item.active{background:var(--accent-dim);color:var(--accent);font-weight:700}
-  .nav-icon{width:16px;text-align:center;flex-shrink:0;font-size:13px}
+  .nav-icon{width:16px;flex-shrink:0;color:var(--muted);display:inline-flex;align-items:center;justify-content:center}
+  .nav-item.active .nav-icon{color:var(--accent)}
   .nav-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
   .nav-item-label{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .nav-count{color:var(--muted);font-size:11px;font-weight:700;flex-shrink:0;background:var(--card-2);
@@ -93,7 +94,7 @@
   .status-line{color:var(--muted);font-size:12px;margin-bottom:16px;display:flex;align-items:center;gap:6px}
   #connDot,#connText{cursor:pointer}
   #connText:hover{color:var(--text);text-decoration:underline}
-  .print-btn{margin-left:auto;background:transparent;border:1px solid var(--line);border-radius:8px;padding:4px 10px;font-size:12px;color:var(--muted)}
+  .print-btn{margin-left:auto;background:transparent;border:1px solid var(--line);border-radius:8px;padding:4px 10px;font-size:12px;color:var(--muted);display:inline-flex;align-items:center;gap:6px}
   .print-btn:hover{color:var(--text)}
   .dot{width:7px;height:7px;border-radius:50%;background:var(--muted)}
   .dot.ok{background:var(--done)}
@@ -111,7 +112,7 @@
   .add-row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center}
   .add-row input[type=date]{background:var(--card-2);border:1px solid var(--line);border-radius:10px;padding:7px 10px;font-size:12.5px;color:var(--text)}
   .tag-select{background:var(--card-2);border:1px solid var(--line);border-radius:10px;padding:7px 10px;font-size:12.5px;color:var(--text);max-width:150px}
-  .notes-toggle{background:transparent;border:1px dashed var(--line);border-radius:10px;padding:7px 10px;font-size:12.5px;color:var(--muted)}
+  .notes-toggle{background:transparent;border:1px dashed var(--line);border-radius:10px;padding:7px 10px;font-size:12.5px;color:var(--muted);display:inline-flex;align-items:center;gap:5px}
   .recur-toggle.active{background:var(--accent-dim);border-color:var(--accent);color:var(--accent)}
   form.add textarea{width:100%;background:var(--card-2);border:1px solid var(--line);border-radius:10px;
     padding:10px;font-size:13.5px;color:var(--text);margin-top:10px;min-height:60px;resize:vertical;display:none}
@@ -136,11 +137,11 @@
   .task-title{font-size:14.5px;font-weight:600;line-height:1.4;background:transparent;border:none;width:100%;color:var(--text)}
   .task.done .task-title{color:var(--muted);text-decoration:line-through}
   .task-meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;align-items:center}
-  .badge{font-size:11px;padding:3px 8px;border-radius:99px;background:var(--card-2);color:var(--muted)}
+  .badge{font-size:11px;padding:3px 8px;border-radius:99px;background:var(--card-2);color:var(--muted);display:inline-flex;align-items:center;gap:4px}
   .badge.due{color:var(--doing)}
   .badge.overdue{color:var(--danger);background:var(--danger-dim)}
   .task-actions{display:flex;gap:8px;flex-shrink:0;align-items:center}
-  .icon-btn{background:transparent;border:none;color:var(--muted);font-size:14px;padding:4px 6px;border-radius:6px}
+  .icon-btn{background:transparent;border:none;color:var(--muted);font-size:14px;padding:4px 6px;border-radius:6px;display:inline-flex;align-items:center;justify-content:center}
   .icon-btn:hover{color:var(--text)}
   .icon-btn.active{color:var(--accent)}
   .task.pinned{border-left:3px solid var(--accent)}
@@ -238,11 +239,11 @@
 
       <nav class="nav-section" id="tasksSection">
         <div class="nav-label">Tasks</div>
-        <button type="button" class="nav-item" data-view="upcoming"><span class="nav-icon">📅</span><span class="nav-item-label">Upcoming</span><span class="nav-count" id="countUpcoming">0</span></button>
-        <button type="button" class="nav-item" data-view="today"><span class="nav-icon">☀️</span><span class="nav-item-label">Today</span><span class="nav-count" id="countToday">0</span></button>
-        <button type="button" class="nav-item" data-view="done"><span class="nav-icon">✅</span><span class="nav-item-label">Done</span></button>
-        <button type="button" class="nav-item" id="reviewNavItem" data-view="review"><span class="nav-icon">🗒️</span><span class="nav-item-label">Daily Review</span></button>
-        <button type="button" class="nav-item" data-view="sticky"><span class="nav-icon">🗂️</span><span class="nav-item-label">Sticky Wall</span></button>
+        <button type="button" class="nav-item" data-view="upcoming"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><rect x="2.5" y="3.5" width="13" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M2.5 7H15.5M6 2V4.5M12 2V4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span><span class="nav-item-label">Upcoming</span><span class="nav-count" id="countUpcoming">0</span></button>
+        <button type="button" class="nav-item" data-view="today"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="3.5" stroke="currentColor" stroke-width="1.5"/><path d="M9 1.5V3.2M9 14.8V16.5M16.5 9H14.8M3.2 9H1.5M14.3 3.7L13.1 4.9M4.9 13.1L3.7 14.3M14.3 14.3L13.1 13.1M4.9 4.9L3.7 3.7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span><span class="nav-item-label">Today</span><span class="nav-count" id="countToday">0</span></button>
+        <button type="button" class="nav-item" data-view="done"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="7" stroke="currentColor" stroke-width="1.5"/><path d="M5.8 9.2L7.8 11.2L12.2 6.6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="nav-item-label">Done</span></button>
+        <button type="button" class="nav-item" id="reviewNavItem" data-view="review"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><rect x="4" y="2.8" width="10" height="13" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="6.5" y="1.5" width="5" height="2.6" rx="0.8" stroke="currentColor" stroke-width="1.4"/><path d="M6.3 8.2H11.7M6.3 11H11.7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></span><span class="nav-item-label">Daily Review</span></button>
+        <button type="button" class="nav-item" data-view="sticky"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><rect x="2" y="2" width="6" height="6" rx="1.2" stroke="currentColor" stroke-width="1.5"/><rect x="10" y="2" width="6" height="6" rx="1.2" stroke="currentColor" stroke-width="1.5"/><rect x="2" y="10" width="6" height="6" rx="1.2" stroke="currentColor" stroke-width="1.5"/><rect x="10" y="10" width="6" height="6" rx="1.2" stroke="currentColor" stroke-width="1.5"/></svg></span><span class="nav-item-label">Sticky Wall</span></button>
       </nav>
 
       <nav class="nav-section" id="listsSection">
@@ -267,7 +268,7 @@
         <img class="main-logo" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAkUAAACrCAYAAABor+gaAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAyhpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuNi1jMTM4IDc5LjE1OTgyNCwgMjAxNi8wOS8xNC0wMTowOTowMSAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvIiB4bWxuczp4bXBNTT0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL21tLyIgeG1sbnM6c3RSZWY9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZVJlZiMiIHhtcDpDcmVhdG9yVG9vbD0iQWRvYmUgUGhvdG9zaG9wIENDIDIwMTcgKE1hY2ludG9zaCkiIHhtcE1NOkluc3RhbmNlSUQ9InhtcC5paWQ6OUVBNzRCRjVENUI3MTFFNzhDN0FCMDA1REJGOEU0QUEiIHhtcE1NOkRvY3VtZW50SUQ9InhtcC5kaWQ6OUVBNzRCRjZENUI3MTFFNzhDN0FCMDA1REJGOEU0QUEiPiA8eG1wTU06RGVyaXZlZEZyb20gc3RSZWY6aW5zdGFuY2VJRD0ieG1wLmlpZDo5RUE3NEJGM0Q1QjcxMUU3OEM3QUIwMDVEQkY4RTRBQSIgc3RSZWY6ZG9jdW1lbnRJRD0ieG1wLmRpZDo5RUE3NEJGNEQ1QjcxMUU3OEM3QUIwMDVEQkY4RTRBQSIvPiA8L3JkZjpEZXNjcmlwdGlvbj4gPC9yZGY6UkRGPiA8L3g6eG1wbWV0YT4gPD94cGFja2V0IGVuZD0iciI/PjF6NRAAABvJSURBVHja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" alt="Columbia Cabinets">
         <div class="view-title" id="viewTitleEl">Today</div>
       </div>
-      <button type="button" id="printBtn" class="print-btn" title="Print or export">🖨 Print</button>
+      <button type="button" id="printBtn" class="print-btn" title="Print or export"><svg width="14" height="14" viewBox="0 0 18 18" fill="none"><path d="M5 6.5V2.5H13V6.5" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><rect x="2.5" y="6.5" width="13" height="6" rx="1.2" stroke="currentColor" stroke-width="1.5"/><rect x="5" y="10.5" width="8" height="5" stroke="currentColor" stroke-width="1.5"/></svg> Print</button>
     </div>
 
     <div class="status-line"><span class="dot" id="connDot"></span><span id="connText">Connecting…</span></div>
@@ -292,7 +293,7 @@
           <datalist id="tagOptions"></datalist>
           <input type="date" id="dueInput">
           <button type="button" class="notes-toggle" id="notesToggleBtn">+ note</button>
-          <button type="button" class="notes-toggle recur-toggle" id="recurToggleBtn" title="Repeat this task every day">↻ Daily</button>
+          <button type="button" class="notes-toggle recur-toggle" id="recurToggleBtn" title="Repeat this task every day"><svg width="13" height="13" viewBox="0 0 18 18" fill="none"><path d="M14.5 9a5.5 5.5 0 1 1-1.6-3.9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M14.5 3.5V6.5H11.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg> Daily</button>
           <button type="submit" class="add-submit">Add</button>
         </div>
         <textarea id="notesInput" placeholder="Notes / blockers…"></textarea>
@@ -430,6 +431,13 @@ let recurActive = false;
 let currentView = { type: 'today' };
 updateTagOptions();
 
+const ICON_X = '<svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M2.5 2.5L11.5 11.5M11.5 2.5L2.5 11.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
+const ICON_DOTS = '<svg width="16" height="16" viewBox="0 0 18 18" fill="none"><circle cx="4" cy="9" r="1.4" fill="currentColor"/><circle cx="9" cy="9" r="1.4" fill="currentColor"/><circle cx="14" cy="9" r="1.4" fill="currentColor"/></svg>';
+const ICON_REFRESH = '<svg width="13" height="13" viewBox="0 0 18 18" fill="none"><path d="M14.5 9a5.5 5.5 0 1 1-1.6-3.9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M14.5 3.5V6.5H11.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+function iconPin(active) {
+  return `<svg width="14" height="14" viewBox="0 0 18 18" fill="${active ? 'currentColor' : 'none'}"><path d="M9 16.5C9 16.5 14 11.8 14 7.5C14 4.46 11.76 2 9 2C6.24 2 4 4.46 4 7.5C4 11.8 9 16.5 9 16.5Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>${active ? '' : '<circle cx="9" cy="7.3" r="2" stroke="currentColor" stroke-width="1.4"/>'}</svg>`;
+}
+
 const nameFor = v => v === 'mary' ? 'Mary' : v === 'sarah' ? 'Sarah' : v;
 const isMobile = () => window.matchMedia('(max-width:767px)').matches;
 
@@ -509,7 +517,7 @@ function photoRowHtml(taskId) {
   const thumbs = pics.length ? `<div class="photo-thumbs">${pics.map(p => `
     <div class="photo-thumb">
       <img src="${escapeAttr(p.url)}" data-action="view-photo">
-      <button type="button" class="photo-remove" data-action="delete-photo" data-photo-id="${p.id}" title="Remove photo">✕</button>
+      <button type="button" class="photo-remove" data-action="delete-photo" data-photo-id="${p.id}" title="Remove photo">${ICON_X}</button>
     </div>
   `).join('')}</div>` : '';
   return `
@@ -532,7 +540,7 @@ function meatballHtml(task, isMary) {
   ` : '';
   return `
     <div class="meatball-wrap">
-      <button class="icon-btn meatball-btn" data-action="meatball" title="More">⋯</button>
+      <button class="icon-btn meatball-btn" data-action="meatball" title="More">${ICON_DOTS}</button>
       <div class="meatball-menu">
         <button type="button" class="meatball-item" data-action="add-note">Add a note</button>
         <button type="button" class="meatball-item" data-action="add-photo">Add a photo</button>
@@ -557,7 +565,7 @@ function taskEl(task) {
         <div class="task-meta">
           ${dueBadge(task)}
           ${task.tag ? `<span class="badge">${escapeHtml(task.tag)}</span>` : ''}
-          ${task.recurring ? '<span class="badge recur" title="Repeats daily">↻ Daily</span>' : ''}
+          ${task.recurring ? `<span class="badge recur" title="Repeats daily">${ICON_REFRESH} Daily</span>` : ''}
           ${task.source === 'claude' ? '<span class="badge claude" title="Added via Claude">✳ via Claude</span>' : ''}
         </div>
         <textarea class="task-notes-edit${task.notes ? '' : ' hidden'}" placeholder="+ Add a note…" rows="1">${escapeHtml(task.notes || '')}</textarea>
@@ -565,8 +573,8 @@ function taskEl(task) {
         <div class="task-history">${historyLine}</div>
       </div>
       <div class="task-actions">
-        <button class="icon-btn pin-btn${task.pinned ? ' active' : ''}" data-action="pin" title="${task.pinned ? 'Unpin' : 'Pin to top'}">📌</button>
-        <button class="icon-btn" data-action="delete" title="Delete">✕</button>
+        <button class="icon-btn pin-btn${task.pinned ? ' active' : ''}" data-action="pin" title="${task.pinned ? 'Unpin' : 'Pin to top'}">${iconPin(task.pinned)}</button>
+        <button class="icon-btn" data-action="delete" title="Delete">${ICON_X}</button>
         ${meatballHtml(task, true)}
       </div>
     </div>
@@ -590,7 +598,7 @@ function basicTaskEl(task) {
         ${photoRowHtml(task.id)}
       </div>
       <div class="task-actions">
-        <button class="icon-btn" data-action="delete" title="Delete">✕</button>
+        <button class="icon-btn" data-action="delete" title="Delete">${ICON_X}</button>
         ${meatballHtml(task, false)}
       </div>
     </div>
@@ -782,7 +790,7 @@ function stickyNoteEl(note) {
   div.style.background = note.color;
   div.dataset.id = note.id;
   div.innerHTML = `
-    <button type="button" class="sticky-del" data-action="delete-sticky" title="Delete">✕</button>
+    <button type="button" class="sticky-del" data-action="delete-sticky" title="Delete">${ICON_X}</button>
     <input class="sticky-title" placeholder="Title" value="${escapeAttr(note.title || '')}">
     <textarea class="sticky-body" placeholder="Write something…">${escapeHtml(note.body || '')}</textarea>
     <div class="sticky-colors">
