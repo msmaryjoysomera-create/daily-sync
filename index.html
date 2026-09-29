@@ -43,13 +43,14 @@
   .sidebar-inner{width:var(--sidebar-w);padding:20px 14px;display:flex;flex-direction:column;gap:16px;
     height:100vh;position:sticky;top:0;overflow-y:auto}
 
-  .rail{width:56px;flex-shrink:0;background:var(--card);border-right:1px solid var(--line);
-    display:flex;flex-direction:column;align-items:center;padding-top:14px;
+  .rail{width:60px;flex-shrink:0;background:var(--bg);border-right:1px solid var(--line);
+    display:flex;flex-direction:column;align-items:center;padding-top:22px;
     height:100vh;position:sticky;top:0;z-index:45}
-  .hamburger-btn{position:relative;width:36px;height:36px;border-radius:10px;border:1px solid var(--line);
-    background:var(--card);font-size:16px;display:flex;align-items:center;justify-content:center}
-  .fab-badge{position:absolute;bottom:-3px;right:-3px;width:16px;height:16px;border-radius:50%;
-    background:var(--accent);color:#fff;font-size:9px;font-weight:700;display:none;align-items:center;justify-content:center;border:2px solid var(--bg)}
+  .hamburger-btn{position:relative;width:36px;height:36px;border-radius:10px;border:none;
+    background:transparent;color:var(--muted);display:flex;align-items:center;justify-content:center}
+  .hamburger-btn:hover{background:var(--card-2);color:var(--text)}
+  .fab-badge{position:absolute;bottom:-2px;right:-2px;width:15px;height:15px;border-radius:50%;
+    background:var(--accent);color:#fff;font-size:8.5px;font-weight:700;display:none;align-items:center;justify-content:center;border:2px solid var(--bg)}
   .fab-badge.show{display:flex}
 
   .sidebar-backdrop{display:none;position:fixed;inset:0;background:rgba(20,15,10,.35);z-index:35}
@@ -199,13 +200,13 @@
 
   @media (max-width:767px){
     .rail{position:fixed;top:0;left:0;bottom:0}
-    .sidebar{position:fixed;top:0;left:56px;bottom:0;width:270px;z-index:40;
+    .sidebar{position:fixed;top:0;left:60px;bottom:0;width:270px;z-index:40;
       transform:translateX(-100%);transition:transform .2s ease}
     .sidebar.closed{transform:translateX(-100%)}
     .sidebar:not(.closed){transform:translateX(0)}
     .sidebar-inner{width:270px}
     .sidebar:not(.closed) ~ .sidebar-backdrop{display:block}
-    .main{max-width:100%;padding-left:calc(56px + 16px)}
+    .main{max-width:100%;padding-left:calc(60px + 16px)}
   }
 
   @media print {
@@ -252,7 +253,10 @@
   </aside>
 
   <div class="rail" id="rail">
-    <button type="button" class="hamburger-btn" id="hamburgerBtn" title="Toggle menu">☰<span class="fab-badge" id="fabBadge"></span></button>
+    <button type="button" class="hamburger-btn" id="hamburgerBtn" title="Toggle menu">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M2 4.5H16M2 9H16M2 13.5H16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      <span class="fab-badge" id="fabBadge"></span>
+    </button>
   </div>
 
   <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
