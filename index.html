@@ -238,6 +238,12 @@
   .sticky-swatch.active{border-color:rgba(0,0,0,.35)}
   .sticky-add{border:2px dashed var(--line);border-radius:12px;min-height:220px;background:var(--card-2);
     color:var(--muted);font-size:28px;display:flex;align-items:center;justify-content:center}
+  .notepad{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:0 1px 2px rgba(0,0,0,.04);padding:22px 26px 14px;max-width:900px}
+  #notepadText{width:100%;min-height:calc(100vh - 230px);border:none;background:transparent;resize:vertical;outline:none;
+    font-family:inherit;font-size:15px;line-height:28px;color:var(--text);
+    background-image:repeating-linear-gradient(to bottom,transparent 0,transparent 27px,var(--line) 27px,var(--line) 28px);background-attachment:local}
+  .notepad-status{font-size:11.5px;color:var(--muted);text-align:right;min-height:16px;margin-top:6px}
+  @media (max-width:767px){ .notepad{padding:16px 16px 10px} #notepadText{min-height:calc(100vh - 200px)} }
   .sticky-add:hover{color:var(--text);border-color:var(--muted)}
 
   @media (max-width:767px){
@@ -295,6 +301,7 @@
         <button type="button" class="nav-item" data-view="done"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="7" stroke="currentColor" stroke-width="1.5"/><path d="M5.8 9.2L7.8 11.2L12.2 6.6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="nav-item-label">Done</span></button>
         <button type="button" class="nav-item" id="reviewNavItem" data-view="review"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><rect x="4" y="2.8" width="10" height="13" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="6.5" y="1.5" width="5" height="2.6" rx="0.8" stroke="currentColor" stroke-width="1.4"/><path d="M6.3 8.2H11.7M6.3 11H11.7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></span><span class="nav-item-label">Daily Review</span></button>
         <button type="button" class="nav-item" data-view="sticky"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><rect x="2" y="2" width="6" height="6" rx="1.2" stroke="currentColor" stroke-width="1.5"/><rect x="10" y="2" width="6" height="6" rx="1.2" stroke="currentColor" stroke-width="1.5"/><rect x="2" y="10" width="6" height="6" rx="1.2" stroke="currentColor" stroke-width="1.5"/><rect x="10" y="10" width="6" height="6" rx="1.2" stroke="currentColor" stroke-width="1.5"/></svg></span><span class="nav-item-label">Sticky Wall</span></button>
+        <button type="button" class="nav-item" data-view="notepad"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><rect x="3" y="2.5" width="12" height="13.5" rx="1.8" stroke="currentColor" stroke-width="1.5"/><path d="M6 6.5h6M6 9.5h6M6 12.5h3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span><span class="nav-item-label">Notepad</span></button>
       </nav>
 
       <nav class="nav-section" id="listsSection">
@@ -358,6 +365,13 @@
 
     <div id="stickyWrap" style="display:none">
       <div class="sticky-grid" id="stickyGrid"></div>
+    </div>
+
+    <div id="notepadWrap" style="display:none">
+      <div class="notepad">
+        <textarea id="notepadText" placeholder="Start typing…" spellcheck="true"></textarea>
+        <div class="notepad-status" id="notepadStatus"></div>
+      </div>
     </div>
   </main>
 </div>
@@ -450,6 +464,9 @@ const detailPane = document.getElementById('detailPane');
 const fullWrap = document.getElementById('fullWrap');
 const stickyWrap = document.getElementById('stickyWrap');
 const stickyGrid = document.getElementById('stickyGrid');
+const notepadWrap = document.getElementById('notepadWrap');
+const notepadText = document.getElementById('notepadText');
+const notepadStatus = document.getElementById('notepadStatus');
 const listsNav = document.getElementById('listsNav');
 const tasksSection = document.getElementById('tasksSection');
 const listsSection = document.getElementById('listsSection');
@@ -477,6 +494,9 @@ let search = '';
 let tasks = [];
 let photos = [];
 let stickyNotes = [];
+const NOTEPAD_MARK = 'notepad';
+let notepadTimer = null;
+let notepadSaving = null;
 let showArchived = false;
 let firstLoad = true;
 let recurActive = false;
@@ -528,6 +548,7 @@ setSidebar(isMobile() ? false : localStorage.getItem('daily-sync-sidebar') !== '
 
 // --- profile ---
 function setWho(val) {
+  if (notepadTimer) saveNotepad(); // finish saving under the profile it was typed in
   who = val;
   selectedTaskId = null;
   localStorage.setItem('daily-sync-who', val);
@@ -719,7 +740,7 @@ function updateActiveNav() {
   });
 }
 
-const VIEW_TITLES = { today: 'Today', upcoming: 'Upcoming', done: 'Done', review: 'Daily Review', sticky: 'Sticky Wall' };
+const VIEW_TITLES = { today: 'Today', upcoming: 'Upcoming', done: 'Done', review: 'Daily Review', sticky: 'Sticky Wall', notepad: 'Notepad' };
 
 function render() {
   renderListsNav();
@@ -730,6 +751,7 @@ function render() {
   fullWrap.style.display = 'none';
   reviewCard.style.display = 'none';
   stickyWrap.style.display = 'none';
+  notepadWrap.style.display = 'none';
   carryBanner.classList.remove('show');
 
   if (!who) {
@@ -743,6 +765,12 @@ function render() {
     viewTitleEl.textContent = 'Sticky Wall';
     stickyWrap.style.display = '';
     renderSticky();
+    return;
+  }
+  if (currentView.type === 'notepad') {
+    viewTitleEl.textContent = 'Notepad';
+    notepadWrap.style.display = '';
+    renderNotepad();
     return;
   }
 
@@ -893,7 +921,7 @@ function renderDetail(cardFor) {
 // --- Sticky Wall ---
 function renderSticky() {
   stickyGrid.innerHTML = '';
-  const mine = stickyNotes.filter(n => n.assignee === who);
+  const mine = stickyNotes.filter(n => n.assignee === who && n.color !== NOTEPAD_MARK);
   mine.forEach(n => stickyGrid.appendChild(stickyNoteEl(n)));
   const addCard = document.createElement('button');
   addCard.type = 'button';
@@ -1248,11 +1276,60 @@ async function fetchStickyNotes() {
   } catch (err) { console.error(err); return; }
   if (error) { console.error(error); return; }
   stickyNotes = data;
-  if (currentView.type === 'sticky') render();
+  if (currentView.type === 'sticky' || currentView.type === 'notepad') render();
 }
 
+// --- Notepad ---
+// One running page per profile. Stored as a single sticky_notes row marked
+// with color 'notepad' (so no extra table), kept off the Sticky Wall.
+function myNotepad(forWho = who) {
+  return stickyNotes.find(n => n.assignee === forWho && n.color === NOTEPAD_MARK) || null;
+}
+
+function renderNotepad() {
+  // Don't overwrite what's being typed; the local text is newer than the server copy.
+  if (document.activeElement === notepadText || notepadTimer) return;
+  const note = myNotepad();
+  notepadText.value = note?.body || '';
+  notepadStatus.textContent = note?.updated_at ? `Saved ${timeAgo(note.updated_at)}` : '';
+}
+
+async function saveNotepad() {
+  clearTimeout(notepadTimer);
+  notepadTimer = null;
+  const forWho = who;
+  const body = notepadText.value;
+  // Saves run one at a time, so a second save waits for the first one's
+  // insert instead of creating a duplicate notepad.
+  const run = async () => {
+    const note = myNotepad(forWho);
+    if (note && (note.body || '') === body) return {};
+    const now = new Date().toISOString();
+    if (note) {
+      const res = await sb.from('sticky_notes').update({ body, updated_at: now }).eq('id', note.id);
+      if (!res.error) { note.body = body; note.updated_at = now; }
+      return res;
+    }
+    const res = await sb.from('sticky_notes').insert({ assignee: forWho || null, title: 'Notepad', body, color: NOTEPAD_MARK }).select().single();
+    if (res.data) stickyNotes.push(res.data);
+    return res;
+  };
+  notepadStatus.textContent = 'Saving…';
+  notepadSaving = (notepadSaving || Promise.resolve()).then(run, run);
+  const { error } = await notepadSaving;
+  if (forWho !== who) return;
+  notepadStatus.textContent = error ? 'Couldn\'t save — ' + error.message : 'Saved';
+}
+
+notepadText.addEventListener('input', () => {
+  notepadStatus.textContent = 'Editing…';
+  clearTimeout(notepadTimer);
+  notepadTimer = setTimeout(saveNotepad, 800);
+});
+notepadText.addEventListener('blur', () => { if (notepadTimer) saveNotepad(); });
+
 async function addStickyNote() {
-  const mineCount = stickyNotes.filter(n => n.assignee === who).length;
+  const mineCount = stickyNotes.filter(n => n.assignee === who && n.color !== NOTEPAD_MARK).length;
   const color = STICKY_COLORS[mineCount % STICKY_COLORS.length];
   const { error } = await sb.from('sticky_notes').insert({ assignee: who || null, title: '', body: '', color });
   if (error) alert(error.message);

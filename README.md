@@ -27,6 +27,7 @@ A shared task tracker for Mary & Sarah's daily sync. Single-file app, no login -
 - A banner flags tasks updated since your last visit to the app
 - Print / export button for a clean printable copy of the board
 - Daily Review checklist (Calendar, Tasks, Inbox, etc.) shared between Mary and Sarah, resets each day
+- Sticky Wall of colored freeform notes, plus a Notepad (one running, auto-saving page) -- each per profile
 - Live updates via Supabase Realtime -- useful when you're both looking at it during the call
 
 ## Adding tasks from Claude
