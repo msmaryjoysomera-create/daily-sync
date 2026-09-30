@@ -18,16 +18,25 @@ import { createClient } from '@supabase/supabase-js';
 const SUPABASE_URL = 'https://aighvqegtxgpvltwosmn.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFpZ2h2cWVndHhncHZsdHdvc21uIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk0Nzc5OTMsImV4cCI6MjEwNTA1Mzk5M30.HakqVLbQpRZQ8VNbkqja74lDiw_jWB4D4fuYB8JfEso';
 
+// Fallback only -- the live tag list is read from the board (see currentTags).
 const TAG_OPTIONS = ['Hot Topics', 'Non-Urgent', 'Follow Up', 'Schedule Pending', 'Mary - Open Items', 'Orders/Deliveries', 'Returns/Credits', 'Appointments', 'Dinner Reservations', 'Deliverables'];
 
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
 });
 
-const TOOLS = [
+// Mary's tags are saved as sticky_notes rows marked color 'tag' (body = sort
+// order), and can be added/renamed/deleted in the app.
+async function currentTags() {
+  const { data, error } = await sb.from('sticky_notes').select('title,body').eq('color', 'tag');
+  if (error || !data?.length) return TAG_OPTIONS;
+  return data.sort((a, b) => (Number(a.body) || 0) - (Number(b.body) || 0)).map(r => r.title);
+}
+
+const buildTools = tags => [
   {
     name: 'sync_up_add_task',
-    description: `Add a task to "Sync Up" -- Columbia Cabinets' own daily task tracker/checklist app for Mary and Sarah (not Salesforce, not a CRM, not any other task/to-do system). Use this specifically when asked to add something "to Sync Up" or "to the board", or when no other task system is named and the context is clearly Mary/Sarah's daily sync. Existing categories on the board: ${TAG_OPTIONS.join(', ')}. Reuse one of these exactly when it clearly fits, instead of inventing a new one.`,
+    description: `Add a task to "Sync Up" -- Columbia Cabinets' own daily task tracker/checklist app for Mary and Sarah (not Salesforce, not a CRM, not any other task/to-do system). Use this specifically when asked to add something "to Sync Up" or "to the board", or when no other task system is named and the context is clearly Mary/Sarah's daily sync. Existing categories on the board: ${tags.join(', ')}. Reuse one of these exactly when it clearly fits, instead of inventing a new one.`,
     inputSchema: {
       type: 'object',
       properties: {
@@ -125,7 +134,7 @@ export default async function handler(req, res) {
       return;
     }
     if (method === 'notifications/initialized') { res.status(202).end(); return; }
-    if (method === 'tools/list') { respond({ tools: TOOLS }); return; }
+    if (method === 'tools/list') { respond({ tools: buildTools(await currentTags()) }); return; }
     if (method === 'tools/call') {
       const { name, arguments: args } = params || {};
       respond(await callTool(name, args || {}));

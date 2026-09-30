@@ -77,6 +77,8 @@ alter table tasks add column if not exists source text;
 -- tied to any task.
 -- Each profile's Notepad (one running page) is also a row here, marked with
 -- color = 'notepad'; the Sticky Wall leaves those rows out.
+-- Mary's tags (the Lists in her sidebar) are rows here too, marked with
+-- color = 'tag': title = tag name, body = sort order.
 create table sticky_notes (
   id         uuid primary key default gen_random_uuid(),
   assignee   text,

@@ -17,11 +17,14 @@ const SUPABASE_URL = 'https://aighvqegtxgpvltwosmn.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFpZ2h2cWVndHhncHZsdHdvc21uIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk0Nzc5OTMsImV4cCI6MjEwNTA1Mzk5M30.HakqVLbQpRZQ8VNbkqja74lDiw_jWB4D4fuYB8JfEso';
 
 // Keep in sync with index.html.
-const TAG_OPTIONS = ['Hot Topics', 'Non-Urgent', 'Follow Up', 'Schedule Pending', 'Mary - Open Items', 'Orders/Deliveries', 'Returns/Credits', 'Appointments', 'Dinner Reservations', 'Deliverables'];
 const REVIEW_ITEMS = ['Calendar', 'Tasks', 'Tasks – Completed', 'Inbox', 'Text Messages', 'Photos'];
 const NOTEPAD_MARK = 'notepad';
 const STATUS_LABEL = { todo: 'To do', doing: 'In progress', done: 'Done' };
 const STATUS_ICON = { todo: '☐', doing: '◐', done: '☑' };
+
+// Mary's tags, in her order (saved as sticky_notes rows marked color 'tag').
+const savedTags = stickies => stickies.filter(n => n.color === 'tag' && n.title)
+  .sort((a, b) => (Number(a.body) || 0) - (Number(b.body) || 0)).map(n => n.title);
 
 const outDir = process.env.SYNC_UP_BACKUP_DIR || path.join(os.homedir(), 'Documents', 'Sync Up Backups');
 
@@ -114,7 +117,7 @@ async function personSection(name, key, { tasks, photosByTask, stickies }) {
   if (!open.length) out.push(empty('No open tasks'));
   // Mary's board is organized by tag; Sarah's by status.
   const groups = key === 'mary'
-    ? [...new Set([...TAG_OPTIONS, ...stickies.filter(n => n.color === 'tag').map(n => n.title), ...open.map(t => t.tag).filter(Boolean)]), null]
+    ? [...new Set([...savedTags(stickies), ...open.map(t => t.tag).filter(Boolean)]), null]
         .map(tag => ({ label: tag || 'Untagged', items: open.filter(t => (t.tag || null) === tag) }))
     : [{ label: 'To Do', items: open.filter(t => t.status === 'todo') }, { label: 'In Progress', items: open.filter(t => t.status === 'doing') }];
   for (const g of groups) {

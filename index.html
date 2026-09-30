@@ -136,6 +136,14 @@
   }
   .main-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}
   .view-title-row{display:flex;align-items:center;gap:12px}
+  .title-meatball{display:none}
+  .view-title-row.tag-view .title-meatball{display:block}
+  .title-meatball .meatball-menu{left:0;right:auto;min-width:150px}
+  .meatball-item.danger{color:#B3261E}
+  .view-title-edit{display:none;font:inherit;font-size:24px;font-weight:800;letter-spacing:-.03em;color:var(--text);
+    background:var(--card);border:1px solid var(--line);border-radius:10px;padding:2px 10px;width:min(420px,60vw)}
+  .view-title-row.renaming .view-title, .view-title-row.renaming .title-meatball{display:none}
+  .view-title-row.renaming .view-title-edit{display:block}
   .view-title{font-size:28px;font-weight:800;letter-spacing:-.03em}
 
   .banner{color:var(--doing);font-size:12.5px;margin:0 0 16px;padding:8px 12px;background:var(--doing-dim);border-radius:10px;display:none}
@@ -336,8 +344,16 @@
 
   <main class="main">
     <div class="main-top">
-      <div class="view-title-row">
+      <div class="view-title-row" id="viewTitleRow">
         <div class="view-title" id="viewTitleEl">Today</div>
+        <input type="text" class="view-title-edit" id="tagRenameInput" autocomplete="off" aria-label="Tag name">
+        <div class="meatball-wrap title-meatball" id="tagActions">
+          <button type="button" class="icon-btn meatball-btn" data-action="meatball" title="Tag options"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><circle cx="4" cy="9" r="1.4" fill="currentColor"/><circle cx="9" cy="9" r="1.4" fill="currentColor"/><circle cx="14" cy="9" r="1.4" fill="currentColor"/></svg></button>
+          <div class="meatball-menu">
+            <button type="button" class="meatball-item" data-action="rename-tag">Rename tag</button>
+            <button type="button" class="meatball-item danger" data-action="delete-tag">Delete tag</button>
+          </div>
+        </div>
       </div>
       <button type="button" id="printBtn" class="print-btn" title="Print or export"><svg width="14" height="14" viewBox="0 0 18 18" fill="none"><path d="M5 6.5V2.5H13V6.5" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><rect x="2.5" y="6.5" width="13" height="6" rx="1.2" stroke="currentColor" stroke-width="1.5"/><rect x="5" y="10.5" width="8" height="5" stroke="currentColor" stroke-width="1.5"/></svg> Print</button>
     </div>
@@ -496,19 +512,22 @@ const addTaskSection = document.getElementById('addTaskSection');
 const listsSection = document.getElementById('listsSection');
 
 const REVIEW_ITEMS = ['Calendar', 'Tasks', 'Tasks – Completed', 'Inbox', 'Text Messages', 'Photos'];
-const TAG_OPTIONS = ['Hot Topics', 'Non-Urgent', 'Follow Up', 'Schedule Pending', 'Mary - Open Items', 'Orders/Deliveries', 'Returns/Credits', 'Appointments', 'Dinner Reservations', 'Deliverables'];
 const LIST_DOT_COLORS = ['#C56A6A', '#5C8BB0', '#C2A23E', '#5FA36A', '#8E6BB5', '#C06B9A', '#4FA898'];
 const STICKY_COLORS = ['#FCE8A8', '#AEE2E0', '#F6C9CB', '#F6D2A6', '#CFE7B8', '#D7CFF0'];
 const ARCHIVE_DAYS = 3;
 
-// Tags Mary creates are saved (as sticky_notes rows marked color 'tag'), so a
-// new tag shows up under Lists right away, even before it has any tasks.
+// Mary's tags are saved as sticky_notes rows marked color 'tag' (title = tag
+// name, body = sort order), so they can be added, renamed, and deleted, and
+// show under Lists even before they have any tasks.
 const TAG_MARK = 'tag';
-const savedTags = () => stickyNotes.filter(n => n.color === TAG_MARK && n.title).map(n => n.title);
+const tagRows = () => stickyNotes.filter(n => n.color === TAG_MARK && n.title)
+  .sort((a, b) => (Number(a.body) || 0) - (Number(b.body) || 0) || a.created_at.localeCompare(b.created_at));
+const savedTags = () => tagRows().map(n => n.title);
 
 function allTagNames() {
+  // Plus any tag a task uses that isn't saved (e.g. one Claude made up).
   const custom = tasks.map(t => t.tag).filter(Boolean);
-  return [...new Set([...TAG_OPTIONS, ...savedTags(), ...custom])];
+  return [...new Set([...savedTags(), ...custom])];
 }
 
 const findTag = name => allTagNames().find(t => t.toLowerCase() === name.trim().toLowerCase()) || null;
@@ -518,12 +537,89 @@ async function createTag(name) {
   if (!name) return null;
   const existing = findTag(name);
   if (existing) return existing;
-  const { data, error } = await sb.from('sticky_notes').insert({ assignee: null, title: name, body: null, color: TAG_MARK }).select().single();
+  const order = Math.max(-1, ...tagRows().map(n => Number(n.body) || 0)) + 1;
+  const { data, error } = await sb.from('sticky_notes').insert({ assignee: null, title: name, body: String(order), color: TAG_MARK }).select().single();
   if (error) { alert(error.message); return name; }
   if (!stickyNotes.some(n => n.id === data.id)) stickyNotes.push(data);
   render();
   return name;
 }
+
+// Renaming retags every task that had the old name. Tag moves don't bump
+// updated_at, so they don't flood the "updated since your last visit" banner.
+async function renameTag(oldName, newName) {
+  newName = newName.trim();
+  if (!newName || newName === oldName) return;
+  const clash = findTag(newName);
+  const row = tagRows().find(n => n.title === oldName);
+  if (clash && clash.toLowerCase() !== oldName.toLowerCase()) {
+    if (!confirm(`A tag named "${clash}" already exists. Move all "${oldName}" tasks into "${clash}"?`)) return;
+    newName = clash;
+    if (row) {
+      const { error } = await sb.from('sticky_notes').delete().eq('id', row.id);
+      if (error) { alert(error.message); return; }
+      stickyNotes = stickyNotes.filter(n => n.id !== row.id);
+    }
+  } else if (row) {
+    const { error } = await sb.from('sticky_notes').update({ title: newName }).eq('id', row.id);
+    if (error) { alert(error.message); return; }
+    row.title = newName;
+  } else {
+    await createTag(newName);
+  }
+  const { error } = await sb.from('tasks').update({ tag: newName }).eq('tag', oldName);
+  if (error) { alert(error.message); return; }
+  tasks.forEach(t => { if (t.tag === oldName) t.tag = newName; });
+  if (reviewOpenGroups.delete(oldName)) {
+    reviewOpenGroups.add(newName);
+    try { localStorage.setItem('daily-sync-review-open', JSON.stringify([...reviewOpenGroups])); } catch {}
+  }
+  if (currentView.type === 'list' && currentView.key === oldName) currentView.key = newName;
+  render();
+}
+
+// Deleting a tag never deletes tasks -- they just become Untagged.
+async function deleteTag(name) {
+  const count = tasks.filter(t => t.tag === name).length;
+  const msg = count
+    ? `Delete the "${name}" tag?\n\nIts ${count} task${count === 1 ? '' : 's'} will move to Untagged. No tasks will be deleted.`
+    : `Delete the "${name}" tag?`;
+  if (!confirm(msg)) return;
+  const { error } = await sb.from('tasks').update({ tag: null }).eq('tag', name);
+  if (error) { alert(error.message); return; }
+  const rowIds = tagRows().filter(n => n.title === name).map(n => n.id);
+  if (rowIds.length) {
+    const { error: delErr } = await sb.from('sticky_notes').delete().in('id', rowIds);
+    if (delErr) { alert(delErr.message); return; }
+  }
+  tasks.forEach(t => { if (t.tag === name) t.tag = null; });
+  stickyNotes = stickyNotes.filter(n => !rowIds.includes(n.id));
+  if (currentView.type === 'list' && currentView.key === name) currentView = { type: 'today' };
+  selectedTaskId = null;
+  render();
+}
+
+const viewTitleRow = document.getElementById('viewTitleRow');
+const tagRenameInput = document.getElementById('tagRenameInput');
+let renameCancelled = false;
+
+function startRenameTag() {
+  renameCancelled = false;
+  tagRenameInput.value = currentView.key;
+  viewTitleRow.classList.add('renaming');
+  tagRenameInput.focus();
+  tagRenameInput.select();
+}
+function endRenameTag(save) {
+  if (!viewTitleRow.classList.contains('renaming')) return;
+  viewTitleRow.classList.remove('renaming');
+  if (save && currentView.type === 'list' && currentView.key) renameTag(currentView.key, tagRenameInput.value);
+}
+tagRenameInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); endRenameTag(true); }
+  if (e.key === 'Escape') { renameCancelled = true; endRenameTag(false); }
+});
+tagRenameInput.addEventListener('blur', () => endRenameTag(!renameCancelled));
 
 function updateTagOptions() {
   if (tagMenu.classList.contains('open')) renderTagMenu();
@@ -871,6 +967,9 @@ function render() {
 
   paneLayout.style.display = '';
   paneLayout.classList.toggle('add-mode', currentView.type === 'add');
+  const tagView = who === 'mary' && currentView.type === 'list' && !!currentView.key;
+  viewTitleRow.classList.toggle('tag-view', tagView);
+  if (!tagView) viewTitleRow.classList.remove('renaming');
   // On Done, the task bar logs something already finished: no tag, date, or Daily.
   const doneView = currentView.type === 'done' || (currentView.type === 'list' && who === 'sarah' && currentView.key === 'done');
   addForm.classList.toggle('done-mode', doneView);
@@ -1062,6 +1161,16 @@ document.body.addEventListener('click', e => {
     selectedTaskId = null;
     if (isMobile()) setSidebar(false);
     render();
+    return;
+  }
+  if (e.target.closest('[data-action="rename-tag"]')) {
+    document.getElementById('tagActions').classList.remove('open');
+    startRenameTag();
+    return;
+  }
+  if (e.target.closest('[data-action="delete-tag"]')) {
+    document.getElementById('tagActions').classList.remove('open');
+    deleteTag(currentView.key);
     return;
   }
   const groupToggle = e.target.closest('[data-action="toggle-group"]');
