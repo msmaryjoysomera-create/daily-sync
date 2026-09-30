@@ -106,6 +106,11 @@
   .row-group + .row-group{margin-top:12px}
   .row-group-head{display:flex;align-items:center;gap:6px;font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:800;padding:6px 8px}
   .row-group-head .count{font-weight:600;letter-spacing:0}
+  button.row-group-head{width:100%;background:none;border:none;cursor:pointer;font-family:inherit;text-align:left;border-radius:8px}
+  button.row-group-head:hover{background:var(--card-2);color:var(--text)}
+  .row-group-head .chev{transition:transform .15s ease;flex:none}
+  .row-group.open .row-group-head .chev{transform:rotate(90deg)}
+  .row-group.collapsible + .row-group.collapsible{margin-top:2px}
   .row{display:flex;align-items:center;gap:10px;padding:9px 8px;border-radius:9px;cursor:pointer}
   .row:hover{background:var(--card-2)}
   .row.selected{background:var(--accent-dim)}
@@ -479,6 +484,7 @@ let currentView = { type: 'today' };
 let selectedTaskId = null;
 updateTagOptions();
 
+const ICON_CHEVRON = '<svg class="chev" width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M5 3l4 4-4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 const ICON_X = '<svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M2.5 2.5L11.5 11.5M11.5 2.5L2.5 11.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
 const ICON_DOTS = '<svg width="16" height="16" viewBox="0 0 18 18" fill="none"><circle cx="4" cy="9" r="1.4" fill="currentColor"/><circle cx="9" cy="9" r="1.4" fill="currentColor"/><circle cx="14" cy="9" r="1.4" fill="currentColor"/></svg>';
 const ICON_REFRESH = '<svg width="13" height="13" viewBox="0 0 18 18" fill="none"><path d="M14.5 9a5.5 5.5 0 1 1-1.6-3.9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M14.5 3.5V6.5H11.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
@@ -763,7 +769,7 @@ function render() {
     viewTitleEl.textContent = 'Daily Review';
     reviewCard.style.display = '';
     const list = visible.filter(t => t.status !== 'done').sort(byDue);
-    renderTaskList(list, groupAcrossLists, search ? noMatch : 'No open tasks');
+    renderTaskList(list, groupAcrossLists, search ? noMatch : 'No open tasks', true);
   } else if (currentView.type === 'today') {
     viewTitleEl.textContent = 'Today';
     renderTaskList(visible.filter(isDueTodayOrOverdue).sort(byDue), groupAcrossLists, search ? noMatch : 'Nothing due today');
@@ -810,7 +816,17 @@ function rowEl(task) {
   return div;
 }
 
-function renderTaskList(list, groupBy, emptyText) {
+// Daily Review's tag groups work like dropdowns: closed by default, and
+// whichever ones Mary opens stay open (remembered in this browser only).
+let reviewOpenGroups = new Set();
+try { reviewOpenGroups = new Set(JSON.parse(localStorage.getItem('daily-sync-review-open') || '[]')); } catch {}
+function toggleReviewGroup(label) {
+  reviewOpenGroups.has(label) ? reviewOpenGroups.delete(label) : reviewOpenGroups.add(label);
+  try { localStorage.setItem('daily-sync-review-open', JSON.stringify([...reviewOpenGroups])); } catch {}
+  render();
+}
+
+function renderTaskList(list, groupBy, emptyText, collapsible = false) {
   board.innerHTML = '';
   if (!list.length) {
     board.innerHTML = `<div class="empty">${emptyText}</div>`;
@@ -821,10 +837,16 @@ function renderTaskList(list, groupBy, emptyText) {
     if (!g.items.length) return;
     const section = document.createElement('div');
     section.className = 'row-group';
-    if (g.label !== null) {
+    // While searching, show every match instead of hiding some in closed groups.
+    const open = !collapsible || !!search || reviewOpenGroups.has(g.label);
+    if (g.label !== null && collapsible) {
+      section.classList.add('collapsible');
+      section.classList.toggle('open', open);
+      section.innerHTML = `<button type="button" class="row-group-head" data-action="toggle-group" data-label="${escapeHtml(g.label)}">${ICON_CHEVRON}${escapeHtml(g.label)}<span class="count">${g.items.length}</span></button>`;
+    } else if (g.label !== null) {
       section.innerHTML = `<div class="row-group-head">${escapeHtml(g.label)}<span class="count">${g.items.length}</span></div>`;
     }
-    g.items.forEach(t => section.appendChild(rowEl(t)));
+    if (open) g.items.forEach(t => section.appendChild(rowEl(t)));
     board.appendChild(section);
   });
 }
@@ -906,6 +928,11 @@ document.body.addEventListener('click', e => {
     selectedTaskId = null;
     if (isMobile()) setSidebar(false);
     render();
+    return;
+  }
+  const groupToggle = e.target.closest('[data-action="toggle-group"]');
+  if (groupToggle) {
+    toggleReviewGroup(groupToggle.dataset.label);
     return;
   }
   if (e.target.closest('[data-action="detail-back"]')) {
