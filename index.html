@@ -1293,7 +1293,7 @@ document.body.addEventListener('click', e => {
 
 // Notes lists: Enter continues "1." / "a." / "•" lines with the next marker,
 // Enter on an empty item ends the list, and "- " or "* " becomes "• ".
-const LIST_FIELDS = '.task-notes-edit, #notesInput';
+const LIST_FIELDS = '.task-notes-edit, #notesInput, .sticky-body, #notepadText';
 const nextLetter = ch => ch === 'z' ? 'a' : ch === 'Z' ? 'A' : String.fromCharCode(ch.charCodeAt(0) + 1);
 
 function insertInto(ta, start, end, text) {
