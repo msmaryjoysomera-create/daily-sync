@@ -117,6 +117,13 @@
   .row .status-btn{width:20px;height:20px;margin-top:0}
   .row-title{flex:1;min-width:0;font-size:14px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .row.done .row-title{color:var(--muted);text-decoration:line-through}
+  .pane-layout.add-mode{grid-template-columns:minmax(0,1fr);max-width:760px}
+  .pane-layout.add-mode .box3{display:none}
+  @media (max-width:900px){
+    .pane-layout.add-mode .box2, .pane-layout.add-mode.has-selection .box2{display:block;position:static;inset:auto;z-index:auto;
+      border:1px solid var(--line);border-radius:14px;padding:18px;min-height:200px}
+    .pane-layout.add-mode .detail-back{display:none}
+  }
   .row-date{flex:none;font-size:12px;color:var(--muted);white-space:nowrap}
   form.add.done-mode #tagInput, form.add.done-mode #dueInput, form.add.done-mode #recurToggleBtn{display:none !important}
 
@@ -296,6 +303,10 @@
 
       <input type="search" id="searchInput" class="sidebar-search" placeholder="Search tasks…" autocomplete="off">
 
+      <nav class="nav-section" id="addTaskSection">
+        <button type="button" class="nav-item" id="addTaskNav" data-view="add"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="7" stroke="currentColor" stroke-width="1.5"/><path d="M9 5.5V12.5M5.5 9H12.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span><span class="nav-item-label">Add a Task</span></button>
+      </nav>
+
       <nav class="nav-section" id="tasksSection">
         <div class="nav-label">Tasks</div>
         <button type="button" class="nav-item" data-view="upcoming"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><rect x="2.5" y="3.5" width="13" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M2.5 7H15.5M6 2V4.5M12 2V4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span><span class="nav-item-label">Upcoming</span><span class="nav-count" id="countUpcoming">0</span></button>
@@ -471,6 +482,7 @@ const notepadText = document.getElementById('notepadText');
 const notepadStatus = document.getElementById('notepadStatus');
 const listsNav = document.getElementById('listsNav');
 const tasksSection = document.getElementById('tasksSection');
+const addTaskSection = document.getElementById('addTaskSection');
 const listsSection = document.getElementById('listsSection');
 
 const REVIEW_ITEMS = ['Calendar', 'Tasks', 'Tasks – Completed', 'Inbox', 'Text Messages', 'Photos'];
@@ -563,6 +575,7 @@ function setWho(val) {
   fabBadge.textContent = val === 'mary' ? 'M' : val === 'sarah' ? 'S' : '';
   fabBadge.classList.toggle('show', !!val);
   tasksSection.classList.toggle('hide', !val);
+  addTaskSection.classList.toggle('hide', !val);
   listsSection.classList.toggle('hide', !val);
   searchInput.classList.toggle('hide', !val);
   render();
@@ -740,12 +753,12 @@ function updateNavCounts() {
 }
 
 function updateActiveNav() {
-  document.querySelectorAll('#tasksSection .nav-item[data-view]').forEach(btn => {
+  document.querySelectorAll('#tasksSection .nav-item[data-view], #addTaskNav').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.view === currentView.type);
   });
 }
 
-const VIEW_TITLES = { today: 'Today', upcoming: 'Upcoming', done: 'Done', review: 'Daily Review', sticky: 'Sticky Wall', notepad: 'Notepad' };
+const VIEW_TITLES = { today: 'Today', upcoming: 'Upcoming', done: 'Done', review: 'Daily Review', sticky: 'Sticky Wall', notepad: 'Notepad', add: 'Add a Task' };
 
 function render() {
   renderListsNav();
@@ -792,6 +805,7 @@ function render() {
   }
 
   paneLayout.style.display = '';
+  paneLayout.classList.toggle('add-mode', currentView.type === 'add');
   // On Done, the task bar logs something already finished: no tag, date, or Daily.
   const doneView = currentView.type === 'done' || (currentView.type === 'list' && who === 'sarah' && currentView.key === 'done');
   addForm.classList.toggle('done-mode', doneView);
@@ -802,7 +816,11 @@ function render() {
   const byDue = (a, b) => pinFirst(a, b) || (a.due_date || '9999').localeCompare(b.due_date || '9999') || a.created_at.localeCompare(b.created_at);
   const groupAcrossLists = who === 'mary' ? groupByTag : groupByStatus;
 
-  if (currentView.type === 'review') {
+  if (currentView.type === 'add') {
+    // Just the task bar (Box 1) and the new task's details (Box 2), no list.
+    viewTitleEl.textContent = 'Add a Task';
+    board.innerHTML = '';
+  } else if (currentView.type === 'review') {
     viewTitleEl.textContent = 'Daily Review';
     reviewCard.style.display = '';
     const list = visible.filter(t => t.status !== 'done').sort(byDue);
@@ -930,7 +948,9 @@ function renderDetail(cardFor) {
 
   detailPane.dataset.showing = task ? task.id : '';
   if (!task) {
-    detailPane.innerHTML = '<div class="detail-empty">Select a task to see its details, notes, and photos.</div>';
+    detailPane.innerHTML = currentView.type === 'add'
+      ? '<div class="detail-empty">Add a task above, and its details will show here so you can add notes, photos, or a due date.</div>'
+      : '<div class="detail-empty">Select a task to see its details, notes, and photos.</div>';
     return;
   }
   detailPane.innerHTML = '<button type="button" class="detail-back" data-action="detail-back">‹ Back</button>';
@@ -1127,7 +1147,7 @@ addForm.addEventListener('submit', async e => {
       completed_by: who || null,
     });
   } else {
-    await addTask({
+    const added = await addTask({
       title,
       assignee: who || null,
       tag: tagInput.value.trim() || listTag,
@@ -1136,6 +1156,12 @@ addForm.addEventListener('submit', async e => {
       status: listStatus,
       recurring: recurActive,
     });
+    // On Add a Task, open the new task in Box 2 for notes, photos, due date.
+    if (added && currentView.type === 'add') {
+      if (!tasks.some(t => t.id === added.id)) tasks.push(added);
+      selectedTaskId = added.id;
+      render();
+    }
   }
   titleInput.value = '';
   tagInput.value = '';
@@ -1215,8 +1241,9 @@ async function resetRecurring() {
 }
 
 async function addTask(fields) {
-  const { error } = await sb.from('tasks').insert(fields);
-  if (error) alert(error.message);
+  const { data, error } = await sb.from('tasks').insert(fields).select().single();
+  if (error) { alert(error.message); return null; }
+  return data;
 }
 
 async function updateTask(id, fields) {
