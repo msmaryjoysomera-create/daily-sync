@@ -1291,6 +1291,57 @@ document.body.addEventListener('click', e => {
   }
 });
 
+// Notes lists: Enter continues "1." / "a." / "•" lines with the next marker,
+// Enter on an empty item ends the list, and "- " or "* " becomes "• ".
+const LIST_FIELDS = '.task-notes-edit, #notesInput';
+const nextLetter = ch => ch === 'z' ? 'a' : ch === 'Z' ? 'A' : String.fromCharCode(ch.charCodeAt(0) + 1);
+
+function insertInto(ta, start, end, text) {
+  ta.focus();
+  ta.setSelectionRange(start, end);
+  // execCommand keeps Cmd+Z working; setRangeText is the fallback.
+  if (!document.execCommand('insertText', false, text)) {
+    ta.setRangeText(text, start, end, 'end');
+    ta.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+  // Browsers can leave the caret off by one after a deletion; pin it.
+  ta.setSelectionRange(start + text.length, start + text.length);
+}
+
+document.addEventListener('keydown', e => {
+  const ta = e.target;
+  if (!(ta instanceof HTMLTextAreaElement) || !ta.matches(LIST_FIELDS)) return;
+  if (e.isComposing || e.metaKey || e.ctrlKey || e.altKey) return;
+  const pos = ta.selectionStart;
+  if (pos !== ta.selectionEnd) return;
+  const lineStart = ta.value.lastIndexOf('\n', pos - 1) + 1;
+  const before = ta.value.slice(lineStart, pos);
+
+  if (e.key === ' ' && /^\s*[-*]$/.test(before)) {
+    e.preventDefault();
+    insertInto(ta, pos - 1, pos, '• ');
+    return;
+  }
+  if (e.key !== 'Enter' || e.shiftKey) return;
+
+  let lineEnd = ta.value.indexOf('\n', pos);
+  if (lineEnd === -1) lineEnd = ta.value.length;
+  const line = ta.value.slice(lineStart, lineEnd);
+  let m, marker, next;
+  if ((m = line.match(/^(\s*)(\d+)([.)])\s/))) { marker = m[0]; next = `${m[1]}${Number(m[2]) + 1}${m[3]} `; }
+  else if ((m = line.match(/^(\s*)([a-zA-Z])([.)])\s/))) { marker = m[0]; next = `${m[1]}${nextLetter(m[2])}${m[3]} `; }
+  else if ((m = line.match(/^(\s*)([•\-*])\s/))) { marker = m[0]; next = `${m[1]}${m[2]} `; }
+  else return;
+  if (pos < lineStart + marker.length) return; // caret inside the marker itself
+
+  e.preventDefault();
+  if (!line.slice(marker.length).trim()) {
+    insertInto(ta, lineStart, lineEnd, ''); // empty item: end the list
+  } else {
+    insertInto(ta, pos, pos, '\n' + next);
+  }
+});
+
 document.body.addEventListener('change', e => {
   if (e.target.classList.contains('task-title')) {
     const id = e.target.closest('.task').dataset.id;
