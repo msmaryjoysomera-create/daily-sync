@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Runs scripts/backup.mjs at 8am and 5pm. If the Mac is asleep then, it runs once when it wakes.
+     Install: cp to ~/Library/LaunchAgents/ and `launchctl bootstrap gui/$(id -u) <that path>`. -->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.columbiacabinets.syncup-backup</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/opt/homebrew/bin/node</string>
+    <string>--no-warnings</string>
+    <string>/Users/marysomera/daily-sync/scripts/backup.mjs</string>
+  </array>
+  <key>WorkingDirectory</key>
+  <string>/Users/marysomera/daily-sync</string>
+  <key>StartCalendarInterval</key>
+  <array>
+    <dict><key>Hour</key><integer>8</integer><key>Minute</key><integer>0</integer></dict>
+    <dict><key>Hour</key><integer>17</integer><key>Minute</key><integer>0</integer></dict>
+  </array>
+  <key>StandardOutPath</key>
+  <string>/Users/marysomera/Library/Logs/Sync Up Backup.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/marysomera/Library/Logs/Sync Up Backup.log</string>
+</dict>
+</plist>

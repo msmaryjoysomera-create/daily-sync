@@ -30,6 +30,10 @@ A shared task tracker for Mary & Sarah's daily sync. Single-file app, no login -
 - Sticky Wall of colored freeform notes, plus a Notepad (one running, auto-saving page) -- each per profile
 - Live updates via Supabase Realtime -- useful when you're both looking at it during the call
 
+## Automatic backups
+
+`scripts/backup.mjs` saves everything on the board -- both people's open and done tasks (with notes and photos), sticky notes, notepads, and today's Daily Review -- into one Word doc in `~/Documents/Sync Up Backups/`. A launchd job on Mary's Mac (`scripts/com.columbiacabinets.syncup-backup.plist`, installed in `~/Library/LaunchAgents/`) runs it at 8am and 5pm; if the Mac is asleep then, it runs once on wake. Log: `~/Library/Logs/Sync Up Backup.log`. Run it by hand any time with `node scripts/backup.mjs`.
+
 ## Adding tasks from Claude
 
 Sarah can add tasks straight from a Claude chat -- e.g. "add a task for Mary to follow up with Adria about the template" -- without opening the app. This works via a small custom Claude connector (a remote MCP server at `/api/mcp`, deployed alongside the app on Vercel) that can add and list tasks on the same shared board.
