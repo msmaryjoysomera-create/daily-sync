@@ -85,7 +85,37 @@
   .nav-item.active .nav-count{color:var(--accent);background:#FFFFFF}
   .nav-empty{color:var(--muted);font-size:12px;padding:4px 8px}
 
-  .main{flex:1;min-width:0;padding:20px calc(16px + env(safe-area-inset-right)) 40px calc(16px + env(safe-area-inset-left));max-width:820px}
+  .main{flex:1;min-width:0;padding:20px calc(16px + env(safe-area-inset-right)) 40px calc(16px + env(safe-area-inset-left));max-width:1280px}
+
+  .pane-layout{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:16px;align-items:stretch}
+  .pane-left{display:flex;flex-direction:column;gap:16px;min-width:0}
+  .box{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px;box-shadow:0 1px 3px rgba(30,20,10,.04);min-width:0}
+  .box1 form.add{background:transparent;border:none;box-shadow:none;padding:0;margin:0}
+  .box1 .review-card{border:none;box-shadow:none;border-radius:0;padding:0 0 14px;margin-bottom:14px;border-bottom:1px solid var(--line)}
+  .box2{min-height:280px;flex:1}
+  .box2 .task{border:none;box-shadow:none;padding:0;margin:0}
+  .box2 .task.pinned{border-left:none}
+  .box2 .task-title{font-size:18px;font-weight:700}
+  .detail-empty{color:var(--muted);font-size:13.5px;text-align:center;padding:100px 20px}
+  .detail-back{display:none;align-items:center;background:transparent;border:none;color:var(--accent);font-size:14px;font-weight:600;padding:0 0 14px}
+  .box3{padding:10px}
+  .row-group + .row-group{margin-top:12px}
+  .row-group-head{display:flex;align-items:center;gap:6px;font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:800;padding:6px 8px}
+  .row-group-head .count{font-weight:600;letter-spacing:0}
+  .row{display:flex;align-items:center;gap:10px;padding:9px 8px;border-radius:9px;cursor:pointer}
+  .row:hover{background:var(--card-2)}
+  .row.selected{background:var(--accent-dim)}
+  .row .status-btn{width:20px;height:20px;margin-top:0}
+  .row-title{flex:1;min-width:0;font-size:14px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .row.done .row-title{color:var(--muted);text-decoration:line-through}
+
+  @media (max-width:900px){
+    .pane-layout{grid-template-columns:minmax(0,1fr)}
+    .box2{display:none}
+    .pane-layout.has-selection .box2{display:block;position:fixed;inset:0;z-index:60;border:none;border-radius:0;
+      overflow-y:auto;min-height:0;padding:calc(20px + env(safe-area-inset-top)) 16px 40px}
+    .detail-back{display:inline-flex}
+  }
   .main-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}
   .view-title-row{display:flex;align-items:center;gap:12px}
   .view-title{font-size:28px;font-weight:800;letter-spacing:-.03em}
@@ -218,6 +248,9 @@
     .task-actions, .photo-add-row { display:none; }
     .task { box-shadow:none; border:1px solid #ccc; break-inside:avoid; }
     body { padding:0; }
+    .pane-layout { display:block !important; }
+    .box1, .box2 { display:none; }
+    .box3 { position:static; max-height:none; border:none; box-shadow:none; }
   }
 </style>
 </head>
@@ -286,7 +319,12 @@
       </ol>
     </div>
 
-    <div id="taskViewWrap">
+    <div class="pane-layout" id="paneLayout">
+      <div class="pane-left">
+        <section class="box box1">
+          <div class="review-card" id="reviewCard" style="display:none">
+            <div class="review-list" id="reviewList"></div>
+          </div>
       <form class="add" id="addForm">
         <input type="text" id="titleInput" placeholder="Add a task…" autocomplete="off">
         <div class="add-row">
@@ -299,13 +337,15 @@
         </div>
         <textarea id="notesInput" placeholder="Notes / blockers…"></textarea>
       </form>
-
-      <div id="board"></div>
+        </section>
+        <section class="box box2" id="detailPane"></section>
+      </div>
+      <section class="box box3">
+        <div id="board"></div>
+      </section>
     </div>
 
-    <div class="review-card" id="reviewCard" style="display:none">
-      <div class="review-list" id="reviewList"></div>
-    </div>
+    <div id="fullWrap" style="display:none"></div>
 
     <div id="stickyWrap" style="display:none">
       <div class="sticky-grid" id="stickyGrid"></div>
@@ -396,7 +436,9 @@ const sidebarBackdrop = document.getElementById('sidebarBackdrop');
 const hamburgerBtn = document.getElementById('hamburgerBtn');
 const fabBadge = document.getElementById('fabBadge');
 const viewTitleEl = document.getElementById('viewTitleEl');
-const taskViewWrap = document.getElementById('taskViewWrap');
+const paneLayout = document.getElementById('paneLayout');
+const detailPane = document.getElementById('detailPane');
+const fullWrap = document.getElementById('fullWrap');
 const stickyWrap = document.getElementById('stickyWrap');
 const stickyGrid = document.getElementById('stickyGrid');
 const listsNav = document.getElementById('listsNav');
@@ -430,6 +472,7 @@ let showArchived = false;
 let firstLoad = true;
 let recurActive = false;
 let currentView = { type: 'today' };
+let selectedTaskId = null;
 updateTagOptions();
 
 const ICON_X = '<svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M2.5 2.5L11.5 11.5M11.5 2.5L2.5 11.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
@@ -476,6 +519,7 @@ setSidebar(isMobile() ? false : localStorage.getItem('daily-sync-sidebar') !== '
 // --- profile ---
 function setWho(val) {
   who = val;
+  selectedTaskId = null;
   localStorage.setItem('daily-sync-who', val);
   [...whoToggle.children].forEach(b => b.classList.toggle('active', b.dataset.who === val));
   recurToggleBtn.style.display = val === 'mary' ? '' : 'none';
@@ -667,21 +711,16 @@ function render() {
   updateNavCounts();
   updateActiveNav();
 
-  taskViewWrap.style.display = 'none';
+  paneLayout.style.display = 'none';
+  fullWrap.style.display = 'none';
   reviewCard.style.display = 'none';
   stickyWrap.style.display = 'none';
   carryBanner.classList.remove('show');
 
   if (!who) {
     viewTitleEl.textContent = 'Sync Up';
-    taskViewWrap.style.display = '';
-    board.innerHTML = `<div class="empty">Choose Mary or Sarah in the menu to get started</div>`;
-    return;
-  }
-
-  if (currentView.type === 'review') {
-    viewTitleEl.textContent = 'Daily Review';
-    reviewCard.style.display = '';
+    fullWrap.style.display = '';
+    fullWrap.innerHTML = `<div class="empty">Choose Mary or Sarah in the menu to get started</div>`;
     return;
   }
 
@@ -691,8 +730,6 @@ function render() {
     renderSticky();
     return;
   }
-
-  taskViewWrap.style.display = '';
 
   let visible = tasks.filter(t => t.assignee === who);
   if (search) {
@@ -706,63 +743,89 @@ function render() {
     carryBanner.classList.add('show');
   }
 
-  const taskEls = who === 'mary' ? taskEl : basicTaskEl;
+  paneLayout.style.display = '';
+  const noMatch = 'No matching tasks';
+  const pinFirst = (a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0);
+  const byDue = (a, b) => pinFirst(a, b) || (a.due_date || '9999').localeCompare(b.due_date || '9999') || a.created_at.localeCompare(b.created_at);
+  const groupAcrossLists = who === 'mary' ? groupByTag : groupByStatus;
 
-  if (currentView.type === 'today') {
+  if (currentView.type === 'review') {
+    viewTitleEl.textContent = 'Daily Review';
+    reviewCard.style.display = '';
+    const list = visible.filter(t => t.status !== 'done').sort(byDue);
+    renderTaskList(list, groupAcrossLists, search ? noMatch : 'No open tasks');
+  } else if (currentView.type === 'today') {
     viewTitleEl.textContent = 'Today';
-    const list = visible.filter(isDueTodayOrOverdue).sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || a.due_date.localeCompare(b.due_date));
-    renderSingleList(list, { emptyText: search ? 'No matching tasks' : 'Nothing due today', taskEls });
+    renderTaskList(visible.filter(isDueTodayOrOverdue).sort(byDue), groupAcrossLists, search ? noMatch : 'Nothing due today');
   } else if (currentView.type === 'upcoming') {
     viewTitleEl.textContent = 'Upcoming';
-    const list = visible.filter(isUpcoming).sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || a.due_date.localeCompare(b.due_date));
-    renderSingleList(list, { emptyText: search ? 'No matching tasks' : 'Nothing upcoming', taskEls });
+    renderTaskList(visible.filter(isUpcoming).sort(byDue), groupAcrossLists, search ? noMatch : 'Nothing upcoming');
   } else if (currentView.type === 'done') {
     viewTitleEl.textContent = 'Done';
-    renderDoneView(visible.filter(t => t.status === 'done'), taskEls);
+    renderDoneList(visible.filter(t => t.status === 'done'));
   } else if (currentView.type === 'list') {
     const key = currentView.key;
     if (who === 'sarah') {
       viewTitleEl.textContent = { todo: 'To Do', doing: 'In Progress', done: 'Done' }[key] || key;
       const list = visible.filter(t => t.status === key)
         .sort((a, b) => key === 'done' ? (b.completed_at || '').localeCompare(a.completed_at || '') : a.created_at.localeCompare(b.created_at));
-      renderSingleList(list, { emptyText: search ? 'No matching tasks' : 'Nothing here', taskEls, presorted: true });
+      renderTaskList(list, null, search ? noMatch : 'Nothing here');
     } else {
       viewTitleEl.textContent = key || 'Untagged';
       const list = visible.filter(t => t.status !== 'done' && (t.tag || '') === key)
-        .sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || a.created_at.localeCompare(b.created_at));
-      renderSingleList(list, { emptyText: search ? 'No matching tasks' : 'Nothing in this list yet', taskEls, presorted: true });
+        .sort((a, b) => pinFirst(a, b) || a.created_at.localeCompare(b.created_at));
+      renderTaskList(list, null, search ? noMatch : 'Nothing in this list yet');
     }
   }
+
+  renderDetail(who === 'mary' ? taskEl : basicTaskEl);
 }
 
-function renderSingleList(list, opts) {
+function groupByTag(list) {
+  return [...allTagNames(), ''].map(name => ({ label: name || 'Untagged', items: list.filter(t => (t.tag || '') === name) }));
+}
+
+function groupByStatus(list) {
+  return [
+    { label: 'To Do', items: list.filter(t => t.status === 'todo') },
+    { label: 'In Progress', items: list.filter(t => t.status === 'doing') },
+  ];
+}
+
+function rowEl(task) {
+  const div = document.createElement('div');
+  div.className = 'row' + (task.status === 'done' ? ' done' : '') + (task.id === selectedTaskId ? ' selected' : '');
+  div.dataset.id = task.id;
+  div.innerHTML = `<button class="status-btn ${task.status === 'todo' ? '' : task.status}" title="Change status"></button><span class="row-title">${escapeHtml(task.title)}</span>`;
+  return div;
+}
+
+function renderTaskList(list, groupBy, emptyText) {
   board.innerHTML = '';
   if (!list.length) {
-    board.innerHTML = `<div class="empty">${opts.emptyText}</div>`;
+    board.innerHTML = `<div class="empty">${emptyText}</div>`;
     return;
   }
-  const wrap = document.createElement('div');
-  wrap.className = 'col';
-  list.forEach(t => wrap.appendChild(opts.taskEls(t)));
-  board.appendChild(wrap);
+  const groups = groupBy ? groupBy(list) : [{ label: null, items: list }];
+  groups.forEach(g => {
+    if (!g.items.length) return;
+    const section = document.createElement('div');
+    section.className = 'row-group';
+    if (g.label !== null) {
+      section.innerHTML = `<div class="row-group-head">${escapeHtml(g.label)}<span class="count">${g.items.length}</span></div>`;
+    }
+    g.items.forEach(t => section.appendChild(rowEl(t)));
+    board.appendChild(section);
+  });
 }
 
-function renderDoneView(doneAll, taskEls) {
-  board.innerHTML = '';
-  if (!doneAll.length) {
-    board.innerHTML = `<div class="empty">${search ? 'No matching tasks' : 'Nothing completed yet'}</div>`;
-    return;
-  }
+function renderDoneList(doneAll) {
   doneAll = [...doneAll].sort((a, b) => (b.completed_at || '').localeCompare(a.completed_at || ''));
   const archiveCutoff = new Date(Date.now() - ARCHIVE_DAYS * 24 * 60 * 60 * 1000).toISOString();
   const doneOlder = doneAll.filter(t => (t.completed_at || '') < archiveCutoff);
   const doneToShow = showArchived ? doneAll : doneAll.filter(t => (t.completed_at || '') >= archiveCutoff);
 
-  const wrap = document.createElement('div');
-  wrap.className = 'col';
-  doneToShow.forEach(t => wrap.appendChild(taskEls(t)));
-  board.appendChild(wrap);
-
+  renderTaskList(doneToShow, null, search ? 'No matching tasks' : doneOlder.length ? 'Nothing completed in the last few days' : 'Nothing completed yet');
   if (doneOlder.length) {
     const footer = document.createElement('div');
     footer.className = 'archive-toggle';
@@ -770,6 +833,29 @@ function renderDoneView(doneAll, taskEls) {
     footer.textContent = showArchived ? 'Hide older completed' : `Show ${doneOlder.length} older completed`;
     board.appendChild(footer);
   }
+}
+
+// Box 2 shows the full, editable card for whichever task is picked in Box 3.
+function renderDetail(cardFor) {
+  const task = selectedTaskId ? tasks.find(t => t.id === selectedTaskId) : null;
+  if (!task) selectedTaskId = null;
+  paneLayout.classList.toggle('has-selection', !!task);
+
+  // Realtime updates re-render constantly; don't rebuild the card out from
+  // under someone mid-typing or with its menu open.
+  const active = document.activeElement;
+  const editing = active && detailPane.contains(active) && active.matches('textarea, input:not([type]), input[type=text]');
+  if (task && detailPane.dataset.showing === task.id && (editing || detailPane.querySelector('.meatball-wrap.open'))) return;
+
+  detailPane.dataset.showing = task ? task.id : '';
+  if (!task) {
+    detailPane.innerHTML = '<div class="detail-empty">Select a task to see its details, notes, and photos.</div>';
+    return;
+  }
+  detailPane.innerHTML = '<button type="button" class="detail-back" data-action="detail-back">‹ Back</button>';
+  const card = cardFor(task);
+  card.querySelector('.task-notes-edit').classList.remove('hidden');
+  detailPane.appendChild(card);
 }
 
 // --- Sticky Wall ---
@@ -807,7 +893,13 @@ document.body.addEventListener('click', e => {
     currentView = navItem.dataset.view === 'list'
       ? { type: 'list', key: navItem.dataset.key }
       : { type: navItem.dataset.view };
+    selectedTaskId = null;
     if (isMobile()) setSidebar(false);
+    render();
+    return;
+  }
+  if (e.target.closest('[data-action="detail-back"]')) {
+    selectedTaskId = null;
     render();
     return;
   }
@@ -851,8 +943,13 @@ document.body.addEventListener('click', e => {
   }
   const statusBtn = e.target.closest('.status-btn');
   if (statusBtn) {
-    const id = statusBtn.closest('.task').dataset.id;
-    cycleStatus(id);
+    cycleStatus(statusBtn.closest('.task, .row').dataset.id);
+    return;
+  }
+  const row = e.target.closest('.row[data-id]');
+  if (row) {
+    selectedTaskId = row.dataset.id;
+    render();
     return;
   }
   const pinBtn = e.target.closest('[data-action="pin"]');
