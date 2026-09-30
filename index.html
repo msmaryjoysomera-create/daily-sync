@@ -96,6 +96,9 @@
   .box2 .task{border:none;box-shadow:none;padding:0;margin:0}
   .box2 .task.pinned{border-left:none}
   .box2 .task-title{font-size:18px;font-weight:700}
+  .due-row{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:12.5px;color:var(--muted)}
+  .due-label{font-weight:600}
+  .task-due-edit{background:var(--card-2);border:1px solid var(--line);border-radius:8px;padding:5px 8px;font-size:12.5px;color:var(--text);font-family:inherit}
   .box2 .task-notes-edit{font-size:13.5px;line-height:1.5;min-height:calc(1.5em * 4 + 8px);padding-bottom:8px}
   .detail-empty{color:var(--muted);font-size:13.5px;text-align:center;padding:100px 20px}
   .detail-back{display:none;align-items:center;background:transparent;border:none;color:var(--accent);font-size:14px;font-weight:600;padding:0 0 14px}
@@ -614,6 +617,11 @@ function taskEl(task) {
           ${task.recurring ? `<span class="badge recur" title="Repeats daily">${ICON_REFRESH} Daily</span>` : ''}
           ${task.source === 'claude' ? '<span class="badge claude" title="Added via Claude">✳ via Claude</span>' : ''}
         </div>
+        <div class="due-row">
+          <span class="due-label">Due date</span>
+          <input type="date" class="task-due-edit" value="${task.due_date || ''}">
+          ${task.due_date ? `<button type="button" class="icon-btn" data-action="clear-due" title="Remove due date">${ICON_X}</button>` : ''}
+        </div>
         <textarea class="task-notes-edit${task.notes ? '' : ' hidden'}" placeholder="+ Add a note…" rows="1">${escapeHtml(task.notes || '')}</textarea>
         ${photoRowHtml(task.id)}
         <div class="task-history">${historyLine}</div>
@@ -954,6 +962,11 @@ document.body.addEventListener('click', e => {
     render();
     return;
   }
+  const clearDueBtn = e.target.closest('[data-action="clear-due"]');
+  if (clearDueBtn) {
+    updateTask(clearDueBtn.closest('.task').dataset.id, { due_date: null });
+    return;
+  }
   const pinBtn = e.target.closest('[data-action="pin"]');
   if (pinBtn) {
     const id = pinBtn.closest('.task').dataset.id;
@@ -990,6 +1003,9 @@ document.body.addEventListener('change', e => {
   if (e.target.classList.contains('task-title')) {
     const id = e.target.closest('.task').dataset.id;
     updateTask(id, { title: e.target.value.trim() || 'Untitled' });
+  } else if (e.target.classList.contains('task-due-edit')) {
+    const id = e.target.closest('.task').dataset.id;
+    updateTask(id, { due_date: e.target.value || null });
   } else if (e.target.classList.contains('task-notes-edit')) {
     const id = e.target.closest('.task').dataset.id;
     updateTask(id, { notes: e.target.value.trim() || null });
@@ -1020,15 +1036,16 @@ addForm.addEventListener('submit', async e => {
   e.preventDefault();
   const title = titleInput.value.trim();
   if (!title) return;
-  // A task added while viewing a list should land in that list, not vanish.
+  // A task added while viewing a list (or Today) should land in that view, not vanish.
   const inList = currentView.type === 'list';
   const listTag = inList && who === 'mary' ? currentView.key || null : null;
   const listStatus = inList && who === 'sarah' && currentView.key === 'doing' ? 'doing' : 'todo';
+  const viewDue = currentView.type === 'today' ? todayStr() : null;
   await addTask({
     title,
     assignee: who || null,
     tag: tagInput.value.trim() || listTag,
-    due_date: dueInput.value || null,
+    due_date: dueInput.value || viewDue,
     notes: notesInput.value.trim() || null,
     status: listStatus,
     recurring: recurActive,
