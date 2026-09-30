@@ -114,7 +114,7 @@ async function personSection(name, key, { tasks, photosByTask, stickies }) {
   if (!open.length) out.push(empty('No open tasks'));
   // Mary's board is organized by tag; Sarah's by status.
   const groups = key === 'mary'
-    ? [...new Set([...TAG_OPTIONS, ...open.map(t => t.tag).filter(Boolean)]), null]
+    ? [...new Set([...TAG_OPTIONS, ...stickies.filter(n => n.color === 'tag').map(n => n.title), ...open.map(t => t.tag).filter(Boolean)]), null]
         .map(tag => ({ label: tag || 'Untagged', items: open.filter(t => (t.tag || null) === tag) }))
     : [{ label: 'To Do', items: open.filter(t => t.status === 'todo') }, { label: 'In Progress', items: open.filter(t => t.status === 'doing') }];
   for (const g of groups) {
@@ -127,7 +127,7 @@ async function personSection(name, key, { tasks, photosByTask, stickies }) {
   if (!done.length) out.push(empty('Nothing completed'));
   for (const t of done) out.push(...await taskParagraphs(t, photosByTask));
 
-  const notes = stickies.filter(n => n.assignee === key && n.color !== NOTEPAD_MARK);
+  const notes = stickies.filter(n => n.assignee === key && n.color !== NOTEPAD_MARK && n.color !== 'tag');
   out.push(heading(`Sticky Wall (${notes.length})`, HeadingLevel.HEADING_2));
   if (!notes.length) out.push(empty('No sticky notes'));
   for (const n of notes) {

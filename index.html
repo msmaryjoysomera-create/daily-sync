@@ -125,7 +125,7 @@
     .pane-layout.add-mode .detail-back{display:none}
   }
   .row-date{flex:none;font-size:12px;color:var(--muted);white-space:nowrap}
-  form.add.done-mode #tagInput, form.add.done-mode #dueInput, form.add.done-mode #recurToggleBtn{display:none !important}
+  form.add.done-mode .tag-wrap, form.add.done-mode #dueInput, form.add.done-mode #recurToggleBtn{display:none !important}
 
   @media (max-width:900px){
     .pane-layout{grid-template-columns:minmax(0,1fr)}
@@ -161,6 +161,14 @@
   form.add input[type=text]:focus{outline:2px solid var(--accent);border-color:transparent}
   .add-row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center}
   .add-row input[type=date]{background:var(--card-2);border:1px solid var(--line);border-radius:10px;padding:7px 10px;font-size:12.5px;color:var(--text)}
+  .tag-wrap{position:relative;display:inline-block}
+  .tag-menu{display:none;position:absolute;top:calc(100% + 4px);left:0;z-index:30;min-width:220px;max-height:280px;overflow-y:auto;
+    background:var(--card);border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.12);padding:4px}
+  .tag-menu.open{display:block}
+  .tag-opt{display:block;width:100%;text-align:left;background:none;border:none;border-radius:7px;padding:7px 10px;font-size:13px;color:var(--text);cursor:pointer;font-family:inherit}
+  .tag-opt:hover, .tag-opt.hl{background:var(--card-2)}
+  .tag-opt.create{color:var(--accent);font-weight:600}
+  .tag-menu .tag-sep{height:1px;background:var(--line);margin:4px 2px}
   .tag-select{background:var(--card-2);border:1px solid var(--line);border-radius:10px;padding:7px 10px;font-size:12.5px;color:var(--text);max-width:150px}
   .notes-toggle{background:transparent;border:1px dashed var(--line);border-radius:10px;padding:7px 10px;font-size:12.5px;color:var(--muted);display:inline-flex;align-items:center;gap:5px}
   .recur-toggle.active{background:var(--accent-dim);border-color:var(--accent);color:var(--accent)}
@@ -357,8 +365,10 @@
       <form class="add" id="addForm">
         <input type="text" id="titleInput" placeholder="Add a task…" autocomplete="off">
         <div class="add-row">
-          <input type="text" id="tagInput" class="tag-select" list="tagOptions" placeholder="Tag (optional)" autocomplete="off">
-          <datalist id="tagOptions"></datalist>
+          <span class="tag-wrap">
+            <input type="text" id="tagInput" class="tag-select" placeholder="Tag (optional)" autocomplete="off">
+            <div class="tag-menu" id="tagMenu"></div>
+          </span>
           <input type="date" id="dueInput">
           <button type="button" class="notes-toggle" id="notesToggleBtn">+ note</button>
           <button type="button" class="notes-toggle recur-toggle" id="recurToggleBtn" title="Repeat this task every day"><svg width="13" height="13" viewBox="0 0 18 18" fill="none"><path d="M14.5 9a5.5 5.5 0 1 1-1.6-3.9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M14.5 3.5V6.5H11.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg> Daily</button>
@@ -465,7 +475,7 @@ const recurToggleBtn = document.getElementById('recurToggleBtn');
 const board = document.getElementById('board');
 const reviewList = document.getElementById('reviewList');
 const tagInput = document.getElementById('tagInput');
-const tagOptionsList = document.getElementById('tagOptions');
+const tagMenu = document.getElementById('tagMenu');
 const searchInput = document.getElementById('searchInput');
 const sidebar = document.getElementById('sidebar');
 const sidebarBackdrop = document.getElementById('sidebarBackdrop');
@@ -491,15 +501,70 @@ const LIST_DOT_COLORS = ['#C56A6A', '#5C8BB0', '#C2A23E', '#5FA36A', '#8E6BB5', 
 const STICKY_COLORS = ['#FCE8A8', '#AEE2E0', '#F6C9CB', '#F6D2A6', '#CFE7B8', '#D7CFF0'];
 const ARCHIVE_DAYS = 3;
 
+// Tags Mary creates are saved (as sticky_notes rows marked color 'tag'), so a
+// new tag shows up under Lists right away, even before it has any tasks.
+const TAG_MARK = 'tag';
+const savedTags = () => stickyNotes.filter(n => n.color === TAG_MARK && n.title).map(n => n.title);
+
 function allTagNames() {
   const custom = tasks.map(t => t.tag).filter(Boolean);
-  return [...new Set([...TAG_OPTIONS, ...custom])];
+  return [...new Set([...TAG_OPTIONS, ...savedTags(), ...custom])];
+}
+
+const findTag = name => allTagNames().find(t => t.toLowerCase() === name.trim().toLowerCase()) || null;
+
+async function createTag(name) {
+  name = name.trim();
+  if (!name) return null;
+  const existing = findTag(name);
+  if (existing) return existing;
+  const { data, error } = await sb.from('sticky_notes').insert({ assignee: null, title: name, body: null, color: TAG_MARK }).select().single();
+  if (error) { alert(error.message); return name; }
+  if (!stickyNotes.some(n => n.id === data.id)) stickyNotes.push(data);
+  render();
+  return name;
 }
 
 function updateTagOptions() {
-  const all = allTagNames();
-  tagOptionsList.innerHTML = all.map(t => `<option value="${escapeAttr(t)}"></option>`).join('');
+  if (tagMenu.classList.contains('open')) renderTagMenu();
 }
+
+// Tag box dropdown: pick an existing tag, or add a new one.
+function renderTagMenu() {
+  const q = tagInput.value.trim();
+  const matches = allTagNames().filter(t => t.toLowerCase().includes(q.toLowerCase()));
+  const exact = q && findTag(q);
+  let html = '';
+  if (q && !exact) html += `<button type="button" class="tag-opt create" data-create="${escapeAttr(q)}">+ Add "${escapeHtml(q)}" as a new tag</button>`;
+  else if (!q) html += `<button type="button" class="tag-opt create" data-new="1">+ New tag</button>`;
+  if (matches.length) html += (html ? '<div class="tag-sep"></div>' : '') + matches.map(t => `<button type="button" class="tag-opt" data-tag="${escapeAttr(t)}">${escapeHtml(t)}</button>`).join('');
+  tagMenu.innerHTML = html;
+  tagMenu.classList.toggle('open', !!html);
+}
+
+tagInput.addEventListener('focus', renderTagMenu);
+tagInput.addEventListener('input', renderTagMenu);
+tagInput.addEventListener('blur', () => tagMenu.classList.remove('open'));
+tagInput.addEventListener('keydown', e => { if (e.key === 'Escape') tagMenu.classList.remove('open'); });
+// mousedown (not click) so the input keeps focus and the menu doesn't close first
+tagMenu.addEventListener('mousedown', async e => {
+  const opt = e.target.closest('.tag-opt');
+  if (!opt) return;
+  e.preventDefault();
+  if (opt.dataset.new) {
+    tagInput.value = '';
+    tagInput.placeholder = 'Type the new tag…';
+    tagMenu.classList.remove('open');
+    return;
+  }
+  if (opt.dataset.create) {
+    tagInput.value = await createTag(opt.dataset.create);
+  } else {
+    tagInput.value = opt.dataset.tag;
+  }
+  tagMenu.classList.remove('open');
+  titleInput.focus();
+});
 
 // Days follow this computer's own clock (not UTC), so "today" -- and the
 // Daily Review reset -- turn over at local midnight.
@@ -962,7 +1027,7 @@ function renderDetail(cardFor) {
 // --- Sticky Wall ---
 function renderSticky() {
   stickyGrid.innerHTML = '';
-  const mine = stickyNotes.filter(n => n.assignee === who && n.color !== NOTEPAD_MARK);
+  const mine = stickyNotes.filter(n => n.assignee === who && n.color !== NOTEPAD_MARK && n.color !== TAG_MARK);
   mine.forEach(n => stickyGrid.appendChild(stickyNoteEl(n)));
   const addCard = document.createElement('button');
   addCard.type = 'button';
@@ -1137,6 +1202,8 @@ addForm.addEventListener('submit', async e => {
   const listTag = inList && who === 'mary' ? currentView.key || null : null;
   const listStatus = inList && who === 'sarah' && currentView.key === 'doing' ? 'doing' : 'todo';
   const viewDue = currentView.type === 'today' ? todayStr() : null;
+  // A typed tag that doesn't exist yet becomes a new saved tag (and a new list).
+  const typedTag = tagInput.value.trim() ? await createTag(tagInput.value) : null;
   if (addForm.classList.contains('done-mode')) {
     await addTask({
       title,
@@ -1150,7 +1217,7 @@ addForm.addEventListener('submit', async e => {
     const added = await addTask({
       title,
       assignee: who || null,
-      tag: tagInput.value.trim() || listTag,
+      tag: typedTag || listTag,
       due_date: dueInput.value || viewDue,
       notes: notesInput.value.trim() || null,
       status: listStatus,
@@ -1335,7 +1402,7 @@ async function fetchStickyNotes() {
   } catch (err) { console.error(err); return; }
   if (error) { console.error(error); return; }
   stickyNotes = data;
-  if (currentView.type === 'sticky' || currentView.type === 'notepad') render();
+  render(); // sticky notes, the notepad, and saved tags (Lists) all come from here
 }
 
 // --- Notepad ---
@@ -1388,7 +1455,7 @@ notepadText.addEventListener('input', () => {
 notepadText.addEventListener('blur', () => { if (notepadTimer) saveNotepad(); });
 
 async function addStickyNote() {
-  const mineCount = stickyNotes.filter(n => n.assignee === who && n.color !== NOTEPAD_MARK).length;
+  const mineCount = stickyNotes.filter(n => n.assignee === who && n.color !== NOTEPAD_MARK && n.color !== TAG_MARK).length;
   const color = STICKY_COLORS[mineCount % STICKY_COLORS.length];
   const { error } = await sb.from('sticky_notes').insert({ assignee: who || null, title: '', body: '', color });
   if (error) alert(error.message);
