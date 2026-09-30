@@ -117,6 +117,8 @@
   .row .status-btn{width:20px;height:20px;margin-top:0}
   .row-title{flex:1;min-width:0;font-size:14px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .row.done .row-title{color:var(--muted);text-decoration:line-through}
+  .row-date{flex:none;font-size:12px;color:var(--muted);white-space:nowrap}
+  form.add.done-mode #tagInput, form.add.done-mode #dueInput, form.add.done-mode #recurToggleBtn{display:none !important}
 
   @media (max-width:900px){
     .pane-layout{grid-template-columns:minmax(0,1fr)}
@@ -790,6 +792,10 @@ function render() {
   }
 
   paneLayout.style.display = '';
+  // On Done, the task bar logs something already finished: no tag, date, or Daily.
+  const doneView = currentView.type === 'done' || (currentView.type === 'list' && who === 'sarah' && currentView.key === 'done');
+  addForm.classList.toggle('done-mode', doneView);
+  titleInput.placeholder = doneView ? 'Add a completed task…' : 'Add a task…';
   tagInput.placeholder = who === 'mary' && currentView.type === 'list' && currentView.key ? `Tag: ${currentView.key}` : 'Tag (optional)';
   const noMatch = 'No matching tasks';
   const pinFirst = (a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0);
@@ -843,8 +849,20 @@ function rowEl(task) {
   const div = document.createElement('div');
   div.className = 'row' + (task.status === 'done' ? ' done' : '') + (task.id === selectedTaskId ? ' selected' : '');
   div.dataset.id = task.id;
-  div.innerHTML = `<button class="status-btn ${task.status === 'todo' ? '' : task.status}" title="Change status"></button><span class="row-title">${escapeHtml(task.title)}</span>`;
+  const doneDate = task.status === 'done' && task.completed_at
+    ? `<span class="row-date" title="Completed ${escapeAttr(new Date(task.completed_at).toLocaleString())}">${completedLabel(task.completed_at)}</span>` : '';
+  div.innerHTML = `<button class="status-btn ${task.status === 'todo' ? '' : task.status}" title="Change status"></button><span class="row-title">${escapeHtml(task.title)}</span>${doneDate}`;
   return div;
+}
+
+function completedLabel(iso) {
+  const d = new Date(iso);
+  const day = localDateStr(d);
+  if (day === todayStr()) return 'Today';
+  if (day === localDateStr(new Date(Date.now() - 864e5))) return 'Yesterday';
+  const opts = { month: 'short', day: 'numeric' };
+  if (d.getFullYear() !== new Date().getFullYear()) opts.year = 'numeric';
+  return d.toLocaleDateString(undefined, opts);
 }
 
 // Daily Review's tag groups work like dropdowns: closed by default, and
@@ -1099,15 +1117,26 @@ addForm.addEventListener('submit', async e => {
   const listTag = inList && who === 'mary' ? currentView.key || null : null;
   const listStatus = inList && who === 'sarah' && currentView.key === 'doing' ? 'doing' : 'todo';
   const viewDue = currentView.type === 'today' ? todayStr() : null;
-  await addTask({
-    title,
-    assignee: who || null,
-    tag: tagInput.value.trim() || listTag,
-    due_date: dueInput.value || viewDue,
-    notes: notesInput.value.trim() || null,
-    status: listStatus,
-    recurring: recurActive,
-  });
+  if (addForm.classList.contains('done-mode')) {
+    await addTask({
+      title,
+      assignee: who || null,
+      notes: notesInput.value.trim() || null,
+      status: 'done',
+      completed_at: new Date().toISOString(),
+      completed_by: who || null,
+    });
+  } else {
+    await addTask({
+      title,
+      assignee: who || null,
+      tag: tagInput.value.trim() || listTag,
+      due_date: dueInput.value || viewDue,
+      notes: notesInput.value.trim() || null,
+      status: listStatus,
+      recurring: recurActive,
+    });
+  }
   titleInput.value = '';
   tagInput.value = '';
   dueInput.value = '';
