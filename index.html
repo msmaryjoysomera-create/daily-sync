@@ -745,6 +745,7 @@ function render() {
   }
 
   paneLayout.style.display = '';
+  tagInput.placeholder = who === 'mary' && currentView.type === 'list' && currentView.key ? `Tag: ${currentView.key}` : 'Tag (optional)';
   const noMatch = 'No matching tasks';
   const pinFirst = (a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0);
   const byDue = (a, b) => pinFirst(a, b) || (a.due_date || '9999').localeCompare(b.due_date || '9999') || a.created_at.localeCompare(b.created_at);
@@ -1019,13 +1020,17 @@ addForm.addEventListener('submit', async e => {
   e.preventDefault();
   const title = titleInput.value.trim();
   if (!title) return;
+  // A task added while viewing a list should land in that list, not vanish.
+  const inList = currentView.type === 'list';
+  const listTag = inList && who === 'mary' ? currentView.key || null : null;
+  const listStatus = inList && who === 'sarah' && currentView.key === 'doing' ? 'doing' : 'todo';
   await addTask({
     title,
     assignee: who || null,
-    tag: tagInput.value.trim() || null,
+    tag: tagInput.value.trim() || listTag,
     due_date: dueInput.value || null,
     notes: notesInput.value.trim() || null,
-    status: 'todo',
+    status: listStatus,
     recurring: recurActive,
   });
   titleInput.value = '';
