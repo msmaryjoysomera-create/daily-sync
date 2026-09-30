@@ -96,6 +96,8 @@
   .box2 .task{border:none;box-shadow:none;padding:0;margin:0}
   .box2 .task.pinned{border-left:none}
   .box2 .task-title{font-size:18px;font-weight:700}
+  .due-none{background:none;border:1px dashed var(--line);border-radius:8px;padding:5px 10px;font-size:12.5px;color:var(--muted);cursor:pointer;font-family:inherit}
+  .due-none:hover{color:var(--text);border-color:var(--muted)}
   .due-row{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:12.5px;color:var(--muted)}
   .due-label{font-weight:600}
   .task-due-edit{background:var(--card-2);border:1px solid var(--line);border-radius:8px;padding:5px 8px;font-size:12.5px;color:var(--text);font-family:inherit}
@@ -672,6 +674,10 @@ let search = '';
 let tasks = [];
 let photos = [];
 let stickyNotes = [];
+// Box 2 shows "None" for a task with no due date; clicking it swaps in the
+// date picker. Remember which task that is so a realtime re-render doesn't
+// swap it back before a date is picked.
+let dueEditingId = null;
 const NOTEPAD_MARK = 'notepad';
 let notepadTimer = null;
 let notepadSaving = null;
@@ -825,7 +831,9 @@ function taskEl(task) {
         </div>
         <div class="due-row">
           <span class="due-label">Due date</span>
-          <input type="date" class="task-due-edit" value="${task.due_date || ''}">
+          ${task.due_date || dueEditingId === task.id
+            ? `<input type="date" class="task-due-edit" value="${task.due_date || ''}">`
+            : `<button type="button" class="due-none" data-action="set-due" title="Add a due date">None</button>`}
           ${task.due_date ? `<button type="button" class="icon-btn" data-action="clear-due" title="Remove due date">${ICON_X}</button>` : ''}
         </div>
         <textarea class="task-notes-edit${task.notes ? '' : ' hidden'}" placeholder="+ Add a note…" rows="1">${escapeHtml(task.notes || '')}</textarea>
@@ -1110,6 +1118,7 @@ function renderDetail(cardFor) {
   const editing = active && detailPane.contains(active) && active.matches('textarea, input:not([type]), input[type=text]');
   if (task && detailPane.dataset.showing === task.id && (editing || detailPane.querySelector('.meatball-wrap.open'))) return;
 
+  if (!task || detailPane.dataset.showing !== task.id) dueEditingId = null; // picked another task: back to "None"
   detailPane.dataset.showing = task ? task.id : '';
   if (!task) {
     detailPane.innerHTML = currentView.type === 'add'
@@ -1234,7 +1243,20 @@ document.body.addEventListener('click', e => {
   }
   const clearDueBtn = e.target.closest('[data-action="clear-due"]');
   if (clearDueBtn) {
+    dueEditingId = null;
     updateTask(clearDueBtn.closest('.task').dataset.id, { due_date: null });
+    return;
+  }
+  const setDueBtn = e.target.closest('[data-action="set-due"]');
+  if (setDueBtn) {
+    const taskCard = setDueBtn.closest('.task');
+    dueEditingId = taskCard.dataset.id;
+    const input = document.createElement('input');
+    input.type = 'date';
+    input.className = 'task-due-edit';
+    setDueBtn.replaceWith(input);
+    input.focus();
+    try { input.showPicker(); } catch {}
     return;
   }
   const pinBtn = e.target.closest('[data-action="pin"]');
@@ -1275,6 +1297,7 @@ document.body.addEventListener('change', e => {
     updateTask(id, { title: e.target.value.trim() || 'Untitled' });
   } else if (e.target.classList.contains('task-due-edit')) {
     const id = e.target.closest('.task').dataset.id;
+    dueEditingId = null;
     updateTask(id, { due_date: e.target.value || null });
   } else if (e.target.classList.contains('task-notes-edit')) {
     const id = e.target.closest('.task').dataset.id;
