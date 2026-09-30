@@ -487,7 +487,10 @@ function updateTagOptions() {
   tagOptionsList.innerHTML = all.map(t => `<option value="${escapeAttr(t)}"></option>`).join('');
 }
 
-const todayStr = () => new Date().toISOString().slice(0, 10);
+// Days follow this computer's own clock (not UTC), so "today" -- and the
+// Daily Review reset -- turn over at local midnight.
+const localDateStr = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+const todayStr = () => localDateStr(new Date());
 
 let who = localStorage.getItem('daily-sync-who') || '';
 let search = '';
@@ -780,7 +783,7 @@ function render() {
       t.title.toLowerCase().includes(search) || (t.notes || '').toLowerCase().includes(search));
   }
 
-  const carried = visible.filter(t => t.status !== 'done' && t.created_at && t.created_at.slice(0, 10) !== todayStr());
+  const carried = visible.filter(t => t.status !== 'done' && t.created_at && localDateStr(new Date(t.created_at)) !== todayStr());
   if (carried.length) {
     carryBanner.textContent = `${carried.length} task${carried.length === 1 ? '' : 's'} carried over from a previous sync`;
     carryBanner.classList.add('show');
@@ -1176,7 +1179,7 @@ function checkUnread() {
 
 async function resetRecurring() {
   const today = todayStr();
-  const toReset = tasks.filter(t => t.recurring && t.status === 'done' && (!t.completed_at || t.completed_at.slice(0, 10) !== today));
+  const toReset = tasks.filter(t => t.recurring && t.status === 'done' && (!t.completed_at || localDateStr(new Date(t.completed_at)) !== today));
   for (const t of toReset) {
     await updateTask(t.id, { status: 'todo', completed_at: null, completed_by: null });
   }
@@ -1356,6 +1359,19 @@ if (sb) {
     .on('postgres_changes', { event: '*', schema: 'public', table: 'task_photos' }, fetchPhotos)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'sticky_notes' }, fetchStickyNotes)
     .subscribe();
+
+  // A tab left open overnight flips to the new day on its own: fresh Daily
+  // Review checklist, daily tasks reset, Today/overdue recalculated.
+  let shownDay = todayStr();
+  const checkNewDay = () => {
+    if (todayStr() === shownDay) return;
+    shownDay = todayStr();
+    fetchReviewState();
+    resetRecurring();
+    render();
+  };
+  setInterval(checkNewDay, 60 * 1000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) checkNewDay(); });
 }
 </script>
 </body>
