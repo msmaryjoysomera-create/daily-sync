@@ -154,7 +154,8 @@
 
   .banner{color:var(--doing);font-size:12.5px;margin:0 0 16px;padding:8px 12px;background:var(--doing-dim);border-radius:10px;display:none}
   .banner.show{display:block}
-  .banner.unread{color:var(--accent);background:var(--accent-dim)}
+  .banner.due{color:var(--accent);background:var(--accent-dim);border:none;font-family:inherit;font-weight:600;text-align:left;cursor:pointer;width:100%}
+  .banner.due:hover{text-decoration:underline}
   .status-line{color:var(--muted);font-size:12px;margin-bottom:16px;display:flex;align-items:center;gap:6px}
   #connDot,#connText{cursor:pointer}
   #connText:hover{color:var(--text);text-decoration:underline}
@@ -489,8 +490,7 @@
     </div>
 
     <div class="status-line"><span class="dot" id="connDot"></span><span id="connText">Connecting…</span></div>
-    <div class="banner unread" id="unreadBanner"></div>
-    <div class="banner" id="carryBanner"></div>
+    <button type="button" class="banner due" id="dueBanner" data-action="due-banner"></button>
 
     <div id="setupNotice" class="setup" style="display:none">
       <h2>One-time setup needed</h2>
@@ -634,8 +634,7 @@ function retryConnection() {
 connDot.addEventListener('click', retryConnection);
 connText.addEventListener('click', retryConnection);
 
-const carryBanner = document.getElementById('carryBanner');
-const unreadBanner = document.getElementById('unreadBanner');
+const dueBanner = document.getElementById('dueBanner');
 const reviewCard = document.getElementById('reviewCard');
 const reviewNavItem = document.getElementById('reviewNavItem');
 const printBtn = document.getElementById('printBtn');
@@ -724,7 +723,7 @@ async function createTag(name) {
 }
 
 // Renaming retags every task that had the old name. Tag moves don't bump
-// updated_at, so they don't flood the "updated since your last visit" banner.
+// updated_at, so the task history lines stay accurate.
 async function renameTag(oldName, newName) {
   newName = newName.trim();
   if (!newName || newName === oldName) return;
@@ -1587,7 +1586,7 @@ function render() {
   reviewCard.style.display = 'none';
   notesWrap.style.display = 'none';
   todoWrap.style.display = 'none';
-  carryBanner.classList.remove('show');
+  dueBanner.classList.remove('show');
   const tagView = (who === 'mary' || who === 'evan') && currentView.type === 'list' && !!currentView.key;
   viewTitleRow.classList.toggle('tag-view', tagView);
   if (!tagView) viewTitleRow.classList.remove('renaming');
@@ -1597,6 +1596,20 @@ function render() {
     fullWrap.style.display = '';
     fullWrap.innerHTML = `<div class="empty">${isMobile() ? 'Tap the circle at the top right to choose Evan, Mary, or Sarah' : 'Choose Evan, Mary, or Sarah in the menu to get started'}</div>`;
     return;
+  }
+
+  // "2 tasks due today" (and any overdue) for whoever's profile is open.
+  if (currentView.type !== 'notes') {
+    const today = todayStr();
+    const open = tasks.filter(t => t.assignee === who && t.status !== 'done' && t.due_date);
+    const dueToday = open.filter(t => t.due_date === today).length;
+    const overdue = open.filter(t => t.due_date < today).length;
+    const plural = n => `${n} task${n === 1 ? '' : 's'}`;
+    const parts = [];
+    if (dueToday) parts.push(`${plural(dueToday)} due today`);
+    if (overdue) parts.push(dueToday ? `${overdue} overdue` : `${plural(overdue)} overdue`);
+    dueBanner.textContent = parts.join(' · ');
+    dueBanner.classList.toggle('show', parts.length > 0);
   }
 
   if (currentView.type === 'notes') {
@@ -1614,12 +1627,6 @@ function render() {
   if (search) {
     visible = visible.filter(t =>
       t.title.toLowerCase().includes(search) || (t.notes || '').toLowerCase().includes(search));
-  }
-
-  const carried = visible.filter(t => t.status !== 'done' && t.created_at && localDateStr(new Date(t.created_at)) !== todayStr());
-  if (carried.length) {
-    carryBanner.textContent = `${carried.length} task${carried.length === 1 ? '' : 's'} carried over from a previous sync`;
-    carryBanner.classList.add('show');
   }
 
   paneLayout.style.display = '';
@@ -1779,6 +1786,14 @@ function renderDetail(cardFor) {
 }
 
 document.body.addEventListener('click', e => {
+  if (e.target.closest('[data-action="due-banner"]')) {
+    // Jump to where those tasks are listed: Today, or Planned for Evan.
+    currentView = { type: who === 'evan' ? 'planned' : 'today' };
+    selectedTaskId = null;
+    mAdding = false;
+    render();
+    return;
+  }
   const mTab = e.target.closest('[data-m-view]');
   if (mTab) {
     currentView = { type: mTab.dataset.mView };
@@ -2153,22 +2168,9 @@ async function fetchTasks() {
   updateTagOptions();
   if (firstLoad) {
     firstLoad = false;
-    checkUnread();
     resetRecurring();
   }
   render();
-}
-
-function checkUnread() {
-  const lastSeen = localStorage.getItem('daily-sync-last-seen');
-  if (lastSeen) {
-    const changed = tasks.filter(t => t.updated_at && t.updated_at > lastSeen);
-    if (changed.length) {
-      unreadBanner.textContent = `${changed.length} task${changed.length === 1 ? '' : 's'} updated since your last visit`;
-      unreadBanner.classList.add('show');
-    }
-  }
-  localStorage.setItem('daily-sync-last-seen', new Date().toISOString());
 }
 
 async function resetRecurring() {
