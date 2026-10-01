@@ -361,8 +361,11 @@
   .m-sheet{display:none;position:fixed;inset:0;z-index:70}
   .m-sheet.open{display:block}
   .m-sheet-backdrop{position:absolute;inset:0;background:rgba(20,15,10,.35)}
-  .m-sheet-panel{position:absolute;left:0;right:0;bottom:0;background:var(--card);border-radius:18px 18px 0 0;padding:8px 14px calc(18px + env(safe-area-inset-bottom));max-height:78vh;overflow-y:auto}
-  .m-sheet-handle{width:38px;height:4px;border-radius:2px;background:var(--line);margin:4px auto 12px}
+  .m-sheet-panel{position:absolute;left:0;right:0;bottom:0;background:var(--card);border-radius:18px 18px 0 0;padding:8px 14px calc(18px + env(safe-area-inset-bottom));max-height:78vh;overflow-y:auto;overscroll-behavior:contain;transition:transform .22s ease}
+  .m-sheet-backdrop{transition:opacity .22s ease}
+  .m-sheet.entering .m-sheet-panel{transform:translateY(100%)}
+  .m-sheet.entering .m-sheet-backdrop{opacity:0}
+  .m-sheet-handle{width:38px;height:5px;border-radius:3px;background:var(--line);margin:2px auto 12px;box-shadow:0 0 0 12px transparent}
   .m-sheet-title{font-size:12.5px;font-weight:700;color:var(--muted);padding:0 6px 8px}
   .m-sheet .nav-item{padding:12px 10px;font-size:15px}
   .m-search{width:100%;background:var(--card-2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-family:inherit;font-size:15px;color:var(--text);margin-bottom:8px}
@@ -656,6 +659,7 @@ const mFab = document.getElementById('mFab');
 const mSheet = document.getElementById('mSheet');
 const mSheetTitle = document.getElementById('mSheetTitle');
 const mSheetBody = document.getElementById('mSheetBody');
+const mSheetPanel = mSheet.querySelector('.m-sheet-panel');
 const todoWrap = document.getElementById('todoWrap');
 const todoList = document.getElementById('todoList');
 const todoDetail = document.getElementById('todoDetail');
@@ -1422,9 +1426,52 @@ function openSheet(kind) {
       .filter(b => b.style.display !== 'none' && !b.closest('.hide') && !tabViews.includes(b.dataset.view))
       .forEach(b => mSheetBody.appendChild(b.cloneNode(true)));
   }
-  mSheet.classList.add('open');
+  // Slide up from the bottom.
+  mSheetPanel.style.transform = '';
+  mSheet.classList.add('open', 'entering');
+  requestAnimationFrame(() => requestAnimationFrame(() => mSheet.classList.remove('entering')));
 }
-function closeSheet() { mSheet.classList.remove('open'); }
+function closeSheet() {
+  mSheet.classList.remove('open', 'entering');
+  mSheetPanel.style.transform = '';
+  mSheetPanel.style.transition = '';
+}
+// Slide down, then hide.
+function dismissSheet() {
+  mSheetPanel.style.transition = '';
+  mSheetPanel.style.transform = 'translateY(100%)';
+  setTimeout(closeSheet, 200);
+}
+
+// Swipe the sheet down to close it, like other iPhone pop-ups. Dragging
+// starts from the top of the sheet (or anywhere once its list is scrolled
+// back to the top), so scrolling a long list still works.
+let sheetDragY = null, sheetDragDy = 0, sheetDragT = 0;
+mSheetPanel.addEventListener('touchstart', e => {
+  if (mSheetPanel.scrollTop > 0 && !e.target.closest('.m-sheet-handle, .m-sheet-title')) return;
+  sheetDragY = e.touches[0].clientY;
+  sheetDragDy = 0;
+  sheetDragT = Date.now();
+}, { passive: true });
+mSheetPanel.addEventListener('touchmove', e => {
+  if (sheetDragY === null) return;
+  sheetDragDy = Math.max(0, e.touches[0].clientY - sheetDragY);
+  if (sheetDragDy > 0) {
+    e.preventDefault(); // pull the sheet, not the page
+    mSheetPanel.style.transition = 'none';
+    mSheetPanel.style.transform = `translateY(${sheetDragDy}px)`;
+  }
+}, { passive: false });
+const endSheetDrag = () => {
+  if (sheetDragY === null) return;
+  const flick = sheetDragDy > 30 && sheetDragDy / Math.max(1, Date.now() - sheetDragT) > 0.5;
+  sheetDragY = null;
+  mSheetPanel.style.transition = '';
+  if (sheetDragDy > 90 || flick) dismissSheet();
+  else mSheetPanel.style.transform = '';
+};
+mSheetPanel.addEventListener('touchend', endSheetDrag);
+mSheetPanel.addEventListener('touchcancel', endSheetDrag);
 
 mFab.addEventListener('click', () => {
   if (currentView.type === 'notes') { noteNewBtn.click(); return; }
@@ -1723,7 +1770,7 @@ document.body.addEventListener('click', e => {
     return;
   }
   if (e.target.closest('[data-action="m-sheet-close"]')) {
-    closeSheet();
+    dismissSheet();
     return;
   }
   const mWho = e.target.closest('[data-m-who]');
