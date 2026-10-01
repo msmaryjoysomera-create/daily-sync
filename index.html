@@ -356,6 +356,44 @@
     .main{max-width:100%;padding-left:calc(60px + 16px)}
   }
 
+  /* --- Phone layout (option A: bottom tab bar, + button, profile at top right) --- */
+  .m-date, .m-profile, .m-tabbar, .m-fab{display:none}
+  .m-sheet{display:none;position:fixed;inset:0;z-index:70}
+  .m-sheet.open{display:block}
+  .m-sheet-backdrop{position:absolute;inset:0;background:rgba(20,15,10,.35)}
+  .m-sheet-panel{position:absolute;left:0;right:0;bottom:0;background:var(--card);border-radius:18px 18px 0 0;padding:8px 14px calc(18px + env(safe-area-inset-bottom));max-height:78vh;overflow-y:auto}
+  .m-sheet-handle{width:38px;height:4px;border-radius:2px;background:var(--line);margin:4px auto 12px}
+  .m-sheet-title{font-size:12.5px;font-weight:700;color:var(--muted);padding:0 6px 8px}
+  .m-sheet .nav-item{padding:12px 10px;font-size:15px}
+  .m-search{width:100%;background:var(--card-2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-family:inherit;font-size:15px;color:var(--text);margin-bottom:8px}
+  .m-who{display:flex;align-items:center;gap:12px;width:100%;background:none;border:none;border-radius:12px;padding:10px 8px;font-family:inherit;font-size:16px;font-weight:600;color:var(--text);cursor:pointer;text-align:left}
+  .m-who.active{background:var(--card-2)}
+  .m-who-dot{width:36px;height:36px;border-radius:50%;background:var(--accent-dim);color:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px}
+  @media (max-width:767px){
+    .rail, .sidebar, .sidebar-backdrop, .print-btn{display:none !important}
+    .main{padding:calc(14px + env(safe-area-inset-top)) 14px calc(100px + env(safe-area-inset-bottom)) 14px}
+    .m-date{display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:2px}
+    .main-top{margin-bottom:12px}
+    .m-profile{display:flex;flex:none;width:38px;height:38px;border-radius:50%;background:var(--accent-dim);color:var(--accent);border:none;font-family:inherit;font-weight:800;font-size:15px;align-items:center;justify-content:center;cursor:pointer}
+    .m-tabbar{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:50;background:var(--card);border-top:1px solid var(--line);padding:6px 4px calc(8px + env(safe-area-inset-bottom))}
+    .m-tabbar.hide, .m-fab.hide{display:none}
+    .m-tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;font-family:inherit;font-size:10.5px;font-weight:600;color:var(--muted);padding:4px 0;cursor:pointer}
+    .m-tab svg{width:21px;height:21px}
+    .m-tab.active{color:var(--accent)}
+    .m-fab{display:flex;position:fixed;right:18px;bottom:calc(78px + env(safe-area-inset-bottom));z-index:55;width:54px;height:54px;border-radius:50%;background:var(--accent);color:#fff;border:none;align-items:center;justify-content:center;box-shadow:0 6px 16px rgba(166,25,46,.35);cursor:pointer}
+    .m-fab svg{transition:transform .15s ease}
+    .m-fab.open svg{transform:rotate(45deg)}
+    /* The task bar shows when + is tapped (always on Add a Task) */
+    .pane-layout:not(.m-adding):not(.add-mode):not(.m-review) .box1{display:none}
+    .pane-layout.m-review:not(.m-adding) #addForm{display:none}
+    .todo-layout:not(.m-adding):not(.add-mode) .todo-add{display:none}
+    /* Tasks as cards */
+    .box3{background:transparent;border:none;box-shadow:none;padding:0}
+    .row{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:6px}
+    .row-group-head{padding:10px 4px 6px}
+    .todo-main{background:transparent;border:none;padding:0}
+    .todo-row{background:var(--card);border:1px solid var(--line);border-radius:12px;margin-bottom:6px}
+  }
   @media print {
     .rail, .sidebar, .sidebar-backdrop, .status-line, form.add, .sidebar-search, .banner { display:none; }
     .main{max-width:100%;padding:0}
@@ -422,6 +460,7 @@
   <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
 
   <main class="main">
+    <div class="m-date" id="mDate"></div>
     <div class="main-top">
       <div class="view-title-row" id="viewTitleRow">
         <div class="view-title" id="viewTitleEl">Today</div>
@@ -435,6 +474,7 @@
         </div>
       </div>
       <button type="button" id="printBtn" class="print-btn" title="Print or export"><svg width="14" height="14" viewBox="0 0 18 18" fill="none"><path d="M5 6.5V2.5H13V6.5" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><rect x="2.5" y="6.5" width="13" height="6" rx="1.2" stroke="currentColor" stroke-width="1.5"/><rect x="5" y="10.5" width="8" height="5" stroke="currentColor" stroke-width="1.5"/></svg> Print</button>
+      <button type="button" class="m-profile" id="mProfileBtn" data-m-sheet="profile" aria-label="Switch profile"></button>
     </div>
 
     <div class="status-line"><span class="dot" id="connDot"></span><span id="connText">Connecting…</span></div>
@@ -508,6 +548,18 @@
       </aside>
     </div>
   </main>
+
+  <!-- Phone layout: bottom tab bar, + button, and pop-up sheets (hidden on bigger screens) -->
+  <button type="button" class="m-fab" id="mFab" aria-label="Add a task"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button>
+  <nav class="m-tabbar" id="mTabbar" aria-label="Main"></nav>
+  <div class="m-sheet" id="mSheet">
+    <div class="m-sheet-backdrop" data-action="m-sheet-close"></div>
+    <div class="m-sheet-panel" role="dialog" aria-modal="true" aria-labelledby="mSheetTitle">
+      <div class="m-sheet-handle"></div>
+      <div class="m-sheet-title" id="mSheetTitle"></div>
+      <div id="mSheetBody"></div>
+    </div>
+  </div>
 </div>
 
 <script type="module">
@@ -597,6 +649,13 @@ const paneLayout = document.getElementById('paneLayout');
 const detailPane = document.getElementById('detailPane');
 const fullWrap = document.getElementById('fullWrap');
 const notesWrap = document.getElementById('notesWrap');
+const mDate = document.getElementById('mDate');
+const mProfileBtn = document.getElementById('mProfileBtn');
+const mTabbar = document.getElementById('mTabbar');
+const mFab = document.getElementById('mFab');
+const mSheet = document.getElementById('mSheet');
+const mSheetTitle = document.getElementById('mSheetTitle');
+const mSheetBody = document.getElementById('mSheetBody');
 const todoWrap = document.getElementById('todoWrap');
 const todoList = document.getElementById('todoList');
 const todoDetail = document.getElementById('todoDetail');
@@ -790,6 +849,16 @@ let dueEditingId = null;
 let todoShowCompleted = false;
 try { todoShowCompleted = localStorage.getItem('daily-sync-todo-completed') === '1'; } catch {}
 let todoForceDetail = false;
+// Phone layout: whether the task bar is showing (opened with the + button).
+let mAdding = false;
+const PROFILE_NAMES = { evan: 'Evan', mary: 'Mary', sarah: 'Sarah' };
+const M_ICON = {
+  sun: '<svg viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="3.5" stroke="currentColor" stroke-width="1.5"/><path d="M9 1.5V3.2M9 14.8V16.5M16.5 9H14.8M3.2 9H1.5M14.3 3.7L13.1 4.9M4.9 13.1L3.7 14.3M14.3 14.3L13.1 13.1M4.9 4.9L3.7 3.7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',
+  cal: '<svg viewBox="0 0 18 18" fill="none"><rect x="2.5" y="3.5" width="13" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M2.5 7H15.5M6 2V4.5M12 2V4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',
+  list: '<svg viewBox="0 0 18 18" fill="none"><path d="M6.5 4.5H15.5M6.5 9H15.5M6.5 13.5H15.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="3" cy="4.5" r="1" fill="currentColor"/><circle cx="3" cy="9" r="1" fill="currentColor"/><circle cx="3" cy="13.5" r="1" fill="currentColor"/></svg>',
+  note: '<svg viewBox="0 0 18 18" fill="none"><rect x="3" y="2.5" width="12" height="13.5" rx="1.8" stroke="currentColor" stroke-width="1.5"/><path d="M6 6.5h6M6 9.5h6M6 12.5h3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',
+  more: '<svg viewBox="0 0 18 18" fill="none"><circle cx="4" cy="9" r="1.5" fill="currentColor"/><circle cx="9" cy="9" r="1.5" fill="currentColor"/><circle cx="14" cy="9" r="1.5" fill="currentColor"/></svg>',
+};
 const isMyDay = t => t.my_day === todayStr();
 const stepsOf = t => Array.isArray(t.steps) ? t.steps : [];
 const TODO_VIEWS = { add: 'Add a Task', myday: 'My Day', important: 'Important', planned: 'Planned', alltasks: 'Tasks', completed: 'Completed' };
@@ -1277,6 +1346,7 @@ function startNewList(btn) {
       currentView = { type: 'list', key: created };
       selectedTaskId = null;
     }
+    closeSheet();
     render();
   };
   input.addEventListener('keydown', e => {
@@ -1295,6 +1365,72 @@ document.addEventListener('keydown', e => {
   todoForceDetail = true;
   updateSteps(id, steps => [...steps, { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), text, done: false }]);
   todoDetail.querySelector('.step-add')?.focus();
+});
+
+// --- Phone layout ---
+function mobileTabs() {
+  const first = who === 'evan'
+    ? [{ view: 'myday', label: 'My Day', icon: M_ICON.sun }, { view: 'planned', label: 'Planned', icon: M_ICON.cal }]
+    : [{ view: 'today', label: 'Today', icon: M_ICON.sun }, { view: 'upcoming', label: 'Upcoming', icon: M_ICON.cal }];
+  return [...first,
+    { sheet: 'lists', label: 'Lists', icon: M_ICON.list },
+    { view: 'notes', label: 'Notes', icon: M_ICON.note },
+    { sheet: 'more', label: 'More', icon: M_ICON.more }];
+}
+
+function renderMobileChrome() {
+  mProfileBtn.textContent = who ? PROFILE_NAMES[who][0] : '?';
+  mDate.textContent = new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' }) + (who ? ` · ${PROFILE_NAMES[who]}` : '');
+  mTabbar.classList.toggle('hide', !who);
+  const tabs = mobileTabs();
+  const tabViews = tabs.map(t => t.view).filter(Boolean);
+  const activeTab = tabViews.includes(currentView.type) ? currentView.type : currentView.type === 'list' ? 'lists' : 'more';
+  mTabbar.innerHTML = tabs.map(t => `<button type="button" class="m-tab${(t.view || t.sheet) === activeTab ? ' active' : ''}" ${t.view ? `data-m-view="${t.view}"` : `data-m-sheet="${t.sheet}"`}>${t.icon}<span>${t.label}</span></button>`).join('');
+  const noFab = !who || currentView.type === 'add' || (who === 'evan' && currentView.type === 'completed');
+  mFab.classList.toggle('hide', noFab);
+  mFab.classList.toggle('open', mAdding);
+  mFab.setAttribute('aria-label', currentView.type === 'notes' ? 'New note' : mAdding ? 'Close' : 'Add a task');
+  paneLayout.classList.toggle('m-adding', mAdding);
+  paneLayout.classList.toggle('m-review', currentView.type === 'review');
+  todoWrap.classList.toggle('m-adding', mAdding);
+}
+
+function openSheet(kind) {
+  mSheetTitle.textContent = { lists: who === 'evan' ? 'Your lists' : 'Lists', more: 'More', profile: 'Switch profile' }[kind];
+  mSheetBody.innerHTML = '';
+  if (kind === 'profile') {
+    ['evan', 'mary', 'sarah'].forEach(p => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'm-who' + (who === p ? ' active' : '');
+      b.dataset.mWho = p;
+      b.innerHTML = `<span class="m-who-dot">${PROFILE_NAMES[p][0]}</span>${PROFILE_NAMES[p]}`;
+      mSheetBody.appendChild(b);
+    });
+  } else if (kind === 'lists') {
+    [...listsNav.children].forEach(n => mSheetBody.appendChild(n.cloneNode(true)));
+  } else if (kind === 'more') {
+    const s = document.createElement('input');
+    s.type = 'search';
+    s.className = 'm-search';
+    s.placeholder = 'Search tasks…';
+    s.value = searchInput.value;
+    s.addEventListener('input', () => { searchInput.value = s.value; searchInput.dispatchEvent(new Event('input')); });
+    mSheetBody.appendChild(s);
+    const tabViews = mobileTabs().map(t => t.view).filter(Boolean);
+    [...document.querySelectorAll('#addTaskNav, #tasksSection .nav-item[data-view]')]
+      .filter(b => b.style.display !== 'none' && !b.closest('.hide') && !tabViews.includes(b.dataset.view))
+      .forEach(b => mSheetBody.appendChild(b.cloneNode(true)));
+  }
+  mSheet.classList.add('open');
+}
+function closeSheet() { mSheet.classList.remove('open'); }
+
+mFab.addEventListener('click', () => {
+  if (currentView.type === 'notes') { noteNewBtn.click(); return; }
+  mAdding = !mAdding;
+  render();
+  if (mAdding) (who === 'evan' ? todoAddInput : titleInput).focus();
 });
 
 function escapeHtml(s) { return s.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c])); }
@@ -1374,6 +1510,7 @@ function render() {
   renderListsNav();
   updateNavCounts();
   updateActiveNav();
+  renderMobileChrome();
 
   paneLayout.style.display = 'none';
   fullWrap.style.display = 'none';
@@ -1388,7 +1525,7 @@ function render() {
   if (!who) {
     viewTitleEl.textContent = 'Sync Up';
     fullWrap.style.display = '';
-    fullWrap.innerHTML = `<div class="empty">Choose Evan, Mary, or Sarah in the menu to get started</div>`;
+    fullWrap.innerHTML = `<div class="empty">${isMobile() ? 'Tap the circle at the top right to choose Evan, Mary, or Sarah' : 'Choose Evan, Mary, or Sarah in the menu to get started'}</div>`;
     return;
   }
 
@@ -1572,8 +1709,34 @@ function renderDetail(cardFor) {
 }
 
 document.body.addEventListener('click', e => {
+  const mTab = e.target.closest('[data-m-view]');
+  if (mTab) {
+    currentView = { type: mTab.dataset.mView };
+    selectedTaskId = null;
+    mAdding = false;
+    render();
+    return;
+  }
+  const mSheetBtn = e.target.closest('[data-m-sheet]');
+  if (mSheetBtn) {
+    openSheet(mSheetBtn.dataset.mSheet);
+    return;
+  }
+  if (e.target.closest('[data-action="m-sheet-close"]')) {
+    closeSheet();
+    return;
+  }
+  const mWho = e.target.closest('[data-m-who]');
+  if (mWho) {
+    closeSheet();
+    mAdding = false;
+    if (mWho.dataset.mWho !== who) setWho(mWho.dataset.mWho);
+    return;
+  }
   const navItem = e.target.closest('.nav-item[data-view]');
   if (navItem) {
+    closeSheet();
+    mAdding = false;
     currentView = navItem.dataset.view === 'list'
       ? { type: 'list', key: navItem.dataset.key }
       : { type: navItem.dataset.view };
