@@ -32,7 +32,7 @@ A shared task tracker for Mary & Sarah's daily sync. Single-file app, no login -
 
 ## Automatic backups
 
-`scripts/backup.mjs` saves everything on the board -- both people's open and done tasks (with notes and photos), sticky notes, notepads, and today's Daily Review -- into one Word doc in `~/Documents/Sync Up Backups/`. A launchd job on Mary's Mac (`scripts/com.columbiacabinets.syncup-backup.plist`, installed in `~/Library/LaunchAgents/`) runs it at 8am and 5pm, Monday to Friday; if the Mac is asleep then, it runs once on wake. Log: `~/Library/Logs/Sync Up Backup.log`. Run it by hand any time with `node scripts/backup.mjs`.
+`scripts/backup.mjs` saves everything on the board -- both people's open and done tasks (with notes and photos), sticky notes, notepads, and today's Daily Review -- into one Word doc in `~/Documents/Sync Up Backups/`. A launchd job on Mary's Mac (`scripts/com.columbiacabinets.syncup-backup.plist`, installed in `~/Library/LaunchAgents/`) runs it at 8am and 5pm, Monday to Friday; if the Mac is asleep then, it runs once on wake, and if it was shut down, the missed backup is made at the next startup/login (`--catch-up`). Log: `~/Library/Logs/Sync Up Backup.log`. Run it by hand any time with `node scripts/backup.mjs`.
 
 ## Adding tasks from Claude
 

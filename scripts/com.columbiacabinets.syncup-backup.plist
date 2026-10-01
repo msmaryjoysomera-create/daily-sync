@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<!-- Runs scripts/backup.mjs at 8am and 5pm, Monday to Friday. If the Mac is asleep then, it runs once when it wakes.
+<!-- Runs scripts/backup.mjs at 8am and 5pm, Monday to Friday. If the Mac is asleep then, it runs once when it wakes;
+     if it was shut down, RunAtLoad with the catch-up flag makes up the missed backup at the next startup/login.
      Install: cp to ~/Library/LaunchAgents/ and `launchctl bootstrap gui/$(id -u) <that path>`. -->
 <plist version="1.0">
 <dict>
@@ -11,7 +12,10 @@
     <string>/opt/homebrew/bin/node</string>
     <string>--no-warnings</string>
     <string>/Users/marysomera/daily-sync/scripts/backup.mjs</string>
+    <string>--catch-up</string>
   </array>
+  <key>RunAtLoad</key>
+  <true/>
   <key>WorkingDirectory</key>
   <string>/Users/marysomera/daily-sync</string>
   <key>StartCalendarInterval</key>

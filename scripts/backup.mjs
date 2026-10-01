@@ -5,6 +5,8 @@
 //
 //   node scripts/backup.mjs            -> ~/Documents/Sync Up Backups/
 //   SYNC_UP_BACKUP_DIR=/some/dir node scripts/backup.mjs
+//   node scripts/backup.mjs --catch-up -> only if the latest weekday 8am/5pm
+//                                         slot has no backup yet (what launchd runs)
 
 import { createClient } from '@supabase/supabase-js';
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, ImageRun } from 'docx';
@@ -190,7 +192,48 @@ async function main() {
   console.log(`${now.toISOString()} saved ${file} (${tasks.length} tasks, ${photos.length} photos)`);
 }
 
-main().catch(err => {
+// The most recent weekday 8am or 5pm at or before `now`.
+function latestSlot(now) {
+  for (let back = 0; back <= 7; back++) {
+    const day = new Date(now.getFullYear(), now.getMonth(), now.getDate() - back);
+    if (day.getDay() === 0 || day.getDay() === 6) continue;
+    for (const hour of [17, 8]) {
+      const slot = new Date(day.getFullYear(), day.getMonth(), day.getDate(), hour);
+      if (slot <= now) return slot;
+    }
+  }
+  return null;
+}
+
+// Catch-up mode is what launchd runs, both at 8am/5pm and at login/startup:
+// a Mac that was shut down at a backup time skips it, so this makes it up
+// the next time the Mac starts -- without doubling up when one already ran.
+async function alreadyBackedUpSince(slot) {
+  let names;
+  try { names = await fs.readdir(outDir); } catch { return false; }
+  for (const name of names) {
+    if (!name.endsWith('.docx')) continue;
+    const { mtime } = await fs.stat(path.join(outDir, name));
+    if (mtime >= slot) return true;
+  }
+  return false;
+}
+
+async function run() {
+  if (!process.argv.includes('--catch-up')) return main();
+  const slot = latestSlot(new Date());
+  if (!slot || await alreadyBackedUpSince(slot)) return;
+  // Right after startup the network may not be up yet; retry for a few minutes.
+  for (let attempt = 1; ; attempt++) {
+    try { return await main(); } catch (err) {
+      if (attempt >= 6) throw err;
+      console.error(`${new Date().toISOString()} attempt ${attempt} failed (${err.message}), retrying in 30s`);
+      await new Promise(r => setTimeout(r, 30000));
+    }
+  }
+}
+
+run().catch(err => {
   console.error(`${new Date().toISOString()} backup failed: ${err.message}`);
   process.exit(1);
 });
