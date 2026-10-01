@@ -19,7 +19,7 @@ A shared task tracker for Mary & Sarah's daily sync. Single-file app, no login -
   - Each task shows a small "Updated Xh ago" / "Completed by Mary" line
   - Completed tasks collect in a "Done" section; anything older than 3 days collapses behind a "Show N older completed" link
 - **Sarah's view** is a simpler To Do / In Progress / Done list (no categories, pinning, or recurring) -- her day-to-day is more straightforward, so it stays out of the way
-- **Evan's view** works like Outlook To Do: My Day, Important (starred), Planned, Tasks, and Completed, plus his own lists. Tasks have steps, due dates, daily repeat, notes, and photos, and **Assign to Mary / Assign to Sarah** buttons that hand a task over (it lands in her list with a "From Evan" badge, steps copied into the note)
+- **Evan's view** works like Outlook To Do: My Day, Important (starred), Planned, Tasks, and Completed, plus his own lists. Tasks have steps, due dates, daily repeat, notes, and photos, and **Assign to Mary / Assign to Sarah** buttons that hand a task over (it lands in her list with a "From Evan" badge, steps copied into the note). When he's done his part but still waiting on someone (a document, a reply), **Done · waiting for…** checks off his task and starts a matching task in Mary's Deliverables, Follow Up, or another of her lists
 - Search bar filters tasks by title or notes as you type
 - Task title and notes are editable inline, right on the card
 - Attach photos to a task with the "+ Add a photo" control on its card (auto-resized before upload); tap a thumbnail to view full-size
