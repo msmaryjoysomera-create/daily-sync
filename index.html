@@ -358,7 +358,8 @@
 
   /* --- Phone layout (option A: bottom tab bar, + button, profile at top right) --- */
   .m-date, .m-profile, .m-tabbar, .m-fab{display:none}
-  .m-sheet{display:none;position:fixed;inset:0;z-index:70}
+  .m-sheet{display:none;position:fixed;inset:0;z-index:70;overscroll-behavior:none}
+  html.sheet-open, html.sheet-open body{overflow:hidden;overscroll-behavior:none}
   .m-sheet.open{display:block}
   .m-sheet-backdrop{position:absolute;inset:0;background:rgba(20,15,10,.35)}
   .m-sheet-panel{position:absolute;left:0;right:0;bottom:0;background:var(--card);border-radius:18px 18px 0 0;padding:8px 14px calc(18px + env(safe-area-inset-bottom));max-height:78vh;overflow-y:auto;overscroll-behavior:contain;transition:transform .22s ease}
@@ -1435,10 +1436,12 @@ function openSheet(kind) {
   }
   // Slide up from the bottom.
   mSheetPanel.style.transform = '';
+  document.documentElement.classList.add('sheet-open');
   mSheet.classList.add('open', 'entering');
   requestAnimationFrame(() => requestAnimationFrame(() => mSheet.classList.remove('entering')));
 }
 function closeSheet() {
+  document.documentElement.classList.remove('sheet-open');
   mSheet.classList.remove('open', 'entering');
   mSheetPanel.style.transform = '';
   mSheetPanel.style.transition = '';
@@ -1478,6 +1481,12 @@ const endSheetDrag = () => {
   else mSheetPanel.style.transform = '';
 };
 mSheetPanel.addEventListener('touchend', endSheetDrag);
+// Keep the page behind still while a sheet is open: dragging on the dark
+// area, or on a sheet too short to scroll, mustn't scroll the page.
+mSheet.querySelector('.m-sheet-backdrop').addEventListener('touchmove', e => e.preventDefault(), { passive: false });
+mSheetPanel.addEventListener('touchmove', e => {
+  if (mSheetPanel.scrollHeight <= mSheetPanel.clientHeight) e.preventDefault();
+}, { passive: false });
 mSheetPanel.addEventListener('touchcancel', endSheetDrag);
 
 // iPhone Safari ignores "no zoom" in the page settings, so block its pinch
