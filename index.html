@@ -1322,10 +1322,15 @@ async function handOffToMary(id, tag, waitingFor) {
   });
 }
 
+let todoAddBusy = false;
 todoAddForm.addEventListener('submit', async e => {
   e.preventDefault();
+  if (todoAddBusy) return;
   const title = todoAddInput.value.trim();
   if (!title) return;
+  todoAddBusy = true;
+  todoAddInput.disabled = true;
+  const placeholder = todoAddInput.placeholder;
   const v = currentView;
   const fields = { title, assignee: 'evan', status: 'todo' };
   if (v.type === 'myday') fields.my_day = todayStr();
@@ -1333,9 +1338,14 @@ todoAddForm.addEventListener('submit', async e => {
   if (v.type === 'planned') fields.due_date = todayStr();
   if (v.type === 'list') fields.tag = v.key;
   todoAddInput.value = '';
+  todoAddInput.placeholder = 'Adding…';
   const added = await addTask(fields);
-  if (added && !tasks.some(t => t.id === added.id)) tasks.push(added);
-  if (added && v.type === 'add') selectedTaskId = added.id; // open it below for steps, date, notes
+  todoAddBusy = false;
+  todoAddInput.disabled = false;
+  todoAddInput.placeholder = placeholder;
+  if (!added) { todoAddInput.value = title; todoAddInput.focus(); return; } // keep it to retry
+  if (!tasks.some(t => t.id === added.id)) tasks.push(added);
+  if (v.type === 'add') selectedTaskId = added.id; // open it below for steps, date, notes
   render();
   todoAddInput.focus();
 });
@@ -1390,8 +1400,8 @@ function mobileTabs() {
 }
 
 function renderMobileChrome() {
-  mProfileBtn.textContent = who ? PROFILE_NAMES[who][0] : '?';
-  mDate.textContent = new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' }) + (who ? ` · ${PROFILE_NAMES[who]}` : '');
+  mProfileBtn.textContent = who ? (PROFILE_NAMES[who] || who)[0].toUpperCase() : '?';
+  mDate.textContent = new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' }) + (who ? ` · ${PROFILE_NAMES[who] || who}` : '');
   mTabbar.classList.toggle('hide', !who);
   const tabs = mobileTabs();
   const tabViews = tabs.map(t => t.view).filter(Boolean);
@@ -2080,51 +2090,67 @@ document.body.addEventListener('change', e => {
   }
 });
 
+// While a save is on its way, the Add button reads "Adding…" and extra
+// presses are ignored, so a slow connection can't create duplicate tasks.
+function setAdding(btn, busy) {
+  if (!btn) return;
+  btn.disabled = busy;
+  if (busy) { btn.dataset.label = btn.textContent; btn.textContent = 'Adding…'; }
+  else if (btn.dataset.label) btn.textContent = btn.dataset.label;
+}
+
+let addBusy = false;
 addForm.addEventListener('submit', async e => {
   e.preventDefault();
+  if (addBusy) return;
   const title = titleInput.value.trim();
   if (!title) return;
+  addBusy = true;
+  const submitBtn = addForm.querySelector('.add-submit');
+  setAdding(submitBtn, true);
   // A task added while viewing a list (or Today) should land in that view, not vanish.
   const inList = currentView.type === 'list';
   const listTag = inList && who === 'mary' ? currentView.key || null : null;
   const listStatus = inList && who === 'sarah' && currentView.key === 'doing' ? 'doing' : 'todo';
   const viewDue = currentView.type === 'today' ? todayStr() : null;
-  // A typed tag that doesn't exist yet becomes a new saved tag (and a new list).
-  const typedTag = tagInput.value.trim() ? await createTag(tagInput.value) : null;
-  if (addForm.classList.contains('done-mode')) {
-    await addTask({
+  const doneMode = addForm.classList.contains('done-mode');
+  const typed = { tag: tagInput.value, due: dueInput.value, notes: notesInput.value, recur: recurActive };
+  try {
+    // A typed tag that doesn't exist yet becomes a new saved tag (and a new list).
+    const typedTag = !doneMode && typed.tag.trim() ? await createTag(typed.tag) : null;
+    const added = await addTask(doneMode ? {
       title,
       assignee: who || null,
-      notes: notesInput.value.trim() || null,
+      notes: typed.notes.trim() || null,
       status: 'done',
       completed_at: new Date().toISOString(),
       completed_by: who || null,
-    });
-  } else {
-    const added = await addTask({
+    } : {
       title,
       assignee: who || null,
       tag: typedTag || listTag,
-      due_date: dueInput.value || viewDue,
-      notes: notesInput.value.trim() || null,
+      due_date: typed.due || viewDue,
+      notes: typed.notes.trim() || null,
       status: listStatus,
-      recurring: recurActive,
+      recurring: typed.recur,
     });
+    if (!added) return; // couldn't save: leave what was typed so it can be retried
+    if (!tasks.some(t => t.id === added.id)) tasks.push(added);
     // On Add a Task, open the new task in Box 2 for notes, photos, due date.
-    if (added && currentView.type === 'add') {
-      if (!tasks.some(t => t.id === added.id)) tasks.push(added);
-      selectedTaskId = added.id;
-      render();
-    }
+    if (currentView.type === 'add') selectedTaskId = added.id;
+    titleInput.value = '';
+    tagInput.value = '';
+    dueInput.value = '';
+    notesInput.value = '';
+    notesInput.classList.remove('show');
+    recurActive = false;
+    recurToggleBtn.classList.remove('active');
+    render();
+  } finally {
+    addBusy = false;
+    setAdding(submitBtn, false);
+    titleInput.focus();
   }
-  titleInput.value = '';
-  tagInput.value = '';
-  dueInput.value = '';
-  notesInput.value = '';
-  notesInput.classList.remove('show');
-  recurActive = false;
-  recurToggleBtn.classList.remove('active');
-  titleInput.focus();
 });
 
 function renderReviewItems(checkedSet) {
@@ -2182,7 +2208,13 @@ async function resetRecurring() {
 }
 
 async function addTask(fields) {
-  const { data, error } = await sb.from('tasks').insert(fields).select().single();
+  let data, error;
+  try {
+    ({ data, error } = await withTimeout(sb.from('tasks').insert(fields).select().single(), 15000));
+  } catch {
+    alert("The connection is slow right now, so that task may not have saved. Check the list in a moment before adding it again.");
+    return null;
+  }
   if (error) { alert(error.message); return null; }
   return data;
 }
