@@ -95,3 +95,8 @@ create policy "anon full access" on sticky_notes for all using (true) with check
 
 alter publication supabase_realtime add table sticky_notes;
 
+-- Evan's profile (Outlook To Do style): "My Day" is the date a task was added
+-- to My Day (shows only on that day); steps are a checklist inside a task.
+-- "Important" reuses pinned; Evan's lists are tag rows with assignee 'evan'.
+alter table tasks add column if not exists my_day date;
+alter table tasks add column if not exists steps jsonb not null default '[]'::jsonb;

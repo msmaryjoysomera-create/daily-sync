@@ -265,6 +265,65 @@
   .sticky-swatch.active{border-color:rgba(0,0,0,.35)}
   .sticky-add{border:2px dashed var(--line);border-radius:12px;min-height:220px;background:var(--card-2);
     color:var(--muted);font-size:28px;display:flex;align-items:center;justify-content:center}
+  /* Evan's profile: Outlook To Do-style list + detail panel */
+  .todo-layout{display:grid;grid-template-columns:minmax(0,1fr);gap:16px;align-items:start}
+  .todo-layout.has-selection{grid-template-columns:minmax(0,1fr) minmax(300px,380px)}
+  .todo-main{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;min-width:0}
+  .todo-add{display:flex;align-items:center;gap:10px;background:var(--card-2);border:1px solid var(--line);border-radius:10px;padding:0 14px;margin-bottom:8px}
+  .todo-add-plus{font-size:20px;color:var(--accent);line-height:1}
+  .todo-add input{flex:1;border:none;background:transparent;padding:12px 0;font-size:14px;color:var(--text);font-family:inherit;outline:none}
+  .todo-row{display:flex;align-items:center;gap:12px;padding:10px;border-radius:10px;cursor:pointer;border-bottom:1px solid var(--line)}
+  .todo-row:hover, .todo-row.selected{background:var(--card-2)}
+  .todo-row-body{flex:1;min-width:0}
+  .todo-row-title{font-size:14px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .todo-row.done .todo-row-title{text-decoration:line-through;color:var(--muted)}
+  .todo-row-meta{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:11.5px;color:var(--muted);margin-top:2px}
+  .todo-row-meta .overdue{color:#B3261E}
+  .todo-check{flex:none;width:20px;height:20px;border-radius:50%;border:1.6px solid var(--muted);background:none;cursor:pointer;padding:0;position:relative}
+  .todo-check:hover{border-color:var(--accent)}
+  .todo-check.sm{width:16px;height:16px}
+  .done > .todo-check, .done > .todo-card-head > .todo-check, .todo-row.done .todo-check, .todo-step.done .todo-check{background:var(--accent);border-color:var(--accent)}
+  .todo-row.done .todo-check::after, .todo-step.done .todo-check::after, .todo-card.done .todo-card-head .todo-check::after{content:'';position:absolute;left:30%;top:16%;width:30%;height:48%;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}
+  .todo-star{flex:none;background:none;border:none;color:var(--muted);cursor:pointer;padding:4px;display:flex}
+  .todo-star:hover{color:var(--text)}
+  .todo-star.on{color:var(--accent)}
+  .todo-group-head{font-size:12px;font-weight:700;color:var(--muted);padding:14px 10px 4px}
+  .todo-completed-toggle{display:flex;align-items:center;gap:6px;background:none;border:none;font-family:inherit;font-size:12.5px;font-weight:700;color:var(--muted);padding:14px 10px 6px;cursor:pointer}
+  .todo-completed-toggle .chev{transition:transform .15s ease}
+  .todo-completed-toggle.open .chev{transform:rotate(90deg)}
+  .todo-empty{padding:28px 10px;text-align:center;color:var(--muted);font-size:13.5px}
+  .todo-detail{display:none;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;position:sticky;top:16px;max-height:calc(100vh - 32px);overflow-y:auto}
+  .todo-layout.has-selection .todo-detail{display:block}
+  .todo-card-head{display:flex;align-items:center;gap:10px}
+  .todo-card-head .task-title{flex:1;font-size:17px;font-weight:700;border:none;background:transparent;color:var(--text);font-family:inherit;min-width:0}
+  .todo-card.done .todo-card-head .task-title{text-decoration:line-through;color:var(--muted)}
+  .todo-steps{margin:10px 0 4px 30px}
+  .todo-step{display:flex;align-items:center;gap:8px;padding:4px 0}
+  .todo-step input{flex:1;border:none;background:transparent;font-size:13.5px;color:var(--text);font-family:inherit;min-width:0;outline:none}
+  .todo-step.done input{text-decoration:line-through;color:var(--muted)}
+  .todo-step .icon-btn{opacity:0}
+  .todo-step:hover .icon-btn{opacity:1}
+  .todo-step-plus{width:16px;text-align:center;color:var(--accent);font-size:16px;line-height:1}
+  .todo-step .step-add::placeholder{color:var(--accent)}
+  .todo-section{border:1px solid var(--line);border-radius:10px;margin-top:12px;overflow:hidden}
+  .todo-opt{display:flex;align-items:center;gap:10px;width:100%;background:none;border:none;border-bottom:1px solid var(--line);padding:10px 12px;font-family:inherit;font-size:13px;color:var(--text);cursor:pointer;text-align:left}
+  .todo-opt:last-child{border-bottom:none}
+  .todo-opt:hover{background:var(--card-2)}
+  .todo-opt.on{color:var(--accent);font-weight:600}
+  .todo-opt select{margin-left:auto;background:var(--card-2);border:1px solid var(--line);border-radius:8px;padding:4px 6px;font-family:inherit;font-size:12.5px;color:var(--text)}
+  .todo-section .due-row{margin:0;padding:8px 12px;border-bottom:1px solid var(--line)}
+  .todo-card .task-notes-edit{margin-top:12px;width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-family:inherit;font-size:13.5px;line-height:1.5;min-height:calc(1.5em * 4 + 20px);background:var(--card-2);color:var(--text);resize:vertical}
+  .todo-assign-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .todo-assign{flex:1;min-width:130px;background:var(--card-2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-family:inherit;font-size:13px;font-weight:600;color:var(--text);cursor:pointer}
+  .todo-assign:hover{border-color:var(--accent);color:var(--accent)}
+  .todo-foot{display:flex;align-items:center;justify-content:space-between;margin-top:14px;padding-top:10px;border-top:1px solid var(--line);font-size:11.5px;color:var(--muted)}
+  .new-list-btn{color:var(--accent)}
+  .new-list-input{width:100%;background:var(--card-2);border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-family:inherit;font-size:13px;color:var(--text);margin-top:4px}
+  .badge.evan{background:#E8EEF8;color:#2F4F7F}
+  @media (max-width:900px){
+    .todo-layout.has-selection{grid-template-columns:minmax(0,1fr)}
+    .todo-layout.has-selection .todo-detail{position:fixed;inset:0;z-index:60;border:none;border-radius:0;max-height:none;padding:calc(20px + env(safe-area-inset-top)) 16px 40px}
+  }
   .notepad{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:0 1px 2px rgba(0,0,0,.04);padding:22px 26px 14px;max-width:900px}
   #notepadText{width:100%;min-height:calc(100vh - 230px);border:none;background:transparent;resize:vertical;outline:none;
     font-family:inherit;font-size:15px;line-height:28px;color:var(--text);
@@ -315,6 +374,7 @@
       </div>
 
       <div class="who-group" id="whoToggle">
+        <button data-who="evan">Evan</button>
         <button data-who="mary">Mary</button>
         <button data-who="sarah">Sarah</button>
       </div>
@@ -327,10 +387,15 @@
 
       <nav class="nav-section" id="tasksSection">
         <div class="nav-label">Tasks</div>
-        <button type="button" class="nav-item" data-view="upcoming"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><rect x="2.5" y="3.5" width="13" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M2.5 7H15.5M6 2V4.5M12 2V4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span><span class="nav-item-label">Upcoming</span><span class="nav-count" id="countUpcoming">0</span></button>
-        <button type="button" class="nav-item" data-view="today"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="3.5" stroke="currentColor" stroke-width="1.5"/><path d="M9 1.5V3.2M9 14.8V16.5M16.5 9H14.8M3.2 9H1.5M14.3 3.7L13.1 4.9M4.9 13.1L3.7 14.3M14.3 14.3L13.1 13.1M4.9 4.9L3.7 3.7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span><span class="nav-item-label">Today</span><span class="nav-count" id="countToday">0</span></button>
-        <button type="button" class="nav-item" data-view="done"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="7" stroke="currentColor" stroke-width="1.5"/><path d="M5.8 9.2L7.8 11.2L12.2 6.6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="nav-item-label">Done</span></button>
-        <button type="button" class="nav-item" id="reviewNavItem" data-view="review"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><rect x="4" y="2.8" width="10" height="13" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="6.5" y="1.5" width="5" height="2.6" rx="0.8" stroke="currentColor" stroke-width="1.4"/><path d="M6.3 8.2H11.7M6.3 11H11.7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></span><span class="nav-item-label">Daily Review</span></button>
+        <button type="button" class="nav-item" data-for="evan" data-view="myday"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="3.5" stroke="currentColor" stroke-width="1.5"/><path d="M9 1.5V3.2M9 14.8V16.5M16.5 9H14.8M3.2 9H1.5M14.3 3.7L13.1 4.9M4.9 13.1L3.7 14.3M14.3 14.3L13.1 13.1M4.9 4.9L3.7 3.7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span><span class="nav-item-label">My Day</span><span class="nav-count" id="countMyDay">0</span></button>
+        <button type="button" class="nav-item" data-for="evan" data-view="important"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M12 3.5l2.6 5.3 5.9.9-4.25 4.1 1 5.8L12 16.9l-5.25 2.75 1-5.8L3.5 9.7l5.9-.9z"/></svg></span><span class="nav-item-label">Important</span><span class="nav-count" id="countImportant">0</span></button>
+        <button type="button" class="nav-item" data-for="evan" data-view="planned"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><rect x="2.5" y="3.5" width="13" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M2.5 7H15.5M6 2V4.5M12 2V4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span><span class="nav-item-label">Planned</span><span class="nav-count" id="countPlanned">0</span></button>
+        <button type="button" class="nav-item" data-for="evan" data-view="alltasks"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><path d="M3 8L9 3l6 5v6.5a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></span><span class="nav-item-label">Tasks</span><span class="nav-count" id="countAllTasks">0</span></button>
+        <button type="button" class="nav-item" data-for="evan" data-view="completed"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="7" stroke="currentColor" stroke-width="1.5"/><path d="M5.8 9.2L7.8 11.2L12.2 6.6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="nav-item-label">Completed</span></button>
+        <button type="button" class="nav-item" data-for="ms" data-view="upcoming"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><rect x="2.5" y="3.5" width="13" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M2.5 7H15.5M6 2V4.5M12 2V4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span><span class="nav-item-label">Upcoming</span><span class="nav-count" id="countUpcoming">0</span></button>
+        <button type="button" class="nav-item" data-for="ms" data-view="today"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="3.5" stroke="currentColor" stroke-width="1.5"/><path d="M9 1.5V3.2M9 14.8V16.5M16.5 9H14.8M3.2 9H1.5M14.3 3.7L13.1 4.9M4.9 13.1L3.7 14.3M14.3 14.3L13.1 13.1M4.9 4.9L3.7 3.7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span><span class="nav-item-label">Today</span><span class="nav-count" id="countToday">0</span></button>
+        <button type="button" class="nav-item" data-for="ms" data-view="done"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="7" stroke="currentColor" stroke-width="1.5"/><path d="M5.8 9.2L7.8 11.2L12.2 6.6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="nav-item-label">Done</span></button>
+        <button type="button" class="nav-item" data-for="ms" id="reviewNavItem" data-view="review"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><rect x="4" y="2.8" width="10" height="13" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="6.5" y="1.5" width="5" height="2.6" rx="0.8" stroke="currentColor" stroke-width="1.4"/><path d="M6.3 8.2H11.7M6.3 11H11.7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></span><span class="nav-item-label">Daily Review</span></button>
         <button type="button" class="nav-item" data-view="sticky"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><rect x="2" y="2" width="6" height="6" rx="1.2" stroke="currentColor" stroke-width="1.5"/><rect x="10" y="2" width="6" height="6" rx="1.2" stroke="currentColor" stroke-width="1.5"/><rect x="2" y="10" width="6" height="6" rx="1.2" stroke="currentColor" stroke-width="1.5"/><rect x="10" y="10" width="6" height="6" rx="1.2" stroke="currentColor" stroke-width="1.5"/></svg></span><span class="nav-item-label">Sticky Wall</span></button>
         <button type="button" class="nav-item" data-view="notepad"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><rect x="3" y="2.5" width="12" height="13.5" rx="1.8" stroke="currentColor" stroke-width="1.5"/><path d="M6 6.5h6M6 9.5h6M6 12.5h3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span><span class="nav-item-label">Notepad</span></button>
       </nav>
@@ -406,6 +471,17 @@
 
     <div id="stickyWrap" style="display:none">
       <div class="sticky-grid" id="stickyGrid"></div>
+    </div>
+
+    <div id="todoWrap" class="todo-layout" style="display:none">
+      <section class="todo-main">
+        <form id="todoAddForm" class="todo-add" autocomplete="off">
+          <span class="todo-add-plus">+</span>
+          <input type="text" id="todoAddInput" placeholder="Add a task">
+        </form>
+        <div id="todoList"></div>
+      </section>
+      <section class="todo-detail" id="todoDetail"></section>
     </div>
 
     <div id="notepadWrap" style="display:none">
@@ -506,6 +582,11 @@ const fullWrap = document.getElementById('fullWrap');
 const stickyWrap = document.getElementById('stickyWrap');
 const stickyGrid = document.getElementById('stickyGrid');
 const notepadWrap = document.getElementById('notepadWrap');
+const todoWrap = document.getElementById('todoWrap');
+const todoList = document.getElementById('todoList');
+const todoDetail = document.getElementById('todoDetail');
+const todoAddForm = document.getElementById('todoAddForm');
+const todoAddInput = document.getElementById('todoAddInput');
 const notepadText = document.getElementById('notepadText');
 const notepadStatus = document.getElementById('notepadStatus');
 const listsNav = document.getElementById('listsNav');
@@ -522,15 +603,21 @@ const ARCHIVE_DAYS = 3;
 // name, body = sort order), so they can be added, renamed, and deleted, and
 // show under Lists even before they have any tasks.
 const TAG_MARK = 'tag';
-const tagRows = () => stickyNotes.filter(n => n.color === TAG_MARK && n.title)
+// Mary's tag rows have no assignee (or 'mary'); Evan's lists are his own ('evan').
+const tagOwner = profile => profile === 'evan' ? 'evan' : 'mary';
+const tagRows = (profile = who) => stickyNotes.filter(n => n.color === TAG_MARK && n.title && (n.assignee || 'mary') === tagOwner(profile))
   .sort((a, b) => (Number(a.body) || 0) - (Number(b.body) || 0) || a.created_at.localeCompare(b.created_at));
-const savedTags = () => tagRows().map(n => n.title);
+const savedTags = (profile = who) => tagRows(profile).map(n => n.title);
+const ownsTask = (t, profile = who) => tagOwner(profile) === 'evan' ? t.assignee === 'evan' : t.assignee !== 'evan';
 
-function allTagNames() {
+function allTagNames(profile = who) {
   // Plus any tag a task uses that isn't saved (e.g. one Claude made up).
-  const custom = tasks.map(t => t.tag).filter(Boolean);
-  return [...new Set([...savedTags(), ...custom])];
+  const custom = tasks.filter(t => ownsTask(t, profile)).map(t => t.tag).filter(Boolean);
+  return [...new Set([...savedTags(profile), ...custom])];
 }
+
+// Tag-wide task updates only touch that profile's tasks.
+const scopeTasks = q => tagOwner(who) === 'evan' ? q.eq('assignee', 'evan') : q.or('assignee.is.null,assignee.neq.evan');
 
 const findTag = name => allTagNames().find(t => t.toLowerCase() === name.trim().toLowerCase()) || null;
 
@@ -540,7 +627,7 @@ async function createTag(name) {
   const existing = findTag(name);
   if (existing) return existing;
   const order = Math.max(-1, ...tagRows().map(n => Number(n.body) || 0)) + 1;
-  const { data, error } = await sb.from('sticky_notes').insert({ assignee: null, title: name, body: String(order), color: TAG_MARK }).select().single();
+  const { data, error } = await sb.from('sticky_notes').insert({ assignee: who === 'evan' ? 'evan' : null, title: name, body: String(order), color: TAG_MARK }).select().single();
   if (error) { alert(error.message); return name; }
   if (!stickyNotes.some(n => n.id === data.id)) stickyNotes.push(data);
   render();
@@ -569,9 +656,9 @@ async function renameTag(oldName, newName) {
   } else {
     await createTag(newName);
   }
-  const { error } = await sb.from('tasks').update({ tag: newName }).eq('tag', oldName);
+  const { error } = await scopeTasks(sb.from('tasks').update({ tag: newName }).eq('tag', oldName));
   if (error) { alert(error.message); return; }
-  tasks.forEach(t => { if (t.tag === oldName) t.tag = newName; });
+  tasks.forEach(t => { if (t.tag === oldName && ownsTask(t)) t.tag = newName; });
   if (reviewOpenGroups.delete(oldName)) {
     reviewOpenGroups.add(newName);
     try { localStorage.setItem('daily-sync-review-open', JSON.stringify([...reviewOpenGroups])); } catch {}
@@ -582,21 +669,23 @@ async function renameTag(oldName, newName) {
 
 // Deleting a tag never deletes tasks -- they just become Untagged.
 async function deleteTag(name) {
-  const count = tasks.filter(t => t.tag === name).length;
+  const count = tasks.filter(t => t.tag === name && ownsTask(t)).length;
+  const kind = who === 'evan' ? 'list' : 'tag';
+  const where = who === 'evan' ? 'Tasks' : 'Untagged';
   const msg = count
-    ? `Delete the "${name}" tag?\n\nIts ${count} task${count === 1 ? '' : 's'} will move to Untagged. No tasks will be deleted.`
-    : `Delete the "${name}" tag?`;
+    ? `Delete the "${name}" ${kind}?\n\nIts ${count} task${count === 1 ? '' : 's'} will move to ${where}. No tasks will be deleted.`
+    : `Delete the "${name}" ${kind}?`;
   if (!confirm(msg)) return;
-  const { error } = await sb.from('tasks').update({ tag: null }).eq('tag', name);
+  const { error } = await scopeTasks(sb.from('tasks').update({ tag: null }).eq('tag', name));
   if (error) { alert(error.message); return; }
   const rowIds = tagRows().filter(n => n.title === name).map(n => n.id);
   if (rowIds.length) {
     const { error: delErr } = await sb.from('sticky_notes').delete().in('id', rowIds);
     if (delErr) { alert(delErr.message); return; }
   }
-  tasks.forEach(t => { if (t.tag === name) t.tag = null; });
+  tasks.forEach(t => { if (t.tag === name && ownsTask(t)) t.tag = null; });
   stickyNotes = stickyNotes.filter(n => !rowIds.includes(n.id));
-  if (currentView.type === 'list' && currentView.key === name) currentView = { type: 'today' };
+  if (currentView.type === 'list' && currentView.key === name) currentView = { type: who === 'evan' ? 'alltasks' : 'today' };
   selectedTaskId = null;
   render();
 }
@@ -678,6 +767,18 @@ let stickyNotes = [];
 // date picker. Remember which task that is so a realtime re-render doesn't
 // swap it back before a date is picked.
 let dueEditingId = null;
+// Evan's profile: whether the "Completed" section under his lists is open,
+// and a flag to rebuild his task panel even while one of its inputs has focus.
+let todoShowCompleted = false;
+try { todoShowCompleted = localStorage.getItem('daily-sync-todo-completed') === '1'; } catch {}
+let todoForceDetail = false;
+const isMyDay = t => t.my_day === todayStr();
+const stepsOf = t => Array.isArray(t.steps) ? t.steps : [];
+const TODO_VIEWS = { myday: 'My Day', important: 'Important', planned: 'Planned', alltasks: 'Tasks', completed: 'Completed' };
+const starSvg = on => `<svg width="18" height="18" viewBox="0 0 24 24" fill="${on ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M12 3.5l2.6 5.3 5.9.9-4.25 4.1 1 5.8L12 16.9l-5.25 2.75 1-5.8L3.5 9.7l5.9-.9z"/></svg>`;
+const SUN_SVG = '<svg width="15" height="15" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="3.5" stroke="currentColor" stroke-width="1.5"/><path d="M9 1.5V3.2M9 14.8V16.5M16.5 9H14.8M3.2 9H1.5M14.3 3.7L13.1 4.9M4.9 13.1L3.7 14.3M14.3 14.3L13.1 13.1M4.9 4.9L3.7 3.7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>';
+const TRASH_SVG = '<svg width="15" height="15" viewBox="0 0 18 18" fill="none"><path d="M3 5h12M7 5V3.5h4V5M5 5l.7 9.5a1 1 0 0 0 1 .9h4.6a1 1 0 0 0 1-.9L13 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
 const NOTEPAD_MARK = 'notepad';
 let notepadTimer = null;
 let notepadSaving = null;
@@ -733,16 +834,25 @@ setSidebar(isMobile() ? false : localStorage.getItem('daily-sync-sidebar') !== '
 // --- profile ---
 function setWho(val) {
   if (notepadTimer) saveNotepad(); // finish saving under the profile it was typed in
+  const crossing = (who === 'evan') !== (val === 'evan');
   who = val;
   selectedTaskId = null;
+  // Evan's views (My Day, Important...) differ from Mary's and Sarah's, and
+  // list names are per profile, so start fresh on his/their default view.
+  const evanView = ['myday', 'important', 'planned', 'alltasks', 'completed'].includes(currentView.type);
+  const wrongKind = val === 'evan' ? ['today', 'upcoming', 'done', 'review', 'add'].includes(currentView.type) : evanView;
+  if (crossing || wrongKind || currentView.type === 'list') currentView = { type: val === 'evan' ? 'myday' : 'today' };
   localStorage.setItem('daily-sync-who', val);
   [...whoToggle.children].forEach(b => b.classList.toggle('active', b.dataset.who === val));
   recurToggleBtn.style.display = val === 'mary' ? '' : 'none';
-  reviewNavItem.style.display = val === 'sarah' ? 'none' : '';
-  fabBadge.textContent = val === 'mary' ? 'M' : val === 'sarah' ? 'S' : '';
+  document.querySelectorAll('#tasksSection .nav-item[data-for]').forEach(b => {
+    b.style.display = (b.dataset.for === 'evan') === (val === 'evan') ? '' : 'none';
+  });
+  if (val === 'sarah') reviewNavItem.style.display = 'none';
+  fabBadge.textContent = { mary: 'M', sarah: 'S', evan: 'E' }[val] || '';
   fabBadge.classList.toggle('show', !!val);
   tasksSection.classList.toggle('hide', !val);
-  addTaskSection.classList.toggle('hide', !val);
+  addTaskSection.classList.toggle('hide', !val || val === 'evan');
   listsSection.classList.toggle('hide', !val);
   searchInput.classList.toggle('hide', !val);
   render();
@@ -828,6 +938,7 @@ function taskEl(task) {
           ${task.tag ? `<span class="badge">${escapeHtml(task.tag)}</span>` : ''}
           ${task.recurring ? `<span class="badge recur" title="Repeats daily">${ICON_REFRESH} Daily</span>` : ''}
           ${task.source === 'claude' ? '<span class="badge claude" title="Added via Claude">✳ via Claude</span>' : ''}
+          ${task.source === 'evan' ? '<span class="badge evan" title="Assigned by Evan">From Evan</span>' : ''}
         </div>
         <div class="due-row">
           <span class="due-label">Due date</span>
@@ -861,6 +972,7 @@ function basicTaskEl(task) {
         <input class="task-title" value="${escapeAttr(task.title)}">
         <div class="task-meta">
           ${task.source === 'claude' ? '<span class="badge claude" title="Added via Claude">✳ via Claude</span>' : ''}
+          ${task.source === 'evan' ? '<span class="badge evan" title="Assigned by Evan">From Evan</span>' : ''}
         </div>
         <textarea class="task-notes-edit${task.notes ? '' : ' hidden'}" placeholder="+ Add a note…" rows="1">${escapeHtml(task.notes || '')}</textarea>
         ${photoRowHtml(task.id)}
@@ -873,6 +985,248 @@ function basicTaskEl(task) {
   `;
   return div;
 }
+
+// --- Evan's profile (Outlook To Do style) ---
+function dueLabel(due) {
+  if (due === todayStr()) return 'Today';
+  if (due === localDateStr(new Date(Date.now() + 864e5))) return 'Tomorrow';
+  return new Date(due + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+}
+
+function todoRowEl(t) {
+  const div = document.createElement('div');
+  div.className = 'todo-row' + (t.status === 'done' ? ' done' : '') + (t.id === selectedTaskId ? ' selected' : '');
+  div.dataset.id = t.id;
+  const meta = [];
+  if (t.tag && currentView.type !== 'list') meta.push(escapeHtml(t.tag));
+  if (isMyDay(t) && currentView.type !== 'myday') meta.push('My Day');
+  if (t.due_date) {
+    const overdue = t.status !== 'done' && t.due_date < todayStr();
+    meta.push(`<span class="${overdue ? 'overdue' : ''}">${overdue ? 'Overdue · ' : ''}${dueLabel(t.due_date)}</span>`);
+  }
+  const steps = stepsOf(t);
+  if (steps.length) meta.push(`${steps.filter(s => s.done).length} of ${steps.length}`);
+  if (t.recurring) meta.push('Repeats daily');
+  if (t.notes) meta.push('Note');
+  div.innerHTML = `
+    <button type="button" class="todo-check" data-action="todo-toggle" aria-label="${t.status === 'done' ? 'Mark not complete' : 'Mark complete'}"></button>
+    <div class="todo-row-body">
+      <div class="todo-row-title">${escapeHtml(t.title)}</div>
+      ${meta.length ? `<div class="todo-row-meta">${meta.map(m => `<span>${m}</span>`).join('')}</div>` : ''}
+    </div>
+    <button type="button" class="todo-star${t.pinned ? ' on' : ''}" data-action="todo-star" aria-label="${t.pinned ? 'Remove importance' : 'Mark as important'}">${starSvg(t.pinned)}</button>`;
+  return div;
+}
+
+function renderTodo() {
+  todoWrap.style.display = '';
+  const v = currentView;
+  viewTitleEl.textContent = v.type === 'list' ? v.key : (TODO_VIEWS[v.type] || 'Tasks');
+  let mine = tasks.filter(t => t.assignee === 'evan');
+  if (search) mine = mine.filter(t => t.title.toLowerCase().includes(search) || (t.notes || '').toLowerCase().includes(search));
+  const inView = {
+    myday: isMyDay,
+    important: t => t.pinned,
+    planned: t => !!t.due_date,
+    alltasks: () => true,
+    completed: t => t.status === 'done',
+    list: t => t.tag === v.key,
+  }[v.type] || (() => true);
+  const list = mine.filter(inView);
+  const newestFirst = (a, b) => b.created_at.localeCompare(a.created_at);
+  const open = list.filter(t => t.status !== 'done').sort(v.type === 'planned' ? (a, b) => a.due_date.localeCompare(b.due_date) : newestFirst);
+  const done = list.filter(t => t.status === 'done').sort((a, b) => (b.completed_at || '').localeCompare(a.completed_at || ''));
+
+  todoAddForm.style.display = v.type === 'completed' ? 'none' : '';
+  todoAddInput.placeholder = v.type === 'myday' ? 'Add a task to My Day' : v.type === 'list' ? `Add a task to ${v.key}` : 'Add a task';
+  todoList.innerHTML = '';
+  const head = text => { const h = document.createElement('div'); h.className = 'todo-group-head'; h.textContent = text; todoList.appendChild(h); };
+
+  if (v.type === 'completed') {
+    done.forEach(t => todoList.appendChild(todoRowEl(t)));
+    if (!done.length) todoList.innerHTML = `<div class="todo-empty">${search ? 'No matching tasks' : 'Nothing completed yet'}</div>`;
+  } else {
+    if (v.type === 'planned') {
+      const today = todayStr();
+      const groups = [
+        ['Overdue', open.filter(t => t.due_date < today)],
+        ['Today', open.filter(t => t.due_date === today)],
+        ['Later', open.filter(t => t.due_date > today)],
+      ];
+      groups.forEach(([label, items]) => { if (items.length) { head(label); items.forEach(t => todoList.appendChild(todoRowEl(t))); } });
+    } else {
+      open.forEach(t => todoList.appendChild(todoRowEl(t)));
+    }
+    if (!open.length) {
+      const empty = { myday: 'Add tasks you want to get done today', important: 'Star a task to see it here', planned: 'Tasks with a due date show up here' }[v.type] || 'No tasks yet';
+      todoList.insertAdjacentHTML('beforeend', `<div class="todo-empty">${search ? 'No matching tasks' : empty}</div>`);
+    }
+    if (done.length) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'todo-completed-toggle' + (todoShowCompleted ? ' open' : '');
+      btn.dataset.action = 'todo-completed';
+      btn.innerHTML = `${ICON_CHEVRON}Completed ${done.length}`;
+      todoList.appendChild(btn);
+      if (todoShowCompleted) done.forEach(t => todoList.appendChild(todoRowEl(t)));
+    }
+  }
+  renderTodoDetail();
+}
+
+function renderTodoDetail() {
+  const task = selectedTaskId ? tasks.find(t => t.id === selectedTaskId && t.assignee === 'evan') : null;
+  if (!task) selectedTaskId = null;
+  todoWrap.classList.toggle('has-selection', !!task);
+  const active = document.activeElement;
+  const editing = active && todoDetail.contains(active) && active.matches('textarea, input:not([type]), input[type=text]');
+  if (!todoForceDetail && task && todoDetail.dataset.showing === task.id && editing) return;
+  todoForceDetail = false;
+  if (!task || todoDetail.dataset.showing !== task.id) dueEditingId = null;
+  todoDetail.dataset.showing = task ? task.id : '';
+  todoDetail.innerHTML = '';
+  if (!task) return;
+  const steps = stepsOf(task);
+  const lists = allTagNames();
+  const div = document.createElement('div');
+  div.className = 'task todo-card' + (task.status === 'done' ? ' done' : '');
+  div.dataset.id = task.id;
+  div.innerHTML = `
+    <button type="button" class="detail-back" data-action="detail-back">‹ Back</button>
+    <div class="todo-card-head">
+      <button type="button" class="todo-check" data-action="todo-toggle" aria-label="Mark complete"></button>
+      <input class="task-title" value="${escapeAttr(task.title)}" aria-label="Task title">
+      <button type="button" class="todo-star${task.pinned ? ' on' : ''}" data-action="todo-star" aria-label="Mark as important">${starSvg(task.pinned)}</button>
+    </div>
+    <div class="todo-steps">
+      ${steps.map(s => `
+        <div class="todo-step${s.done ? ' done' : ''}" data-step="${escapeAttr(String(s.id))}">
+          <button type="button" class="todo-check sm" data-action="step-toggle" aria-label="Complete step"></button>
+          <input class="step-text" value="${escapeAttr(s.text || '')}" aria-label="Step">
+          <button type="button" class="icon-btn" data-action="step-delete" title="Remove step">${ICON_X}</button>
+        </div>`).join('')}
+      <div class="todo-step"><span class="todo-step-plus">+</span><input class="step-add" placeholder="${steps.length ? 'Next step' : 'Add step'}" aria-label="Add step"></div>
+    </div>
+    <div class="todo-section">
+      <button type="button" class="todo-opt${isMyDay(task) ? ' on' : ''}" data-action="toggle-myday">${SUN_SVG}${isMyDay(task) ? 'Added to My Day' : 'Add to My Day'}</button>
+    </div>
+    <div class="todo-section">
+      <div class="due-row">
+        <span class="due-label">Due date</span>
+        ${task.due_date || dueEditingId === task.id
+          ? `<input type="date" class="task-due-edit" value="${task.due_date || ''}">`
+          : `<button type="button" class="due-none" data-action="set-due" title="Add a due date">None</button>`}
+        ${task.due_date ? `<button type="button" class="icon-btn" data-action="clear-due" title="Remove due date">${ICON_X}</button>` : ''}
+      </div>
+      <button type="button" class="todo-opt${task.recurring ? ' on' : ''}" data-action="toggle-repeat">${ICON_REFRESH}${task.recurring ? 'Repeats daily' : 'Repeat daily'}</button>
+      <button type="button" class="todo-opt" data-action="add-photo"><svg width="15" height="15" viewBox="0 0 18 18" fill="none"><rect x="2" y="3.5" width="14" height="11" rx="2" stroke="currentColor" stroke-width="1.5"/><circle cx="6.5" cy="7.5" r="1.3" stroke="currentColor" stroke-width="1.3"/><path d="M2.5 13l4-3.5 3 2.5 2.5-2 3.5 3" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>Add a photo</button>
+      <label class="todo-opt">List
+        <select class="todo-list-select">
+          <option value="">No list</option>
+          ${lists.map(l => `<option value="${escapeAttr(l)}"${l === task.tag ? ' selected' : ''}>${escapeHtml(l)}</option>`).join('')}
+        </select>
+      </label>
+    </div>
+    <textarea class="task-notes-edit" placeholder="Add a note">${escapeHtml(task.notes || '')}</textarea>
+    ${photoRowHtml(task.id)}
+    <div class="todo-assign-row">
+      <button type="button" class="todo-assign" data-action="assign" data-to="mary">Assign to Mary</button>
+      <button type="button" class="todo-assign" data-action="assign" data-to="sarah">Assign to Sarah</button>
+    </div>
+    <div class="todo-foot">
+      <span>${task.status === 'done' && task.completed_at ? `Completed ${completedLabel(task.completed_at)}` : `Created ${completedLabel(task.created_at)}`}</span>
+      <button type="button" class="icon-btn" data-action="delete" title="Delete task">${TRASH_SVG}</button>
+    </div>`;
+  todoDetail.appendChild(div);
+}
+
+function patchTask(id, fields) {
+  const t = tasks.find(x => x.id === id);
+  if (t) Object.assign(t, fields);
+  render();
+  return updateTask(id, fields);
+}
+
+function toggleTodoDone(id) {
+  const t = tasks.find(x => x.id === id);
+  if (!t) return;
+  const done = t.status !== 'done';
+  patchTask(id, { status: done ? 'done' : 'todo', completed_at: done ? new Date().toISOString() : null, completed_by: done ? who : null });
+}
+
+function updateSteps(id, change) {
+  const t = tasks.find(x => x.id === id);
+  if (!t) return;
+  patchTask(id, { steps: change(stepsOf(t).map(s => ({ ...s }))) });
+}
+
+// Hands a task to Mary or Sarah: it leaves Evan's list and lands in hers
+// (Mary: Untagged; Sarah: To Do) with a "From Evan" badge. Steps become
+// lines in the note, since their views don't show steps.
+async function assignTask(id, to) {
+  const t = tasks.find(x => x.id === id);
+  if (!t) return;
+  const name = to === 'mary' ? 'Mary' : 'Sarah';
+  if (!confirm(`Move "${t.title}" to ${name}'s list?`)) return;
+  const steps = stepsOf(t);
+  const stepLines = steps.map(s => `${s.done ? '✓' : '•'} ${s.text}`).join('\n');
+  const notes = [t.notes, stepLines].filter(Boolean).join('\n') || null;
+  selectedTaskId = null;
+  await patchTask(id, { assignee: to, tag: null, steps: [], my_day: null, pinned: false, notes, source: 'evan', status: t.status === 'done' ? 'done' : 'todo' });
+}
+
+todoAddForm.addEventListener('submit', async e => {
+  e.preventDefault();
+  const title = todoAddInput.value.trim();
+  if (!title) return;
+  const v = currentView;
+  const fields = { title, assignee: 'evan', status: 'todo' };
+  if (v.type === 'myday') fields.my_day = todayStr();
+  if (v.type === 'important') fields.pinned = true;
+  if (v.type === 'planned') fields.due_date = todayStr();
+  if (v.type === 'list') fields.tag = v.key;
+  todoAddInput.value = '';
+  const added = await addTask(fields);
+  if (added && !tasks.some(t => t.id === added.id)) { tasks.push(added); render(); }
+  todoAddInput.focus();
+});
+
+function startNewList(btn) {
+  const input = document.createElement('input');
+  input.className = 'new-list-input';
+  input.placeholder = 'List name';
+  btn.replaceWith(input);
+  input.focus();
+  let done = false;
+  const finish = async save => {
+    if (done) return;
+    done = true;
+    const name = input.value.trim();
+    input.blur();
+    if (save && name) {
+      const created = await createTag(name);
+      currentView = { type: 'list', key: created };
+      selectedTaskId = null;
+    }
+    render();
+  };
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); finish(true); }
+    if (e.key === 'Escape') finish(false);
+  });
+  input.addEventListener('blur', () => finish(true));
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Enter' || !e.target.matches('.todo-card .step-add')) return;
+  e.preventDefault();
+  const text = e.target.value.trim();
+  if (!text) return;
+  const id = e.target.closest('.task').dataset.id;
+  todoForceDetail = true;
+  updateSteps(id, steps => [...steps, { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), text, done: false }]);
+  todoDetail.querySelector('.step-add')?.focus();
+});
 
 function escapeHtml(s) { return s.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c])); }
 function escapeAttr(s) { return s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
@@ -891,8 +1245,21 @@ function listNavItemEl(key, label, count, colorIdx) {
 }
 
 function renderListsNav() {
+  // Don't wipe the "New list" name box while Evan is typing in it.
+  if (listsNav.contains(document.activeElement) && document.activeElement.matches('.new-list-input')) return;
   listsNav.innerHTML = '';
   if (!who) return;
+  if (who === 'evan') {
+    const open = tasks.filter(t => t.assignee === 'evan' && t.status !== 'done');
+    allTagNames().forEach((name, i) => listsNav.appendChild(listNavItemEl(name, name, open.filter(t => t.tag === name).length, i)));
+    const add = document.createElement('button');
+    add.type = 'button';
+    add.className = 'nav-item new-list-btn';
+    add.dataset.action = 'new-list';
+    add.innerHTML = '<span class="nav-icon">+</span><span class="nav-item-label">New list</span>';
+    listsNav.appendChild(add);
+    return;
+  }
   if (who === 'sarah') {
     const statusDefs = [
       { key: 'todo', label: 'To Do' },
@@ -919,6 +1286,11 @@ function updateNavCounts() {
   const mine = who ? tasks.filter(t => t.assignee === who) : [];
   document.getElementById('countUpcoming').textContent = mine.filter(isUpcoming).length;
   document.getElementById('countToday').textContent = mine.filter(isDueTodayOrOverdue).length;
+  const open = mine.filter(t => t.status !== 'done');
+  document.getElementById('countMyDay').textContent = open.filter(isMyDay).length;
+  document.getElementById('countImportant').textContent = open.filter(t => t.pinned).length;
+  document.getElementById('countPlanned').textContent = open.filter(t => t.due_date).length;
+  document.getElementById('countAllTasks').textContent = open.length;
 }
 
 function updateActiveNav() {
@@ -939,12 +1311,16 @@ function render() {
   reviewCard.style.display = 'none';
   stickyWrap.style.display = 'none';
   notepadWrap.style.display = 'none';
+  todoWrap.style.display = 'none';
   carryBanner.classList.remove('show');
+  const tagView = (who === 'mary' || who === 'evan') && currentView.type === 'list' && !!currentView.key;
+  viewTitleRow.classList.toggle('tag-view', tagView);
+  if (!tagView) viewTitleRow.classList.remove('renaming');
 
   if (!who) {
     viewTitleEl.textContent = 'Sync Up';
     fullWrap.style.display = '';
-    fullWrap.innerHTML = `<div class="empty">Choose Mary or Sarah in the menu to get started</div>`;
+    fullWrap.innerHTML = `<div class="empty">Choose Evan, Mary, or Sarah in the menu to get started</div>`;
     return;
   }
 
@@ -958,6 +1334,10 @@ function render() {
     viewTitleEl.textContent = 'Notepad';
     notepadWrap.style.display = '';
     renderNotepad();
+    return;
+  }
+  if (who === 'evan') {
+    renderTodo();
     return;
   }
 
@@ -975,9 +1355,6 @@ function render() {
 
   paneLayout.style.display = '';
   paneLayout.classList.toggle('add-mode', currentView.type === 'add');
-  const tagView = who === 'mary' && currentView.type === 'list' && !!currentView.key;
-  viewTitleRow.classList.toggle('tag-view', tagView);
-  if (!tagView) viewTitleRow.classList.remove('renaming');
   // On Done, the task bar logs something already finished: no tag, date, or Daily.
   const doneView = currentView.type === 'done' || (currentView.type === 'list' && who === 'sarah' && currentView.key === 'done');
   addForm.classList.toggle('done-mode', doneView);
@@ -1172,6 +1549,62 @@ document.body.addEventListener('click', e => {
     render();
     return;
   }
+  const newListBtn = e.target.closest('[data-action="new-list"]');
+  if (newListBtn) {
+    startNewList(newListBtn);
+    return;
+  }
+  const todoToggle = e.target.closest('[data-action="todo-toggle"]');
+  if (todoToggle) {
+    toggleTodoDone(todoToggle.closest('.todo-row, .task').dataset.id);
+    return;
+  }
+  const todoStar = e.target.closest('[data-action="todo-star"]');
+  if (todoStar) {
+    const id = todoStar.closest('.todo-row, .task').dataset.id;
+    const t = tasks.find(x => x.id === id);
+    if (t) patchTask(id, { pinned: !t.pinned });
+    return;
+  }
+  if (e.target.closest('[data-action="todo-completed"]')) {
+    todoShowCompleted = !todoShowCompleted;
+    try { localStorage.setItem('daily-sync-todo-completed', todoShowCompleted ? '1' : '0'); } catch {}
+    render();
+    return;
+  }
+  const todoRow = e.target.closest('.todo-row[data-id]');
+  if (todoRow) {
+    selectedTaskId = todoRow.dataset.id;
+    render();
+    return;
+  }
+  const stepToggle = e.target.closest('[data-action="step-toggle"], [data-action="step-delete"]');
+  if (stepToggle) {
+    const stepId = stepToggle.closest('.todo-step').dataset.step;
+    const id = stepToggle.closest('.task').dataset.id;
+    const del = stepToggle.dataset.action === 'step-delete';
+    updateSteps(id, steps => del ? steps.filter(s => String(s.id) !== stepId) : steps.map(s => String(s.id) === stepId ? { ...s, done: !s.done } : s));
+    return;
+  }
+  const myDayBtn = e.target.closest('[data-action="toggle-myday"]');
+  if (myDayBtn) {
+    const id = myDayBtn.closest('.task').dataset.id;
+    const t = tasks.find(x => x.id === id);
+    if (t) patchTask(id, { my_day: isMyDay(t) ? null : todayStr() });
+    return;
+  }
+  const repeatBtn = e.target.closest('[data-action="toggle-repeat"]');
+  if (repeatBtn) {
+    const id = repeatBtn.closest('.task').dataset.id;
+    const t = tasks.find(x => x.id === id);
+    if (t) patchTask(id, { recurring: !t.recurring });
+    return;
+  }
+  const assignBtn = e.target.closest('[data-action="assign"]');
+  if (assignBtn) {
+    assignTask(assignBtn.closest('.task').dataset.id, assignBtn.dataset.to);
+    return;
+  }
   if (e.target.closest('[data-action="rename-tag"]')) {
     document.getElementById('tagActions').classList.remove('open');
     startRenameTag();
@@ -1350,6 +1783,13 @@ document.body.addEventListener('change', e => {
     const id = e.target.closest('.task').dataset.id;
     dueEditingId = null;
     updateTask(id, { due_date: e.target.value || null });
+  } else if (e.target.classList.contains('step-text')) {
+    const stepId = e.target.closest('.todo-step').dataset.step;
+    const text = e.target.value.trim();
+    updateSteps(e.target.closest('.task').dataset.id, steps =>
+      text ? steps.map(s => String(s.id) === stepId ? { ...s, text } : s) : steps.filter(s => String(s.id) !== stepId));
+  } else if (e.target.classList.contains('todo-list-select')) {
+    patchTask(e.target.closest('.task').dataset.id, { tag: e.target.value || null });
   } else if (e.target.classList.contains('task-notes-edit')) {
     const id = e.target.closest('.task').dataset.id;
     updateTask(id, { notes: e.target.value.trim() || null });

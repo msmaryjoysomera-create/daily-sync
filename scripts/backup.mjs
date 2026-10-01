@@ -1,4 +1,4 @@
-// Saves everything on Sync Up -- Mary's and Sarah's tasks (open and done,
+// Saves everything on Sync Up -- Mary's, Sarah's, and Evan's tasks (open and done,
 // with notes and photos), sticky notes, notepads, and today's Daily Review
 // -- into one Word doc. Run on a schedule by a launchd job on Mary's Mac
 // (see scripts/com.columbiacabinets.syncup-backup.plist), 8am and 5pm.
@@ -24,8 +24,9 @@ const NOTEPAD_MARK = 'notepad';
 const STATUS_LABEL = { todo: 'To do', doing: 'In progress', done: 'Done' };
 const STATUS_ICON = { todo: '☐', doing: '◐', done: '☑' };
 
-// Mary's tags, in her order (saved as sticky_notes rows marked color 'tag').
-const savedTags = stickies => stickies.filter(n => n.color === 'tag' && n.title)
+// Mary's tags / Evan's lists, in order (sticky_notes rows marked color 'tag';
+// Mary's have no assignee, Evan's have assignee 'evan').
+const savedTags = (stickies, owner) => stickies.filter(n => n.color === 'tag' && n.title && (n.assignee || 'mary') === owner)
   .sort((a, b) => (Number(a.body) || 0) - (Number(b.body) || 0)).map(n => n.title);
 
 const outDir = process.env.SYNC_UP_BACKUP_DIR || path.join(os.homedir(), 'Documents', 'Sync Up Backups');
@@ -89,7 +90,8 @@ async function taskParagraphs(task, photosByTask) {
   if (task.due_date) meta.push(`Due ${fmtDate(task.due_date)}`);
   if (task.tag) meta.push(`Tag: ${task.tag}`);
   if (task.recurring) meta.push('Repeats daily');
-  if (task.pinned) meta.push('Pinned');
+  if (task.pinned) meta.push(task.assignee === 'evan' ? 'Important' : 'Pinned');
+  if (task.my_day === localDateStr(new Date())) meta.push('My Day');
   if (task.source === 'claude') meta.push('Added via Claude');
   if (task.created_at) meta.push(`Added ${fmtDate(task.created_at)}`);
   if (task.status === 'done' && task.completed_at) {
@@ -103,6 +105,8 @@ async function taskParagraphs(task, photosByTask) {
     }),
     new Paragraph({ indent: { left: 360 }, children: [muted(meta.join('  ·  '))] }),
   ];
+  const steps = Array.isArray(task.steps) ? task.steps : [];
+  for (const s of steps) out.push(new Paragraph({ indent: { left: 360 }, text: `${s.done ? '☑' : '☐'}  ${s.text}` }));
   if (task.notes) out.push(multiline(task.notes, { indent: { left: 360 }, spacing: { before: 40 } }));
   out.push(...await photoParagraphs(photosByTask.get(task.id) || []));
   return out;
@@ -117,10 +121,10 @@ async function personSection(name, key, { tasks, photosByTask, stickies }) {
 
   out.push(heading(`Open tasks (${open.length})`, HeadingLevel.HEADING_2));
   if (!open.length) out.push(empty('No open tasks'));
-  // Mary's board is organized by tag; Sarah's by status.
-  const groups = key === 'mary'
-    ? [...new Set([...savedTags(stickies), ...open.map(t => t.tag).filter(Boolean)]), null]
-        .map(tag => ({ label: tag || 'Untagged', items: open.filter(t => (t.tag || null) === tag) }))
+  // Mary's board is organized by tag, Evan's by his lists; Sarah's by status.
+  const groups = key === 'mary' || key === 'evan'
+    ? [...new Set([...savedTags(stickies, key), ...open.map(t => t.tag).filter(Boolean)]), null]
+        .map(tag => ({ label: tag || (key === 'evan' ? 'No list' : 'Untagged'), items: open.filter(t => (t.tag || null) === tag) }))
     : [{ label: 'To Do', items: open.filter(t => t.status === 'todo') }, { label: 'In Progress', items: open.filter(t => t.status === 'doing') }];
   for (const g of groups) {
     if (!g.items.length) continue;
@@ -172,8 +176,9 @@ async function main() {
     ...REVIEW_ITEMS.map(item => new Paragraph({ text: `${checked.has(item) ? '☑' : '☐'}  ${item}` })),
     ...await personSection('Mary', 'mary', data),
     ...await personSection('Sarah', 'sarah', data),
+    ...await personSection('Evan', 'evan', data),
   ];
-  const unassigned = tasks.filter(t => t.assignee !== 'mary' && t.assignee !== 'sarah');
+  const unassigned = tasks.filter(t => !['mary', 'sarah', 'evan'].includes(t.assignee));
   if (unassigned.length) {
     children.push(heading(`Unassigned tasks (${unassigned.length})`, HeadingLevel.HEADING_1));
     for (const t of unassigned) children.push(...await taskParagraphs(t, photosByTask));

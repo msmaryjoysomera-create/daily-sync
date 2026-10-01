@@ -27,21 +27,26 @@ const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
 
 // Mary's tags are saved as sticky_notes rows marked color 'tag' (body = sort
 // order), and can be added/renamed/deleted in the app.
+// Evan's own lists are rows with assignee 'evan'.
 async function currentTags() {
-  const { data, error } = await sb.from('sticky_notes').select('title,body').eq('color', 'tag');
-  if (error || !data?.length) return TAG_OPTIONS;
-  return data.sort((a, b) => (Number(a.body) || 0) - (Number(b.body) || 0)).map(r => r.title);
+  const { data, error } = await sb.from('sticky_notes').select('title,body,assignee').eq('color', 'tag');
+  if (error || !data?.length) return { mary: TAG_OPTIONS, evan: [] };
+  const sorted = data.sort((a, b) => (Number(a.body) || 0) - (Number(b.body) || 0));
+  return {
+    mary: sorted.filter(r => (r.assignee || 'mary') === 'mary').map(r => r.title),
+    evan: sorted.filter(r => r.assignee === 'evan').map(r => r.title),
+  };
 }
 
-const buildTools = tags => [
+const buildTools = ({ mary: tags, evan: evanLists }) => [
   {
     name: 'sync_up_add_task',
-    description: `Add a task to "Sync Up" -- Columbia Cabinets' own daily task tracker/checklist app for Mary and Sarah (not Salesforce, not a CRM, not any other task/to-do system). Use this specifically when asked to add something "to Sync Up" or "to the board", or when no other task system is named and the context is clearly Mary/Sarah's daily sync. Existing categories on the board: ${tags.join(', ')}. Reuse one of these exactly when it clearly fits, instead of inventing a new one.`,
+    description: `Add a task to "Sync Up" -- Columbia Cabinets' own daily task tracker/checklist app for Mary, Sarah, and Evan (not Salesforce, not a CRM, not any other task/to-do system). Use this specifically when asked to add something "to Sync Up" or "to the board", or when no other task system is named and the context is clearly Mary/Sarah's daily sync. Mary's categories: ${tags.join(', ')}.${evanLists.length ? ` Evan's lists: ${evanLists.join(', ')}.` : ''} Reuse one of the assignee's existing categories/lists exactly when it clearly fits, instead of inventing a new one.`,
     inputSchema: {
       type: 'object',
       properties: {
         title: { type: 'string', description: 'Short task title, e.g. "Follow up with Adria about Template"' },
-        assignee: { type: 'string', enum: ['mary', 'sarah'], description: 'Who the task is for, if a specific person was named' },
+        assignee: { type: 'string', enum: ['mary', 'sarah', 'evan'], description: 'Who the task is for, if a specific person was named' },
         tag: { type: 'string', description: 'Category for the task -- prefer an existing category listed above when it fits' },
         due_date: { type: 'string', description: 'Due date in YYYY-MM-DD format, only if a date was mentioned' },
         notes: { type: 'string', description: 'Extra context or notes for the task' },
@@ -51,18 +56,18 @@ const buildTools = tags => [
   },
   {
     name: 'sync_up_list_tasks',
-    description: 'List current open (not-done) tasks on "Sync Up" -- Columbia Cabinets\' own daily task tracker for Mary and Sarah (not Salesforce, not a CRM). Optionally filtered to one person.',
+    description: 'List current open (not-done) tasks on "Sync Up" -- Columbia Cabinets\' own daily task tracker for Mary, Sarah, and Evan (not Salesforce, not a CRM). Optionally filtered to one person.',
     inputSchema: {
       type: 'object',
       properties: {
-        assignee: { type: 'string', enum: ['mary', 'sarah'], description: 'Only list tasks assigned to this person' },
+        assignee: { type: 'string', enum: ['mary', 'sarah', 'evan'], description: 'Only list tasks assigned to this person' },
       },
     },
   },
 ];
 
 function personName(v) {
-  return v === 'mary' ? 'Mary' : v === 'sarah' ? 'Sarah' : null;
+  return { mary: 'Mary', sarah: 'Sarah', evan: 'Evan' }[v] || null;
 }
 
 async function callTool(name, args) {
