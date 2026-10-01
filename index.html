@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#FAF9F6">
 <title>Sync Up — Columbia Cabinets</title>
 <link rel="icon" href="icon.svg" type="image/svg+xml">
@@ -372,7 +372,14 @@
   .m-who{display:flex;align-items:center;gap:12px;width:100%;background:none;border:none;border-radius:12px;padding:10px 8px;font-family:inherit;font-size:16px;font-weight:600;color:var(--text);cursor:pointer;text-align:left}
   .m-who.active{background:var(--card-2)}
   .m-who-dot{width:36px;height:36px;border-radius:50%;background:var(--accent-dim);color:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px}
+  /* Phones and tablets: keep the app at screen size (no pinch or double-tap zoom). */
+  @media (pointer:coarse){
+    html{touch-action:pan-x pan-y;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+  }
   @media (max-width:767px){
+    /* iPhone Safari zooms in on any text box under 16px when tapped, and stays zoomed. */
+    input:not(.note-title):not(.view-title-edit):not(.task-title), textarea, select{font-size:16px !important}
+    .task-title{font-size:max(16px, 1em)}
     .rail, .sidebar, .sidebar-backdrop, .print-btn{display:none !important}
     .main{padding:calc(14px + env(safe-area-inset-top)) 14px calc(100px + env(safe-area-inset-bottom)) 14px}
     .m-date{display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:2px}
@@ -1472,6 +1479,13 @@ const endSheetDrag = () => {
 };
 mSheetPanel.addEventListener('touchend', endSheetDrag);
 mSheetPanel.addEventListener('touchcancel', endSheetDrag);
+
+// iPhone Safari ignores "no zoom" in the page settings, so block its pinch
+// gesture directly (touch screens only; trackpad zoom on the Mac still works).
+if (window.matchMedia('(pointer:coarse)').matches) {
+  ['gesturestart', 'gesturechange', 'gestureend'].forEach(t => document.addEventListener(t, e => e.preventDefault(), { passive: false }));
+  document.addEventListener('touchmove', e => { if (e.touches.length > 1) e.preventDefault(); }, { passive: false });
+}
 
 mFab.addEventListener('click', () => {
   if (currentView.type === 'notes') { noteNewBtn.click(); return; }
