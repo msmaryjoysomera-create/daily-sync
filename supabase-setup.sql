@@ -75,8 +75,9 @@ alter table tasks add column if not exists source text;
 
 -- Sticky Wall: freeform sticky notes, per profile (Mary's / Sarah's), not
 -- tied to any task.
--- Each profile's Notepad (one running page) is also a row here, marked with
--- color = 'notepad'; the Sticky Wall leaves those rows out.
+-- (The Sticky Wall and single Notepad were replaced by Notes.) Each note is
+-- a row here marked color = 'note', per profile; a note with no title shows
+-- its creation date as its name.
 -- Mary's tags (the Lists in her sidebar) are rows here too, marked with
 -- color = 'tag': title = tag name, body = sort order.
 create table sticky_notes (

@@ -1,5 +1,5 @@
 // Saves everything on Sync Up -- Mary's, Sarah's, and Evan's tasks (open and done,
-// with notes and photos), sticky notes, notepads, and today's Daily Review
+// with notes and photos), notes, and today's Daily Review
 // -- into one Word doc. Run on a schedule by a launchd job on Mary's Mac
 // (see scripts/com.columbiacabinets.syncup-backup.plist), 8am and 5pm.
 //
@@ -20,7 +20,7 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 
 // Keep in sync with index.html.
 const REVIEW_ITEMS = ['Calendar', 'Tasks', 'Tasks – Completed', 'Inbox', 'Text Messages', 'Photos'];
-const NOTEPAD_MARK = 'notepad';
+const NOTE_MARK = 'note';
 const STATUS_LABEL = { todo: 'To do', doing: 'In progress', done: 'Done' };
 const STATUS_ICON = { todo: '☐', doing: '◐', done: '☑' };
 
@@ -136,18 +136,16 @@ async function personSection(name, key, { tasks, photosByTask, stickies }) {
   if (!done.length) out.push(empty('Nothing completed'));
   for (const t of done) out.push(...await taskParagraphs(t, photosByTask));
 
-  const notes = stickies.filter(n => n.assignee === key && n.color !== NOTEPAD_MARK && n.color !== 'tag');
-  out.push(heading(`Sticky Wall (${notes.length})`, HeadingLevel.HEADING_2));
-  if (!notes.length) out.push(empty('No sticky notes'));
+  // Notes: one row per note (color 'note'), named by creation date until titled.
+  const notes = stickies.filter(n => n.assignee === key && n.color === NOTE_MARK)
+    .sort((a, b) => (b.updated_at || b.created_at).localeCompare(a.updated_at || a.created_at));
+  out.push(heading(`Notes (${notes.length})`, HeadingLevel.HEADING_2));
+  if (!notes.length) out.push(empty('No notes'));
   for (const n of notes) {
-    out.push(new Paragraph({ spacing: { before: 120 }, children: [new TextRun({ text: n.title || 'Untitled note', bold: true })] }));
-    if (n.body) out.push(multiline(n.body, { indent: { left: 360 } }));
+    out.push(new Paragraph({ spacing: { before: 120 }, children: [new TextRun({ text: n.title || fmtDate(n.created_at), bold: true })] }));
+    out.push(new Paragraph({ children: [muted(`Last edited ${fmtDateTime(n.updated_at || n.created_at)}`)] }));
+    if (n.body?.trim()) out.push(multiline(n.body.trimEnd(), { indent: { left: 360 } }));
   }
-
-  const pad = stickies.find(n => n.assignee === key && n.color === NOTEPAD_MARK);
-  out.push(heading('Notepad', HeadingLevel.HEADING_2));
-  out.push(pad?.body ? multiline(pad.body) : empty('Empty'));
-  if (pad?.updated_at) out.push(new Paragraph({ children: [muted(`Last edited ${fmtDateTime(pad.updated_at)}`)] }));
 
   return out;
 }
