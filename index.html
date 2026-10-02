@@ -363,6 +363,27 @@
     .main{max-width:100%;padding-left:calc(60px + 16px)}
   }
 
+  .meeting-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px;padding-top:12px;border-top:1px solid var(--line);font-size:12.5px;font-weight:600;color:var(--muted)}
+  .recap-btn{background:var(--accent);color:#fff;border:none;border-radius:9px;padding:7px 12px;font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer}
+  .discuss-chip{flex:none;background:none;border:1px solid var(--line);border-radius:999px;padding:3px 9px;font-family:inherit;font-size:11.5px;font-weight:600;color:var(--muted);cursor:pointer}
+  .discuss-chip:hover{border-color:var(--muted);color:var(--text)}
+  .discuss-chip.on{background:#E7F3EA;border-color:#9FCFAE;color:#2E6B3F}
+  .row.discussed .row-title{color:var(--muted)}
+  .modal{display:none;position:fixed;inset:0;z-index:75}
+  .modal.open{display:flex;align-items:center;justify-content:center;padding:16px}
+  .modal-backdrop{position:absolute;inset:0;background:rgba(20,15,10,.35)}
+  .modal-panel{position:relative;background:var(--card);border-radius:16px;padding:16px;width:min(640px,100%);max-height:calc(100vh - 32px);display:flex;flex-direction:column;gap:10px;box-shadow:0 12px 40px rgba(0,0,0,.2)}
+  .modal-head{display:flex;align-items:center;justify-content:space-between;font-weight:700;font-size:15px}
+  #recapText{width:100%;min-height:320px;flex:1;border:1px solid var(--line);border-radius:10px;padding:12px;font-family:inherit;font-size:13.5px;line-height:1.55;color:var(--text);background:var(--card-2);resize:vertical}
+  .modal-actions{display:flex;justify-content:flex-end;gap:8px}
+  .recap-action{background:var(--card-2);border:1px solid var(--line);border-radius:10px;padding:9px 16px;font-family:inherit;font-size:13.5px;font-weight:700;color:var(--text);cursor:pointer;text-decoration:none}
+  .recap-action.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  .toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,20px);opacity:0;pointer-events:none;z-index:80;display:flex;align-items:center;gap:14px;
+    background:#211C18;color:#fff;border-radius:12px;padding:10px 10px 10px 16px;font-size:13.5px;box-shadow:0 8px 24px rgba(0,0,0,.2);transition:opacity .18s ease,transform .18s ease;max-width:calc(100vw - 32px)}
+  .toast.show{opacity:1;transform:translate(-50%,0);pointer-events:auto}
+  .toast span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .toast button{flex:none;background:rgba(255,255,255,.14);color:#fff;border:none;border-radius:8px;padding:6px 12px;font-family:inherit;font-weight:700;font-size:13px;cursor:pointer}
+  @media (max-width:767px){ .toast{bottom:calc(82px + env(safe-area-inset-bottom))} }
   /* --- Phone layout (option A: bottom tab bar, + button, profile at top right) --- */
   .m-date, .m-profile, .m-tabbar, .m-fab{display:none}
   .m-sheet{display:none;position:fixed;inset:0;z-index:70;overscroll-behavior:none}
@@ -513,6 +534,10 @@
         <section class="box box1">
           <div class="review-card" id="reviewCard" style="display:none">
             <div class="review-list" id="reviewList"></div>
+            <div class="meeting-bar">
+              <span id="meetingCount"></span>
+              <button type="button" class="recap-btn" data-action="recap-open">Meeting recap</button>
+            </div>
           </div>
       <form class="add" id="addForm">
         <input type="text" id="titleInput" placeholder="Add a task…" autocomplete="off">
@@ -569,6 +594,20 @@
       </aside>
     </div>
   </main>
+
+  <div class="modal" id="recapModal">
+    <div class="modal-backdrop" data-action="recap-close"></div>
+    <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="recapTitle">
+      <div class="modal-head"><span id="recapTitle">Meeting recap</span><button type="button" class="icon-btn" data-action="recap-close" aria-label="Close"><svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M2.5 2.5L11.5 11.5M11.5 2.5L2.5 11.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button></div>
+      <textarea id="recapText" readonly></textarea>
+      <div class="modal-actions">
+        <button type="button" class="recap-action" id="recapCopy">Copy</button>
+        <a class="recap-action primary" id="recapEmail" href="#">Email recap</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"><span id="toastText"></span><button type="button" id="toastUndo">Undo</button></div>
 
   <!-- Phone layout: bottom tab bar, + button, and pop-up sheets (hidden on bigger screens) -->
   <button type="button" class="m-fab" id="mFab" aria-label="Add a task"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button>
@@ -669,6 +708,13 @@ const paneLayout = document.getElementById('paneLayout');
 const detailPane = document.getElementById('detailPane');
 const fullWrap = document.getElementById('fullWrap');
 const notesWrap = document.getElementById('notesWrap');
+const toastEl = document.getElementById('toast');
+const toastText = document.getElementById('toastText');
+const toastUndoBtn = document.getElementById('toastUndo');
+const meetingCount = document.getElementById('meetingCount');
+const recapModal = document.getElementById('recapModal');
+const recapText = document.getElementById('recapText');
+const recapEmail = document.getElementById('recapEmail');
 const mDate = document.getElementById('mDate');
 const mProfileBtn = document.getElementById('mProfileBtn');
 const mTabbar = document.getElementById('mTabbar');
@@ -860,6 +906,12 @@ const todayStr = () => localDateStr(new Date());
 let who = localStorage.getItem('daily-sync-who') || '';
 let search = '';
 let tasks = [];
+// Deletes wait a few seconds behind an "Undo" message before they happen.
+const pendingDeletes = new Set();
+const pendingNoteDeletes = new Set();
+// Daily Review meeting mode: tasks marked "discussed" today (stored in the
+// daily_review table as items named "task:<id>", so they reset each day).
+let discussedToday = new Set();
 let photos = [];
 let stickyNotes = [];
 // Box 2 shows "None" for a task with no due date; clicking it swaps in the
@@ -1292,7 +1344,9 @@ function toggleTodoDone(id) {
   const t = tasks.find(x => x.id === id);
   if (!t) return;
   const done = t.status !== 'done';
+  const before = snapshot(t, ['status', 'completed_at', 'completed_by']);
   patchTask(id, { status: done ? 'done' : 'todo', completed_at: done ? new Date().toISOString() : null, completed_by: done ? who : null });
+  if (done) showToast(`Completed "${shortTitle(t.title)}"`, () => patchTask(id, before));
 }
 
 function updateSteps(id, change) {
@@ -1308,32 +1362,54 @@ async function assignTask(id, to) {
   const t = tasks.find(x => x.id === id);
   if (!t) return;
   const name = to === 'mary' ? 'Mary' : 'Sarah';
-  if (!confirm(`Move "${t.title}" to ${name}'s list?`)) return;
+  const before = snapshot(t, ['assignee', 'tag', 'steps', 'my_day', 'pinned', 'notes', 'source', 'status']);
   const steps = stepsOf(t);
   const stepLines = steps.map(s => `${s.done ? '✓' : '•'} ${s.text}`).join('\n');
   const notes = [t.notes, stepLines].filter(Boolean).join('\n') || null;
   selectedTaskId = null;
   await patchTask(id, { assignee: to, tag: null, steps: [], my_day: null, pinned: false, notes, source: 'evan', status: t.status === 'done' ? 'done' : 'todo' });
+  showToast(`Moved to ${name}'s list`, () => { selectedTaskId = id; patchTask(id, before); });
 }
 
 // Evan did his part (e.g. emailed Alicia) but someone still owes a reply or
 // a document: check off his task and start a matching task in one of Mary's
 // lists (Deliverables, Follow Up, ...) so she tracks the waiting part.
+function addBusinessDays(date, n) {
+  const d = new Date(date);
+  while (n > 0) {
+    d.setDate(d.getDate() + 1);
+    if (d.getDay() !== 0 && d.getDay() !== 6) n--;
+  }
+  return d;
+}
+
 async function handOffToMary(id, tag, waitingFor) {
   const t = tasks.find(x => x.id === id);
   if (!t || !tag) return;
   const day = new Date().toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  // Check back in 3 business days: the task shows up in Mary's Today then,
+  // in case the reply or document still hasn't come.
+  const checkBack = addBusinessDays(new Date(), 3);
+  const checkBackLabel = checkBack.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
   const stepLines = stepsOf(t).map(s => `${s.done ? '✓' : '•'} ${s.text}`).join('\n');
   const added = await addTask({
     title: t.title,
     assignee: 'mary',
     tag,
-    notes: [t.notes, stepLines, `Evan completed this on ${day}, waiting for ${waitingFor}.`].filter(Boolean).join('\n'),
+    due_date: localDateStr(checkBack),
+    notes: [t.notes, stepLines, `Evan completed this on ${day}, waiting for ${waitingFor}. Check back ${checkBackLabel}.`].filter(Boolean).join('\n'),
     status: 'todo',
     source: 'evan',
   });
   if (!added) return;
   if (!tasks.some(x => x.id === added.id)) tasks.push(added);
+  const before = snapshot(t, ['status', 'completed_at', 'completed_by', 'notes']);
+  showToast(`Sent to Mary's ${tag}`, () => {
+    // Take Mary's copy back off her list and reopen Evan's task.
+    tasks = tasks.filter(x => x.id !== added.id);
+    deleteTask(added.id);
+    patchTask(id, before);
+  });
   await patchTask(id, {
     status: 'done',
     completed_at: new Date().toISOString(),
@@ -1679,6 +1755,8 @@ function render() {
     viewTitleEl.textContent = 'Daily Review';
     reviewCard.style.display = '';
     const list = visible.filter(t => t.status !== 'done').sort(byDue);
+    const allOpen = tasks.filter(t => t.assignee === who && t.status !== 'done');
+    meetingCount.textContent = `${allOpen.filter(t => discussedToday.has(t.id)).length} of ${allOpen.length} discussed`;
     renderTaskList(list, groupAcrossLists, search ? noMatch : 'No open tasks', true);
   } else if (currentView.type === 'today') {
     viewTitleEl.textContent = 'Today';
@@ -1724,7 +1802,11 @@ function rowEl(task) {
   div.dataset.id = task.id;
   const doneDate = task.status === 'done' && task.completed_at
     ? `<span class="row-date" title="Completed ${escapeAttr(new Date(task.completed_at).toLocaleString())}">${completedLabel(task.completed_at)}</span>` : '';
-  div.innerHTML = `<button class="status-btn ${task.status === 'todo' ? '' : task.status}" title="Change status"></button><span class="row-title">${escapeHtml(task.title)}</span>${doneDate}`;
+  const discussed = discussedToday.has(task.id);
+  const chip = currentView.type === 'review'
+    ? `<button type="button" class="discuss-chip${discussed ? ' on' : ''}" data-action="discuss" aria-pressed="${discussed}">${discussed ? '✓ Discussed' : 'Discussed?'}</button>` : '';
+  if (chip && discussed) div.classList.add('discussed');
+  div.innerHTML = `<button class="status-btn ${task.status === 'todo' ? '' : task.status}" title="Change status"></button><span class="row-title">${escapeHtml(task.title)}</span>${doneDate}${chip}`;
   return div;
 }
 
@@ -1858,6 +1940,19 @@ document.body.addEventListener('click', e => {
     selectedTaskId = null;
     if (isMobile()) setSidebar(false);
     render();
+    return;
+  }
+  const discussBtn = e.target.closest('[data-action="discuss"]');
+  if (discussBtn) {
+    toggleDiscussed(discussBtn.closest('.row').dataset.id);
+    return;
+  }
+  if (e.target.closest('[data-action="recap-open"]')) {
+    openRecap();
+    return;
+  }
+  if (e.target.closest('[data-action="recap-close"]')) {
+    recapModal.classList.remove('open');
     return;
   }
   const noteItem = e.target.closest('[data-note-id]');
@@ -1999,8 +2094,7 @@ document.body.addEventListener('click', e => {
   }
   const delBtn = e.target.closest('[data-action="delete"]');
   if (delBtn) {
-    const id = delBtn.closest('.task').dataset.id;
-    if (confirm('Delete this task?')) deleteTask(id);
+    deleteTaskWithUndo(delBtn.closest('.task').dataset.id);
     return;
   }
   const viewPhoto = e.target.closest('[data-action="view-photo"]');
@@ -2194,6 +2288,8 @@ async function fetchReviewState() {
   if (error) { console.error(error); return; }
   const checkedSet = new Set(data.filter(r => r.checked).map(r => r.item));
   renderReviewItems(checkedSet);
+  discussedToday = new Set([...checkedSet].filter(i => i.startsWith('task:')).map(i => i.slice(5)));
+  if (currentView.type === 'review') render();
 }
 
 async function toggleReviewItem(item, checked) {
@@ -2210,7 +2306,7 @@ async function fetchTasks() {
     return;
   }
   if (error) { setConn(false, error.message); return; }
-  tasks = data;
+  tasks = data.filter(t => !pendingDeletes.has(t.id));
   setConn(true);
   updateTagOptions();
   if (firstLoad) {
@@ -2245,6 +2341,93 @@ async function updateTask(id, fields) {
   if (error) alert(error.message);
 }
 
+// --- Meeting mode (Daily Review) ---
+async function toggleDiscussed(id) {
+  const on = !discussedToday.has(id);
+  on ? discussedToday.add(id) : discussedToday.delete(id);
+  render();
+  const { error } = await sb.from('daily_review').upsert({ day: todayStr(), item: `task:${id}`, checked: on });
+  if (error) alert(error.message);
+}
+
+function buildRecap() {
+  const today = todayStr();
+  const mine = tasks.filter(t => t.assignee === who);
+  const fmtDue = d => new Date(d + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  const line = t => {
+    const bits = [t.tag, t.due_date && `due ${fmtDue(t.due_date)}`, t.status === 'doing' && 'in progress', t.status === 'done' && 'done'].filter(Boolean);
+    const note = (t.notes || '').trim().split('\n')[0];
+    return `• ${t.title}${bits.length ? ` (${bits.join(', ')})` : ''}${note ? `\n   ${note}` : ''}`;
+  };
+  const section = (title, items) => items.length ? `${title} (${items.length})\n${items.map(line).join('\n')}` : '';
+  const discussed = mine.filter(t => discussedToday.has(t.id));
+  const completed = mine.filter(t => t.status === 'done' && t.completed_at && localDateStr(new Date(t.completed_at)) === today);
+  const added = mine.filter(t => t.created_at && localDateStr(new Date(t.created_at)) === today && t.status !== 'done');
+  const date = new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
+  const body = [section('Discussed', discussed), section('Completed today', completed), section('Added today', added)].filter(Boolean).join('\n\n');
+  return { subject: `Sync Up recap: ${date}`, text: `Sync Up recap: ${date}\n\n${body || 'Nothing marked as discussed yet.'}` };
+}
+
+function openRecap() {
+  const { subject, text } = buildRecap();
+  recapText.value = text;
+  recapEmail.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(text)}`;
+  recapModal.classList.add('open');
+}
+document.getElementById('recapCopy').addEventListener('click', async e => {
+  try { await navigator.clipboard.writeText(recapText.value); }
+  catch { recapText.select(); document.execCommand('copy'); }
+  e.target.textContent = 'Copied';
+  setTimeout(() => { e.target.textContent = 'Copy'; }, 1500);
+});
+
+// --- Undo ---
+// One message at a time: showing a new one finishes the previous action.
+let toastTimer = null, toastUndoFn = null, toastCommitFn = null;
+const shortTitle = s => s.length > 40 ? s.slice(0, 38) + '…' : s;
+function showToast(text, undo, commit = null) {
+  finishToast();
+  toastText.textContent = text;
+  toastUndoFn = undo;
+  toastCommitFn = commit;
+  toastEl.classList.add('show');
+  toastTimer = setTimeout(finishToast, 6000);
+}
+function finishToast() {
+  clearTimeout(toastTimer);
+  toastTimer = null;
+  const commit = toastCommitFn;
+  toastUndoFn = toastCommitFn = null;
+  toastEl.classList.remove('show');
+  if (commit) commit();
+}
+toastUndoBtn.addEventListener('click', () => {
+  clearTimeout(toastTimer);
+  const undo = toastUndoFn;
+  toastUndoFn = toastCommitFn = null;
+  toastEl.classList.remove('show');
+  if (undo) undo();
+});
+// Leaving the page: go ahead with anything still waiting (e.g. a delete).
+document.addEventListener('visibilitychange', () => { if (document.hidden) finishToast(); });
+window.addEventListener('pagehide', finishToast);
+
+function deleteTaskWithUndo(id) {
+  const t = tasks.find(x => x.id === id);
+  if (!t) return;
+  pendingDeletes.add(id);
+  tasks = tasks.filter(x => x.id !== id);
+  const wasOpen = selectedTaskId === id;
+  if (wasOpen) selectedTaskId = null;
+  render();
+  showToast(`Deleted "${shortTitle(t.title)}"`,
+    () => { pendingDeletes.delete(id); tasks.push(t); if (wasOpen) selectedTaskId = id; render(); },
+    () => deleteTask(id).finally(() => pendingDeletes.delete(id)));
+}
+
+// Restores the fields an action changed, e.g. after an accidental check-off.
+const snapshot = (t, keys) => Object.fromEntries(keys.map(k => [k, t[k] ?? null]));
+
 function cycleStatus(id) {
   const task = tasks.find(t => t.id === id);
   if (!task) return;
@@ -2252,7 +2435,9 @@ function cycleStatus(id) {
   const fields = { status: next };
   fields.completed_at = next === 'done' ? new Date().toISOString() : null;
   fields.completed_by = next === 'done' ? (who || null) : null;
+  const before = snapshot(task, ['status', 'completed_at', 'completed_by']);
   updateTask(id, fields);
+  if (next === 'done') showToast(`Completed "${shortTitle(task.title)}"`, () => updateTask(id, before));
 }
 
 async function deleteTask(id) {
@@ -2328,7 +2513,7 @@ async function fetchStickyNotes() {
     ({ data, error } = await withTimeout(sb.from('sticky_notes').select('*').order('created_at', { ascending: true }), 10000));
   } catch (err) { console.error(err); return; }
   if (error) { console.error(error); return; }
-  stickyNotes = data;
+  stickyNotes = data.filter(n => !pendingNoteDeletes.has(n.id));
   render(); // notes and saved tags (Lists) both come from here
 }
 
@@ -2423,14 +2608,20 @@ noteNewBtn.addEventListener('click', () => {
 noteDeleteBtn.addEventListener('click', async () => {
   const id = noteRef?.id;
   const note = id && stickyNotes.find(n => n.id === id);
-  if (!note || !confirm(`Delete "${noteName(note)}"?`)) return;
+  if (!note) return;
   clearTimeout(noteTimer);
   noteTimer = null;
-  const { error } = await sb.from('sticky_notes').delete().eq('id', id);
-  if (error) { alert(error.message); return; }
+  pendingNoteDeletes.add(id);
   stickyNotes = stickyNotes.filter(n => n.id !== id);
   noteRef = null;
   renderNotes();
+  showToast(`Deleted "${shortTitle(noteName(note))}"`,
+    () => { pendingNoteDeletes.delete(id); stickyNotes.push(note); openNote(id); },
+    async () => {
+      const { error } = await sb.from('sticky_notes').delete().eq('id', id);
+      pendingNoteDeletes.delete(id);
+      if (error) alert(error.message);
+    });
 });
 
 if (sb) {
