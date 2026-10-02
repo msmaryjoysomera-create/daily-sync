@@ -1,7 +1,7 @@
 -- Daily Sync -- Supabase table setup
--- No auth: this is a shared-link tool for two people, so the anon key gets
--- full read/write access to the tasks table. Don't reuse this key/project
--- for anything that needs real access control.
+-- Originally open to the anon key ("anon full access" policies below). Since
+-- 2026-10-02 the board is locked to one shared team login -- see "Lock" at the
+-- end of this file, which replaces those policies.
 
 create table tasks (
   id           uuid primary key default gen_random_uuid(),
@@ -105,3 +105,18 @@ alter table tasks add column if not exists steps jsonb not null default '[]'::js
 -- Drag-to-reorder within a list: lower position = higher in the list. Tasks
 -- never dragged have no position and keep their default order.
 alter table tasks add column if not exists position double precision;
+
+-- Lock: one shared team login (Supabase Auth user mary@ccabinet.com, whose
+-- password is the team passcode). Only that signed-in user can read or write;
+-- the public anon key alone sees nothing. The Claude connector (api/mcp.js)
+-- and the Word backup (scripts/backup.mjs) use the service-role key instead.
+drop policy if exists "anon full access" on tasks;
+drop policy if exists "anon full access" on daily_review;
+drop policy if exists "anon full access" on task_photos;
+drop policy if exists "anon full access" on sticky_notes;
+drop policy if exists "anon full access to task-photos" on storage.objects;
+create policy "team only" on tasks for all to authenticated using ((auth.jwt() ->> 'email') = 'mary@ccabinet.com') with check ((auth.jwt() ->> 'email') = 'mary@ccabinet.com');
+create policy "team only" on daily_review for all to authenticated using ((auth.jwt() ->> 'email') = 'mary@ccabinet.com') with check ((auth.jwt() ->> 'email') = 'mary@ccabinet.com');
+create policy "team only" on task_photos for all to authenticated using ((auth.jwt() ->> 'email') = 'mary@ccabinet.com') with check ((auth.jwt() ->> 'email') = 'mary@ccabinet.com');
+create policy "team only" on sticky_notes for all to authenticated using ((auth.jwt() ->> 'email') = 'mary@ccabinet.com') with check ((auth.jwt() ->> 'email') = 'mary@ccabinet.com');
+create policy "team only task-photos" on storage.objects for all to authenticated using (bucket_id = 'task-photos' and (auth.jwt() ->> 'email') = 'mary@ccabinet.com') with check (bucket_id = 'task-photos' and (auth.jwt() ->> 'email') = 'mary@ccabinet.com');

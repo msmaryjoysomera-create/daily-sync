@@ -1,6 +1,6 @@
 # Sync Up
 
-A shared task tracker for Mary & Sarah's daily sync. Single-file app, no login -- anyone with the link can view and edit.
+A shared task tracker for Evan, Mary, and Sarah. Single-file app, locked with one shared team passcode (entered once per device; "Change passcode" and "Lock all devices" are in the sidebar).
 
 ## Setup
 
@@ -33,7 +33,7 @@ A shared task tracker for Mary & Sarah's daily sync. Single-file app, no login -
 
 ## Automatic backups
 
-`scripts/backup.mjs` saves everything on the board -- both people's open and done tasks (with notes and photos), sticky notes, notepads, and today's Daily Review -- into one Word doc in `~/Documents/Sync Up Backups/`. A launchd job on Mary's Mac (`scripts/com.columbiacabinets.syncup-backup.plist`, installed in `~/Library/LaunchAgents/`) runs it at 8am and 5pm, Monday to Friday; if the Mac is asleep then, it runs once on wake, and if it was shut down, the missed backup is made at the next startup/login (`--catch-up`). Log: `~/Library/Logs/Sync Up Backup.log`. Run it by hand any time with `node scripts/backup.mjs`.
+`scripts/backup.mjs` saves everything on the board -- both people's open and done tasks (with notes and photos), sticky notes, notepads, and today's Daily Review -- into one Word doc in `~/Documents/Sync Up Backups/`. A launchd job on Mary's Mac (`scripts/com.columbiacabinets.syncup-backup.plist`, installed in `~/Library/LaunchAgents/`) runs it at 8am and 5pm, Monday to Friday; if the Mac is asleep then, it runs once on wake, and if it was shut down, the missed backup is made at the next startup/login (`--catch-up`). Log: `~/Library/Logs/Sync Up Backup.log`. It reads with the service-role key saved in `~/.config/sync-up/service-key` (private to Mary's Mac account). Run it by hand any time with `node scripts/backup.mjs`.
 
 ## Adding tasks from Claude
 
@@ -41,7 +41,7 @@ Sarah can add tasks straight from a Claude chat -- e.g. "add a task for Mary to 
 
 To set it up in Claude (one-time, per person who wants to use it):
 1. In Claude's settings, find **Connectors** (or **Custom Connectors**) and add a new one.
-2. Set the URL to `https://daily-sync-woad.vercel.app/api/mcp`.
-3. No login/API key needed -- it uses the same open, no-auth model as the rest of the app.
+2. Set the URL to `https://daily-sync-woad.vercel.app/api/mcp?key=<connector key>`. The connector key is Vercel's `MCP_KEY` environment variable (Mary has a private copy in `~/.config/sync-up/mcp-key`); without it the connector refuses requests.
+3. The connector reads and writes with `SUPABASE_SERVICE_ROLE_KEY` (also a Vercel environment variable), since the database only lets the signed-in team login in.
 
 Once added, just ask Claude in chat to add, or list, a task and it'll show up live on the board.
