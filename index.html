@@ -256,8 +256,11 @@
   .review-item.checked span{color:var(--muted);text-decoration:line-through}
 
   /* Evan's profile: Outlook To Do-style list + detail panel */
-  .todo-layout{display:grid;grid-template-columns:minmax(0,1fr);gap:16px;align-items:start}
-  .todo-layout.has-selection{grid-template-columns:minmax(0,1fr) minmax(300px,380px)}
+  .todo-layout{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:16px;align-items:start}
+  .todo-left{display:flex;flex-direction:column;gap:16px;min-width:0}
+  .todo-addbox{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px}
+  .todo-addbox .todo-add{margin-bottom:0}
+  .todo-detail-empty{padding:40px 16px;text-align:center;color:var(--muted);font-size:13.5px}
   .todo-main{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;min-width:0}
   .todo-add{display:flex;align-items:center;gap:10px;background:var(--card-2);border:1px solid var(--line);border-radius:10px;padding:0 14px;margin-bottom:8px}
   .todo-add-plus{font-size:20px;color:var(--accent);line-height:1}
@@ -282,9 +285,9 @@
   .todo-completed-toggle .chev{transition:transform .15s ease}
   .todo-completed-toggle.open .chev{transform:rotate(90deg)}
   .todo-empty{padding:28px 10px;text-align:center;color:var(--muted);font-size:13.5px}
-  .todo-detail{display:none;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;position:sticky;top:16px;max-height:calc(100vh - 32px);overflow-y:auto}
-  .todo-layout.has-selection .todo-detail{display:block}
-  .todo-layout.add-mode, .todo-layout.add-mode.has-selection{grid-template-columns:minmax(0,1fr);max-width:760px}
+  .todo-detail{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;min-height:280px}
+  .todo-layout.add-mode{grid-template-columns:minmax(0,1fr);max-width:760px}
+  .todo-layout.add-mode .todo-main{display:none}
   .todo-layout.add-mode .todo-detail{position:static;max-height:none}
   .todo-layout.add-mode .detail-back{display:none !important}
   .todo-detail .task.todo-card{border:none;box-shadow:none;background:none;padding:0;margin:0;border-radius:0}
@@ -324,7 +327,8 @@
   .new-list-input{width:100%;background:var(--card-2);border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-family:inherit;font-size:13px;color:var(--text);margin-top:4px}
   .badge.evan{background:#E8EEF8;color:#2F4F7F}
   @media (max-width:900px){
-    .todo-layout.has-selection{grid-template-columns:minmax(0,1fr)}
+    .todo-layout{grid-template-columns:minmax(0,1fr)}
+    .todo-layout:not(.has-selection):not(.add-mode) .todo-detail{display:none}
     .todo-layout.has-selection:not(.add-mode) .todo-detail{position:fixed;inset:0;z-index:60;border:none;border-radius:0;max-height:none;padding:calc(20px + env(safe-area-inset-top)) 16px 40px}
   }
   .notes-layout{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:16px;align-items:start}
@@ -400,7 +404,7 @@
     /* The task bar shows when + is tapped (always on Add a Task) */
     .pane-layout:not(.m-adding):not(.add-mode):not(.m-review) .box1{display:none}
     .pane-layout.m-review:not(.m-adding) #addForm{display:none}
-    .todo-layout:not(.m-adding):not(.add-mode) .todo-add{display:none}
+    .todo-layout:not(.m-adding):not(.add-mode) .todo-addbox{display:none}
     /* Tasks as cards */
     .box3{background:transparent;border:none;box-shadow:none;padding:0}
     .row{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:6px}
@@ -536,14 +540,18 @@
 
 
     <div id="todoWrap" class="todo-layout" style="display:none">
+      <div class="todo-left">
+        <section class="todo-addbox" id="todoAddBox">
+          <form id="todoAddForm" class="todo-add" autocomplete="off">
+            <span class="todo-add-plus">+</span>
+            <input type="text" id="todoAddInput" placeholder="Add a task">
+          </form>
+        </section>
+        <section class="todo-detail" id="todoDetail"></section>
+      </div>
       <section class="todo-main">
-        <form id="todoAddForm" class="todo-add" autocomplete="off">
-          <span class="todo-add-plus">+</span>
-          <input type="text" id="todoAddInput" placeholder="Add a task">
-        </form>
         <div id="todoList"></div>
       </section>
-      <section class="todo-detail" id="todoDetail"></section>
     </div>
 
     <div id="notesWrap" class="notes-layout" style="display:none">
@@ -673,6 +681,7 @@ const todoWrap = document.getElementById('todoWrap');
 const todoList = document.getElementById('todoList');
 const todoDetail = document.getElementById('todoDetail');
 const todoAddForm = document.getElementById('todoAddForm');
+const todoAddBox = document.getElementById('todoAddBox');
 const todoAddInput = document.getElementById('todoAddInput');
 const noteTitle = document.getElementById('noteTitle');
 const noteBody = document.getElementById('noteBody');
@@ -1130,9 +1139,9 @@ function renderTodo() {
   // Add a Task: just the task bar and the new task's details, no list (like Mary's).
   todoWrap.classList.toggle('add-mode', v.type === 'add');
   if (v.type === 'add') {
-    todoAddForm.style.display = '';
+    todoAddBox.style.display = '';
     todoAddInput.placeholder = 'Add a task';
-    todoList.innerHTML = selectedTaskId ? '' : '<div class="todo-empty">Add a task above, and it opens below so you can add steps, a due date, notes, or a photo.</div>';
+    todoList.innerHTML = '';
     renderTodoDetail();
     return;
   }
@@ -1151,7 +1160,7 @@ function renderTodo() {
   const open = list.filter(t => t.status !== 'done').sort(v.type === 'planned' ? (a, b) => a.due_date.localeCompare(b.due_date) : newestFirst);
   const done = list.filter(t => t.status === 'done').sort((a, b) => (b.completed_at || '').localeCompare(a.completed_at || ''));
 
-  todoAddForm.style.display = v.type === 'completed' ? 'none' : '';
+  todoAddBox.style.display = v.type === 'completed' ? 'none' : '';
   todoAddInput.placeholder = v.type === 'myday' ? 'Add a task to My Day' : v.type === 'list' ? `Add a task to ${v.key}` : 'Add a task';
   todoList.innerHTML = '';
   const head = text => { const h = document.createElement('div'); h.className = 'todo-group-head'; h.textContent = text; todoList.appendChild(h); };
@@ -1199,7 +1208,12 @@ function renderTodoDetail() {
   if (!task || todoDetail.dataset.showing !== task.id) dueEditingId = null;
   todoDetail.dataset.showing = task ? task.id : '';
   todoDetail.innerHTML = '';
-  if (!task) return;
+  if (!task) {
+    todoDetail.innerHTML = `<div class="todo-detail-empty">${currentView.type === 'add'
+      ? 'Add a task above, and it opens here so you can add steps, a due date, notes, or a photo.'
+      : 'Select a task to see its details, steps, and notes.'}</div>`;
+    return;
+  }
   const steps = stepsOf(task);
   const lists = allTagNames();
   const div = document.createElement('div');
