@@ -1157,7 +1157,11 @@ function renderTodo() {
   }[v.type] || (() => true);
   const list = mine.filter(inView);
   const newestFirst = (a, b) => b.created_at.localeCompare(a.created_at);
-  const open = list.filter(t => t.status !== 'done').sort(v.type === 'planned' ? (a, b) => a.due_date.localeCompare(b.due_date) : newestFirst);
+  // Starred (Important) tasks always sit at the top of every list.
+  const importantFirst = (a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0);
+  const open = list.filter(t => t.status !== 'done').sort(v.type === 'planned'
+    ? (a, b) => importantFirst(a, b) || a.due_date.localeCompare(b.due_date)
+    : (a, b) => importantFirst(a, b) || newestFirst(a, b));
   const done = list.filter(t => t.status === 'done').sort((a, b) => (b.completed_at || '').localeCompare(a.completed_at || ''));
 
   todoAddBox.style.display = v.type === 'completed' ? 'none' : '';
