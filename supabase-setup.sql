@@ -101,3 +101,7 @@ alter publication supabase_realtime add table sticky_notes;
 -- "Important" reuses pinned; Evan's lists are tag rows with assignee 'evan'.
 alter table tasks add column if not exists my_day date;
 alter table tasks add column if not exists steps jsonb not null default '[]'::jsonb;
+
+-- Drag-to-reorder within a list: lower position = higher in the list. Tasks
+-- never dragged have no position and keep their default order.
+alter table tasks add column if not exists position double precision;
