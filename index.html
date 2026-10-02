@@ -1361,7 +1361,7 @@ todoAddForm.addEventListener('submit', async e => {
   todoAddInput.placeholder = placeholder;
   if (!added) { todoAddInput.value = title; todoAddInput.focus(); return; } // keep it to retry
   if (!tasks.some(t => t.id === added.id)) tasks.push(added);
-  if (v.type === 'add') selectedTaskId = added.id; // open it below for steps, date, notes
+  if (v.type === 'add' || !isMobile()) selectedTaskId = added.id; // open it below for steps, date, notes
   render();
   todoAddInput.focus();
 });
@@ -2152,8 +2152,9 @@ addForm.addEventListener('submit', async e => {
     });
     if (!added) return; // couldn't save: leave what was typed so it can be retried
     if (!tasks.some(t => t.id === added.id)) tasks.push(added);
-    // On Add a Task, open the new task in Box 2 for notes, photos, due date.
-    if (currentView.type === 'add') selectedTaskId = added.id;
+    // Show the new task in Box 2 (below the task bar) for notes, photos, due
+    // date. On phones that view is full screen, so there it's Add a Task only.
+    if (currentView.type === 'add' || !isMobile()) selectedTaskId = added.id;
     titleInput.value = '';
     tagInput.value = '';
     dueInput.value = '';
