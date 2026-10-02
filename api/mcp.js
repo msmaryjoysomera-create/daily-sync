@@ -21,7 +21,11 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 // Fallback only -- the live tag list is read from the board (see currentTags).
 const TAG_OPTIONS = ['Hot Topics', 'Non-Urgent', 'Follow Up', 'Schedule Pending', 'Mary - Open Items', 'Orders/Deliveries', 'Returns/Credits', 'Appointments', 'Dinner Reservations', 'Deliverables'];
 
-const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+// Once the board is locked (RLS: signed-in team only), this server needs its
+// own key: SUPABASE_SERVICE_ROLE_KEY, set in Vercel's environment variables.
+// If MCP_KEY is set there too, callers must add ?key=<MCP_KEY> to the URL,
+// so only Mary's and Evan's Claude connectors can use it.
+const sb = createClient(SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY || SUPABASE_ANON_KEY, {
   auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
 });
 
@@ -121,6 +125,8 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Mcp-Session-Id, Mcp-Protocol-Version');
 
   if (req.method === 'OPTIONS') { res.status(204).end(); return; }
+  const requiredKey = process.env.MCP_KEY;
+  if (requiredKey && req.query?.key !== requiredKey) { res.status(401).json({ error: 'Missing or wrong connector key' }); return; }
   if (req.method === 'GET') { res.status(200).json({ status: 'ok', server: 'sync-up-mcp' }); return; }
   if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
 

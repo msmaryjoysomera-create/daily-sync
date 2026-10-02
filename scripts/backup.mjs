@@ -31,7 +31,11 @@ const savedTags = (stickies, owner) => stickies.filter(n => n.color === 'tag' &&
 
 const outDir = process.env.SYNC_UP_BACKUP_DIR || path.join(os.homedir(), 'Documents', 'Sync Up Backups');
 
-const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+// Once the board is locked, the backup reads with the project's service key,
+// kept only on this Mac in ~/.config/sync-up/service-key (never in the repo).
+let serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+try { serviceKey ||= (await fs.readFile(path.join(os.homedir(), '.config', 'sync-up', 'service-key'), 'utf8')).trim(); } catch {}
+const sb = createClient(SUPABASE_URL, serviceKey || SUPABASE_ANON_KEY, {
   auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
 });
 
