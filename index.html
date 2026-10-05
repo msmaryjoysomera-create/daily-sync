@@ -301,7 +301,8 @@
   .todo-step input{flex:1;border:none;background:transparent;font-size:13.5px;color:var(--text);font-family:inherit;min-width:0;outline:none}
   .todo-step.done input{text-decoration:line-through;color:var(--muted)}
   .todo-step .icon-btn{opacity:0}
-  .todo-step:hover .icon-btn{opacity:1}
+  @media (hover:hover){ .todo-step:hover .icon-btn{opacity:1} }
+  @media (hover:none){ .todo-step .icon-btn{opacity:.6} }
   .todo-step-plus{width:16px;text-align:center;color:var(--accent);font-size:16px;line-height:1}
   .todo-step .step-add::placeholder{color:var(--accent)}
   .todo-section{border:1px solid var(--line);border-radius:10px;margin-top:12px;overflow:hidden}
@@ -381,7 +382,7 @@
   .recap-action{background:var(--card-2);border:1px solid var(--line);border-radius:10px;padding:9px 16px;font-family:inherit;font-size:13.5px;font-weight:700;color:var(--text);cursor:pointer;text-decoration:none}
   .recap-action.primary{background:var(--accent);border-color:var(--accent);color:#fff}
   .drag-grip{flex:none;display:flex;align-items:center;justify-content:center;width:22px;height:28px;color:var(--muted);cursor:grab;touch-action:none;opacity:0;transition:opacity .12s}
-  .row:hover .drag-grip, .todo-row:hover .drag-grip{opacity:.7}
+  @media (hover:hover){ .row:hover .drag-grip, .todo-row:hover .drag-grip{opacity:.7} }
   .drag-grip:hover{opacity:1 !important;color:var(--text)}
   .dragging{box-shadow:0 8px 22px rgba(0,0,0,.14);background:var(--card) !important;position:relative;z-index:5;cursor:grabbing}
   .dragging .drag-grip{opacity:1;cursor:grabbing}
@@ -1149,6 +1150,8 @@ function meatballHtml(task, isMary) {
       <div class="meatball-menu">
         <button type="button" class="meatball-item" data-action="add-note">Add a note</button>
         <button type="button" class="meatball-item" data-action="add-photo">Add a photo</button>
+        ${task.status === 'todo' ? '<button type="button" class="meatball-item" data-action="set-status" data-status="doing">Mark in progress</button>' : ''}
+        ${task.status === 'doing' ? '<button type="button" class="meatball-item" data-action="set-status" data-status="todo">Move back to To Do</button>' : ''}
         ${moveHtml}
       </div>
     </div>
@@ -2135,6 +2138,12 @@ document.body.addEventListener('click', e => {
     addPhotoBtn.closest('.task').querySelector('.photo-input').click();
     return;
   }
+  const setStatusBtn = e.target.closest('[data-action="set-status"]');
+  if (setStatusBtn) {
+    setStatusBtn.closest('.meatball-wrap')?.classList.remove('open');
+    cycleStatus(setStatusBtn.closest('.task').dataset.id, setStatusBtn.dataset.status);
+    return;
+  }
   const statusBtn = e.target.closest('.status-btn');
   if (statusBtn) {
     cycleStatus(statusBtn.closest('.task, .row').dataset.id);
@@ -2555,10 +2564,12 @@ function deleteTaskWithUndo(id) {
 // Restores the fields an action changed, e.g. after an accidental check-off.
 const snapshot = (t, keys) => Object.fromEntries(keys.map(k => [k, t[k] ?? null]));
 
-function cycleStatus(id) {
+// The circle is one click to Done (and back). "In progress" is set from the
+// task's ⋯ menu instead (Mark in progress).
+function cycleStatus(id, next) {
   const task = tasks.find(t => t.id === id);
   if (!task) return;
-  const next = { todo: 'doing', doing: 'done', done: 'todo' }[task.status];
+  next = next || (task.status === 'done' ? 'todo' : 'done');
   const fields = { status: next };
   fields.completed_at = next === 'done' ? new Date().toISOString() : null;
   fields.completed_by = next === 'done' ? (who || null) : null;
