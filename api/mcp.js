@@ -34,28 +34,30 @@ const sb = createClient(SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY || S
 // Evan's own lists are rows with assignee 'evan'.
 async function currentTags() {
   const { data, error } = await sb.from('sticky_notes').select('title,body,assignee').eq('color', 'tag');
-  if (error || !data?.length) return { mary: TAG_OPTIONS, evan: [] };
+  if (error || !data?.length) return { mary: TAG_OPTIONS, evan: [], sarah: [] };
   const sorted = data.sort((a, b) => (Number(a.body) || 0) - (Number(b.body) || 0));
   return {
     mary: sorted.filter(r => (r.assignee || 'mary') === 'mary').map(r => r.title),
     evan: sorted.filter(r => r.assignee === 'evan').map(r => r.title),
+    // Sarah's "To Do" is her default list (tasks with no list of their own).
+    sarah: ['To Do', ...sorted.filter(r => r.assignee === 'sarah').map(r => r.title)],
   };
 }
 
-const buildTools = ({ mary: tags, evan: evanLists }) => [
+const buildTools = ({ mary: tags, evan: evanLists, sarah: sarahLists }) => [
   {
     name: 'sync_up_add_task',
-    description: `Add a task to "Sync Up" -- Columbia Cabinets' own daily task tracker/checklist app for Mary, Sarah, and EHL (Evan) (not Salesforce, not a CRM, not any other task/to-do system). Use this specifically when asked to add something "to Sync Up" or "to the board", or when no other task system is named and the context is clearly Mary/Sarah's daily sync. Mary's categories: ${tags.join(', ')}.${evanLists.length ? ` EHL's (Evan's) lists: ${evanLists.join(', ')}.` : ''} Reuse one of the assignee's existing categories/lists exactly when it clearly fits, instead of inventing a new one.`,
+    description: `Add a task to "Sync Up" -- Columbia Cabinets' own daily task tracker/checklist app for Mary, Sarah, and EHL (Evan) (not Salesforce, not a CRM, not any other task/to-do system). Use this specifically when asked to add something "to Sync Up" or "to the board", or when no other task system is named and the context is clearly Mary/Sarah's daily sync. Every task needs a person AND a list. Lists per person -- Mary: ${tags.join(', ')}. EHL (Evan): ${evanLists.join(', ') || '(none yet)'}. Sarah: ${sarahLists.join(', ')}. If the user didn't say which list, ASK them (offer that person's lists) before adding -- never guess or default to the first list.`,
     inputSchema: {
       type: 'object',
       properties: {
         title: { type: 'string', description: 'Short task title, e.g. "Follow up with Adria about Template"' },
         assignee: { type: 'string', enum: ['mary', 'sarah', 'evan'], description: 'Who the task is for ("evan" = EHL, also called Evan). Required: if the user did not say whose task it is, ask them (EHL, Mary, or Sarah?) before adding.' },
-        tag: { type: 'string', description: 'Category for the task -- prefer an existing category listed above when it fits' },
+        tag: { type: 'string', description: "Which of that person's lists the task goes in -- exactly one of the names listed above. Required: if the user didn't say, ask which list before adding." },
         due_date: { type: 'string', description: 'Due date in YYYY-MM-DD format, only if a date was mentioned' },
         notes: { type: 'string', description: 'Extra context or notes for the task' },
       },
-      required: ['title', 'assignee'],
+      required: ['title', 'assignee', 'tag'],
     },
   },
   {
@@ -83,10 +85,24 @@ async function callTool(name, args) {
       return { content: [{ type: 'text', text: 'Whose task is this: EHL, Mary, or Sarah? Ask the user, then add it again with assignee set.' }], isError: true };
     }
 
+    // ...and a list: one of that person's existing lists, so nothing lands in
+    // a made-up list or a default the user didn't pick.
+    const lists = (await currentTags())[args.assignee];
+    const name = personName(args.assignee);
+    const asked = String(args.tag || '').trim();
+    if (!asked) {
+      return { content: [{ type: 'text', text: `Which list should this go in? ${name}'s lists: ${lists.join(', ')}. Ask the user, then add it again with tag set.` }], isError: true };
+    }
+    const list = lists.find(l => l.toLowerCase() === asked.toLowerCase());
+    if (!list) {
+      return { content: [{ type: 'text', text: `"${asked}" isn't one of ${name}'s lists (${lists.join(', ')}). Ask the user which one to use.` }], isError: true };
+    }
+    const tag = args.assignee === 'sarah' && list === 'To Do' ? null : list;
+
     const { data, error } = await sb.from('tasks').insert({
       title,
-      assignee: args.assignee || null,
-      tag: args.tag ? String(args.tag).trim() : null,
+      assignee: args.assignee,
+      tag,
       due_date: args.due_date || null,
       notes: args.notes ? String(args.notes).trim() : null,
       status: 'todo',

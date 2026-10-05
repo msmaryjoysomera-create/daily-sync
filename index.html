@@ -274,6 +274,7 @@
   .todo-main{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;min-width:0}
   .todo-add{display:flex;align-items:center;gap:10px;background:var(--card-2);border:1px solid var(--line);border-radius:10px;padding:0 14px;margin-bottom:8px}
   .todo-add-plus{font-size:20px;color:var(--accent);line-height:1}
+  .todo-add-list{flex:none;max-width:42%;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:5px 8px;font-family:inherit;font-size:12.5px;color:var(--text)}
   .todo-add input{flex:1;border:none;background:transparent;padding:12px 0;font-size:14px;color:var(--text);font-family:inherit;outline:none}
   .todo-row{display:flex;align-items:center;gap:12px;padding:10px;border-radius:10px;cursor:pointer;border-bottom:1px solid var(--line)}
   .todo-row:hover, .todo-row.selected{background:var(--card-2)}
@@ -648,6 +649,7 @@
           <form id="todoAddForm" class="todo-add" autocomplete="off">
             <span class="todo-add-plus">+</span>
             <input type="text" id="todoAddInput" placeholder="Add a task">
+            <select id="todoAddList" class="todo-add-list" aria-label="List"></select>
           </form>
         </section>
         <section class="todo-detail" id="todoDetail"></section>
@@ -824,6 +826,7 @@ const todoList = document.getElementById('todoList');
 const todoDetail = document.getElementById('todoDetail');
 const todoAddForm = document.getElementById('todoAddForm');
 const todoAddBox = document.getElementById('todoAddBox');
+const todoAddList = document.getElementById('todoAddList');
 const todoAddInput = document.getElementById('todoAddInput');
 const noteTitle = document.getElementById('noteTitle');
 const noteBody = document.getElementById('noteBody');
@@ -1323,6 +1326,15 @@ function renderTodo() {
   // Add a Task: just the task bar and the new task's details, no list (like Mary's).
   todoWrap.classList.toggle('add-mode', v.type === 'add');
   todoWrap.classList.toggle('dash-mode', v.type === 'dashboard');
+  // Which list a new task goes in (hidden on a list's own page, where it's that list).
+  const ehlLists = allTagNames();
+  todoAddList.hidden = v.type === 'list' || !ehlLists.length;
+  if (document.activeElement !== todoAddList) {
+    let last = '';
+    try { last = localStorage.getItem('daily-sync-ehl-list') || ''; } catch {}
+    const pick = ehlLists.includes(todoAddList.value) ? todoAddList.value : ehlLists.includes(last) ? last : ehlLists[0];
+    todoAddList.innerHTML = ehlLists.map(l => `<option value="${escapeAttr(l)}"${l === pick ? ' selected' : ''}>${escapeHtml(l)}</option>`).join('');
+  }
   if (v.type === 'dashboard') { renderDashboard(); return; }
   if (v.type === 'add') {
     todoAddBox.style.display = '';
@@ -1398,12 +1410,14 @@ function renderDashboard() {
   if (search) open = open.filter(t => t.title.toLowerCase().includes(search) || (t.notes || '').toLowerCase().includes(search));
   reorderable = !search;
   const order = (a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || byPosition(true)(a, b) || b.created_at.localeCompare(a.created_at);
-  const lists = [...allTagNames().map(name => ({ name, key: name })), { name: 'No list', key: null }];
+  // Every task belongs to a list (the add bar always picks one), so no "No list"
+  // column -- unless EHL has no lists yet.
+  const names = allTagNames();
+  const lists = names.length ? names.map(name => ({ name, key: name })) : [{ name: 'Tasks', key: null }];
   const board = document.createElement('div');
   board.className = 'dash-board';
   lists.forEach(({ name, key }) => {
     const items = open.filter(t => (t.tag || null) === key).sort(order);
-    if (key === null && !items.length && !reorderable) return; // "No list" shows when it has tasks (or as a drop target)
     if (search && !items.length) return;
     const col = document.createElement('section');
     col.className = 'dash-col';
@@ -1474,7 +1488,7 @@ function renderTodoDetail() {
       <button type="button" class="todo-opt" data-action="add-photo"><svg width="15" height="15" viewBox="0 0 18 18" fill="none"><rect x="2" y="3.5" width="14" height="11" rx="2" stroke="currentColor" stroke-width="1.5"/><circle cx="6.5" cy="7.5" r="1.3" stroke="currentColor" stroke-width="1.3"/><path d="M2.5 13l4-3.5 3 2.5 2.5-2 3.5 3" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>Add a photo</button>
       <label class="todo-opt">List
         <select class="todo-list-select">
-          <option value="">No list</option>
+          ${task.tag ? '' : '<option value="" selected disabled>Choose a list…</option>'}
           ${lists.map(l => `<option value="${escapeAttr(l)}"${l === task.tag ? ' selected' : ''}>${escapeHtml(l)}</option>`).join('')}
         </select>
       </label>
@@ -1606,6 +1620,10 @@ todoAddForm.addEventListener('submit', async e => {
   if (v.type === 'important') fields.pinned = true;
   if (v.type === 'planned') fields.due_date = todayStr();
   if (v.type === 'list') fields.tag = v.key;
+  else if (!todoAddList.hidden && todoAddList.value) {
+    fields.tag = todoAddList.value;
+    try { localStorage.setItem('daily-sync-ehl-list', todoAddList.value); } catch {}
+  }
   todoAddInput.value = '';
   todoAddInput.placeholder = 'Adding…';
   const added = await addTask(fields);
