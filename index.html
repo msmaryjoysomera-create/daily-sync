@@ -2389,8 +2389,39 @@ document.addEventListener('keydown', e => {
     insertInto(ta, lineStart, lineEnd, ''); // empty item: end the list
   } else {
     insertInto(ta, pos, pos, '\n' + next);
+    if (m[2] && /[\da-zA-Z]/.test(m[2])) renumberBelow(ta, m[1], m[3]);
   }
 });
+
+// After inserting an item in the middle of a numbered (or lettered) list,
+// shift the items below it: 1, 2, new 3, old 3 -> 4, ...
+function renumberBelow(ta, indent, sep) {
+  const caret = ta.selectionStart;
+  const v = ta.value;
+  const curStart = v.lastIndexOf('\n', caret - 1) + 1;
+  let curEnd = v.indexOf('\n', caret);
+  if (curEnd === -1) return; // new item is the last line
+  const curMarker = v.slice(curStart, caret).trim().slice(0, -1); // "3" or "c"
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const itemRe = new RegExp('^' + esc(indent) + '(\\d+|[a-zA-Z])' + esc(sep) + '(\\s.*)?$');
+  const numeric = /^\d+$/.test(curMarker);
+  let expected = curMarker;
+  const advance = x => numeric ? String(Number(x) + 1) : nextLetter(x);
+  const lines = v.slice(curEnd + 1).split('\n');
+  const out = [];
+  for (const line of lines) {
+    const mm = line.match(itemRe);
+    if (!mm || /^\d+$/.test(mm[1]) !== numeric) break;
+    expected = advance(expected);
+    out.push(indent + expected + sep + (mm[2] || ''));
+  }
+  if (!out.length) return;
+  const blockStart = curEnd + 1;
+  const blockEnd = blockStart + lines.slice(0, out.length).join('\n').length;
+  const replacement = out.join('\n');
+  if (v.slice(blockStart, blockEnd) !== replacement) insertInto(ta, blockStart, blockEnd, replacement);
+  ta.setSelectionRange(caret, caret); // back to the new item
+}
 
 document.body.addEventListener('change', e => {
   if (e.target.classList.contains('task-title')) {
