@@ -50,12 +50,12 @@ const buildTools = ({ mary: tags, evan: evanLists }) => [
       type: 'object',
       properties: {
         title: { type: 'string', description: 'Short task title, e.g. "Follow up with Adria about Template"' },
-        assignee: { type: 'string', enum: ['mary', 'sarah', 'evan'], description: 'Who the task is for, if a specific person was named ("evan" = EHL, also called Evan)' },
+        assignee: { type: 'string', enum: ['mary', 'sarah', 'evan'], description: 'Who the task is for ("evan" = EHL, also called Evan). Required: if the user did not say whose task it is, ask them (EHL, Mary, or Sarah?) before adding.' },
         tag: { type: 'string', description: 'Category for the task -- prefer an existing category listed above when it fits' },
         due_date: { type: 'string', description: 'Due date in YYYY-MM-DD format, only if a date was mentioned' },
         notes: { type: 'string', description: 'Extra context or notes for the task' },
       },
-      required: ['title'],
+      required: ['title', 'assignee'],
     },
   },
   {
@@ -78,6 +78,10 @@ async function callTool(name, args) {
   if (name === 'sync_up_add_task') {
     const title = (args?.title || '').trim();
     if (!title) return { content: [{ type: 'text', text: 'A task title is required.' }], isError: true };
+    // Every task needs a person: one with none shows up in nobody's list.
+    if (!['mary', 'sarah', 'evan'].includes(args?.assignee)) {
+      return { content: [{ type: 'text', text: 'Whose task is this: EHL, Mary, or Sarah? Ask the user, then add it again with assignee set.' }], isError: true };
+    }
 
     const { data, error } = await sb.from('tasks').insert({
       title,
