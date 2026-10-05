@@ -396,6 +396,17 @@
   @media (pointer:coarse){ .drag-grip{opacity:.55} }
   .passcode-panel{width:min(400px,100%)}
   .passcode-note{margin:0;font-size:12px;color:var(--muted);line-height:1.5}
+  .banner.offline-banner{color:#5F5E5A;background:#EDEBE6;font-weight:600}
+  /* Offline: view only. Hide the controls that change things; the server
+     write functions are also blocked (see blockedOffline). */
+  body.offline #addForm, body.offline .todo-addbox, body.offline .m-fab, body.offline .notes-new,
+  body.offline .meatball-wrap, body.offline [data-action="delete"], body.offline .todo-delete,
+  body.offline .todo-handoff, body.offline .todo-assign-row, body.offline [data-drag],
+  body.offline .photo-add-row, body.offline #noteDeleteBtn, body.offline #lockSection,
+  body.offline [data-action="clear-due"], body.offline .recap-btn{display:none !important}
+  body.offline .status-btn, body.offline .todo-check, body.offline .todo-star, body.offline .discuss-chip,
+  body.offline .due-none, body.offline .todo-opt, body.offline .review-item, body.offline .todo-list-select,
+  body.offline .task-due-edit{pointer-events:none}
   .lock{position:fixed;inset:0;z-index:200;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:24px}
   .lock[hidden]{display:none}
   .lock-card{width:min(340px,100%);background:var(--card);border:1px solid var(--line);border-radius:18px;padding:28px 24px;display:flex;flex-direction:column;align-items:center;gap:10px;box-shadow:0 8px 30px rgba(0,0,0,.06)}
@@ -562,6 +573,7 @@
     </div>
 
     <div class="status-line"><span class="dot" id="connDot"></span><span id="connText">Connecting…</span></div>
+    <div class="banner offline-banner" id="offlineBanner" role="status"></div>
     <button type="button" class="banner due" id="dueBanner" data-action="due-banner"></button>
 
     <div id="setupNotice" class="setup" style="display:none">
@@ -746,6 +758,7 @@ connDot.addEventListener('click', retryConnection);
 connText.addEventListener('click', retryConnection);
 
 const dueBanner = document.getElementById('dueBanner');
+const offlineBanner = document.getElementById('offlineBanner');
 const reviewCard = document.getElementById('reviewCard');
 const reviewNavItem = document.getElementById('reviewNavItem');
 const printBtn = document.getElementById('printBtn');
@@ -829,6 +842,7 @@ const scopeTasks = q => tagOwner(who) === 'evan' ? q.eq('assignee', 'evan') : q.
 const findTag = name => allTagNames().find(t => t.toLowerCase() === name.trim().toLowerCase()) || null;
 
 async function createTag(name) {
+  if (blockedOffline()) return name?.trim() || null;
   name = name.trim();
   if (!name) return null;
   const existing = findTag(name);
@@ -844,6 +858,7 @@ async function createTag(name) {
 // Renaming retags every task that had the old name. Tag moves don't bump
 // updated_at, so the task history lines stay accurate.
 async function renameTag(oldName, newName) {
+  if (blockedOffline()) return;
   newName = newName.trim();
   if (!newName || newName === oldName) return;
   const clash = findTag(newName);
@@ -876,6 +891,7 @@ async function renameTag(oldName, newName) {
 
 // Deleting a tag never deletes tasks -- they just become Untagged.
 async function deleteTag(name) {
+  if (blockedOffline()) return;
   const count = tasks.filter(t => t.tag === name && ownsTask(t)).length;
   const kind = who === 'evan' ? 'list' : 'tag';
   const where = who === 'evan' ? 'Tasks' : 'Untagged';
@@ -975,6 +991,13 @@ const pendingNoteDeletes = new Set();
 // daily_review table as items named "task:<id>", so they reset each day).
 let discussedToday = new Set();
 // Drag to reorder: on in single-list views; the order is saved as tasks.position.
+// Offline view: a saved copy of everything, shown read-only when there's no
+// internet. Kept on this device; dropped after 7 days without connecting, and
+// when this device is locked.
+const OFFLINE_KEY = 'daily-sync-offline';
+const OFFLINE_MAX_AGE = 7 * 24 * 60 * 60 * 1000;
+let offlineMode = false;
+let lastReviewChecked = { day: null, items: [] };
 let reorderable = false;
 let dragState = null, renderAfterDrag = false, lastDragEnd = 0;
 // Tasks someone has dragged into place have a position; the rest keep their
@@ -1413,6 +1436,7 @@ function renderTodoDetail() {
 }
 
 function patchTask(id, fields) {
+  if (blockedOffline()) return;
   const t = tasks.find(x => x.id === id);
   if (t) Object.assign(t, fields);
   render();
@@ -1420,6 +1444,7 @@ function patchTask(id, fields) {
 }
 
 function toggleTodoDone(id) {
+  if (blockedOffline()) return;
   const t = tasks.find(x => x.id === id);
   if (!t) return;
   const done = t.status !== 'done';
@@ -1438,6 +1463,7 @@ function updateSteps(id, change) {
 // (Mary: Untagged; Sarah: To Do) with a "From Evan" badge. Steps become
 // lines in the note, since their views don't show steps.
 async function assignTask(id, to) {
+  if (blockedOffline()) return;
   const t = tasks.find(x => x.id === id);
   if (!t) return;
   const name = to === 'mary' ? 'Mary' : 'Sarah';
@@ -1463,6 +1489,7 @@ function addBusinessDays(date, n) {
 }
 
 async function handOffToMary(id, tag, waitingFor) {
+  if (blockedOffline()) return;
   const t = tasks.find(x => x.id === id);
   if (!t || !tag) return;
   const day = new Date().toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
@@ -1764,6 +1791,7 @@ const VIEW_TITLES = { today: 'Today', upcoming: 'Upcoming', done: 'Done', review
 function render() {
   if (dragState) { renderAfterDrag = true; return; } // don't rebuild rows mid-drag
   reorderable = false;
+  if (offlineMode) queueMicrotask(applyOfflineReadOnly);
   renderListsNav();
   updateNavCounts();
   updateActiveNav();
@@ -2382,12 +2410,15 @@ async function fetchReviewState() {
   } catch (err) { console.error(err); return; }
   if (error) { console.error(error); return; }
   const checkedSet = new Set(data.filter(r => r.checked).map(r => r.item));
+  lastReviewChecked = { day: todayStr(), items: [...checkedSet] };
+  saveOfflineCopySoon();
   renderReviewItems(checkedSet);
   discussedToday = new Set([...checkedSet].filter(i => i.startsWith('task:')).map(i => i.slice(5)));
   if (currentView.type === 'review') render();
 }
 
 async function toggleReviewItem(item, checked) {
+  if (blockedOffline()) return;
   const { error } = await sb.from('daily_review').upsert({ day: todayStr(), item, checked });
   if (error) alert(error.message);
 }
@@ -2403,6 +2434,8 @@ async function fetchTasks() {
   if (error) { setConn(false, error.message); return; }
   tasks = data.filter(t => !pendingDeletes.has(t.id));
   setConn(true);
+  if (offlineMode) exitOffline();
+  saveOfflineCopySoon();
   updateTagOptions();
   if (firstLoad) {
     firstLoad = false;
@@ -2420,6 +2453,7 @@ async function resetRecurring() {
 }
 
 async function addTask(fields) {
+  if (blockedOffline()) return null;
   let data, error;
   try {
     ({ data, error } = await withTimeout(sb.from('tasks').insert(fields).select().single(), 15000));
@@ -2432,6 +2466,7 @@ async function addTask(fields) {
 }
 
 async function updateTask(id, fields) {
+  if (blockedOffline()) return;
   const { error } = await sb.from('tasks').update({ ...fields, updated_at: new Date().toISOString() }).eq('id', id);
   if (error) alert(error.message);
 }
@@ -2471,6 +2506,7 @@ document.addEventListener('pointerup', endDrag);
 document.addEventListener('pointercancel', endDrag);
 
 async function saveOrder(ids) {
+  if (blockedOffline()) return;
   const changed = [];
   ids.forEach((id, i) => {
     const t = tasks.find(x => x.id === id);
@@ -2485,6 +2521,7 @@ async function saveOrder(ids) {
 
 // --- Meeting mode (Daily Review) ---
 async function toggleDiscussed(id) {
+  if (blockedOffline()) return;
   const on = !discussedToday.has(id);
   on ? discussedToday.add(id) : discussedToday.delete(id);
   render();
@@ -2556,6 +2593,7 @@ document.addEventListener('visibilitychange', () => { if (document.hidden) finis
 window.addEventListener('pagehide', finishToast);
 
 function deleteTaskWithUndo(id) {
+  if (blockedOffline()) return;
   const t = tasks.find(x => x.id === id);
   if (!t) return;
   pendingDeletes.add(id);
@@ -2574,6 +2612,7 @@ const snapshot = (t, keys) => Object.fromEntries(keys.map(k => [k, t[k] ?? null]
 // The circle is one click to Done (and back). "In progress" is set from the
 // task's ⋯ menu instead (Mark in progress).
 function cycleStatus(id, next) {
+  if (blockedOffline()) return;
   const task = tasks.find(t => t.id === id);
   if (!task) return;
   next = next || (task.status === 'done' ? 'todo' : 'done');
@@ -2586,6 +2625,7 @@ function cycleStatus(id, next) {
 }
 
 async function deleteTask(id) {
+  if (blockedOffline()) return;
   const { error } = await sb.from('tasks').delete().eq('id', id);
   if (error) alert(error.message);
 }
@@ -2627,10 +2667,12 @@ async function fetchPhotos() {
   } catch (err) { console.error(err); return; }
   if (error) { console.error(error); return; }
   photos = data;
+  saveOfflineCopySoon();
   render();
 }
 
 async function uploadPhoto(taskId, file) {
+  if (blockedOffline()) return;
   let blob;
   try {
     blob = await resizeImage(file, 1600, 0.82);
@@ -2647,6 +2689,7 @@ async function uploadPhoto(taskId, file) {
 }
 
 async function deletePhoto(photo) {
+  if (blockedOffline()) return;
   await sb.storage.from('task-photos').remove([photo.path]);
   const { error } = await sb.from('task_photos').delete().eq('id', photo.id);
   if (error) alert(error.message);
@@ -2659,6 +2702,7 @@ async function fetchStickyNotes() {
   } catch (err) { console.error(err); return; }
   if (error) { console.error(error); return; }
   stickyNotes = data.filter(n => !pendingNoteDeletes.has(n.id));
+  saveOfflineCopySoon();
   render(); // notes and saved tags (Lists) both come from here
 }
 
@@ -2697,6 +2741,7 @@ function renderNotes() {
 }
 
 async function saveNote() {
+  if (blockedOffline()) { clearTimeout(noteTimer); noteTimer = null; return; }
   clearTimeout(noteTimer);
   noteTimer = null;
   const ref = noteRef;
@@ -2806,7 +2851,7 @@ async function refreshAuth() {
   try {
     const { data, error } = await withTimeout(sb.auth.refreshSession({ refresh_token: session.refresh_token }), 10000);
     if (data?.session) useSession(data.session);
-    else if (badLogin(error)) { try { localStorage.removeItem(AUTH_KEY); } catch {} session = null; showLock(); }
+    else if (badLogin(error)) { try { localStorage.removeItem(AUTH_KEY); } catch {} clearOfflineCopy(); session = null; showLock(); }
   } catch {}
 }
 
@@ -2873,17 +2918,95 @@ async function lockAllDevices() {
   if (!confirm('Lock Sync Up on every phone and computer? Everyone (you too) will need to enter the passcode again.')) return;
   try { await withTimeout(sb.auth.signOut({ scope: 'global' }), 15000); } catch {}
   try { localStorage.removeItem(AUTH_KEY); } catch {}
+  clearOfflineCopy();
   session = null;
   location.reload();
 }
 
+// --- Offline view ---
+function blockedOffline() {
+  if (!offlineMode) return false;
+  showToast("You're offline. Changes are paused until you reconnect.", null);
+  return true;
+}
+
+let offlineSaveTimer = null;
+function saveOfflineCopySoon() {
+  clearTimeout(offlineSaveTimer);
+  offlineSaveTimer = setTimeout(() => {
+    if (offlineMode || !session) return;
+    try {
+      localStorage.setItem(OFFLINE_KEY, JSON.stringify({ savedAt: new Date().toISOString(), tasks, stickyNotes, photos, review: lastReviewChecked }));
+    } catch {}
+  }, 1000);
+}
+function clearOfflineCopy() { try { localStorage.removeItem(OFFLINE_KEY); } catch {} }
+
+// Returns the saved copy's time, or null if there's none (or it's over 7 days old).
+function loadOfflineCopy() {
+  let saved = null;
+  try { saved = JSON.parse(localStorage.getItem(OFFLINE_KEY) || 'null'); } catch {}
+  if (!saved?.savedAt) return null;
+  if (Date.now() - new Date(saved.savedAt).getTime() > OFFLINE_MAX_AGE) { clearOfflineCopy(); return null; }
+  tasks = saved.tasks || [];
+  stickyNotes = saved.stickyNotes || [];
+  photos = saved.photos || [];
+  const review = saved.review?.day === todayStr() ? saved.review.items : [];
+  renderReviewItems(new Set(review));
+  discussedToday = new Set(review.filter(i => i.startsWith('task:')).map(i => i.slice(5)));
+  return saved.savedAt;
+}
+
+function enterOffline(savedAt) {
+  offlineMode = true;
+  document.body.classList.add('offline');
+  const when = savedAt ? new Date(savedAt) : new Date();
+  const sameDay = localDateStr(when) === todayStr();
+  const label = when.toLocaleString(undefined, sameDay ? { hour: 'numeric', minute: '2-digit' } : { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+  offlineBanner.textContent = `Offline · showing your tasks as of ${label} · changes are paused`;
+  offlineBanner.classList.add('show');
+  setConn(false, 'Offline');
+  render();
+}
+function exitOffline() {
+  offlineMode = false;
+  document.body.classList.remove('offline');
+  offlineBanner.classList.remove('show');
+  render();
+}
+// Keep text boxes read-only while offline (the page re-renders often).
+function applyOfflineReadOnly() {
+  document.querySelectorAll('#detailPane input, #detailPane textarea, #todoDetail input, #todoDetail textarea, #noteTitle, #noteBody')
+    .forEach(el => { el.readOnly = offlineMode; });
+}
+
+window.addEventListener('offline', () => { if (appStarted) enterOffline(new Date().toISOString()); });
+window.addEventListener('online', () => {
+  if (!appStarted) { boot(); return; }
+  refreshAuth().then(() => { retryConnection(); fetchTasks(); });
+});
+
 async function boot() {
   connText.textContent = 'Connecting…';
   connDot.className = 'dot';
+  // Clearly offline (e.g. airplane mode): show the saved copy right away.
+  let hasLogin = false;
+  try { hasLogin = !!localStorage.getItem(AUTH_KEY); } catch {}
+  if (!navigator.onLine && hasLogin) {
+    const savedAt = loadOfflineCopy();
+    if (savedAt) { lockScreen.hidden = true; enterOffline(savedAt); return; }
+  }
   const ok = await restoreSession();
-  if (ok === true) startApp();
-  else if (ok === 'retry') setConn(false, 'Connection timed out — click to retry');
-  else showLock();
+  if (ok === true) { startApp(); return; }
+  if (ok === 'retry') {
+    // No internet: open the saved copy, if this device was unlocked before.
+    const savedAt = loadOfflineCopy();
+    if (savedAt) { lockScreen.hidden = true; enterOffline(savedAt); }
+    else setConn(false, 'Connection timed out — click to retry');
+    return;
+  }
+  clearOfflineCopy();
+  showLock();
 }
 
 function startApp() {
@@ -2921,6 +3044,9 @@ function startApp() {
 }
 
 if (sb) boot();
+
+// Lets the app open with no internet (see sw.js).
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
 </script>
 </body>
 </html>

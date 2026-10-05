@@ -29,6 +29,7 @@ A shared task tracker for Evan, Mary, and Sarah. Single-file app, locked with on
 - Print / export button for a clean printable copy of the board
 - Daily Review checklist (Calendar, Tasks, Inbox, etc.) shared between Mary and Sarah, resets each day
 - Notes: as many auto-saving notes as you like, per profile, listed on the right; a note is named by the date it was created until you give it a title
+- Offline view: each device keeps a saved copy of the board (refreshed on every sync) and a service worker (`sw.js`) keeps the app itself, so with no internet Sync Up still opens -- read-only, with an "Offline · as of …" banner. Only on devices unlocked before; the copy is dropped after 7 days offline or when the device is locked
 - Live updates via Supabase Realtime -- useful when you're both looking at it during the call
 
 ## Automatic backups
