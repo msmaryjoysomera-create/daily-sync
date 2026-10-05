@@ -312,6 +312,9 @@
   .dash-col .todo-row{padding:8px 6px}
   .dash-col .todo-row:last-child{border-bottom:none}
   .dash-empty{padding:8px 6px 12px;font-size:12.5px;color:var(--muted)}
+  .dash-rows{min-height:36px;border-radius:10px}
+  body.is-dragging .dash-rows{outline:1px dashed var(--line);outline-offset:2px}
+  body.is-dragging{user-select:none;-webkit-user-select:none}
   .todo-layout.add-mode{grid-template-columns:minmax(0,1fr);max-width:760px}
   .todo-layout.add-mode .todo-main{display:none}
   .todo-layout.add-mode .todo-detail{position:static;max-height:none}
@@ -1400,13 +1403,14 @@ function renderDashboard() {
   board.className = 'dash-board';
   lists.forEach(({ name, key }) => {
     const items = open.filter(t => (t.tag || null) === key).sort(order);
-    if (key === null && !items.length) return; // only show "No list" when it has tasks
+    if (key === null && !items.length && !reorderable) return; // "No list" shows when it has tasks (or as a drop target)
     if (search && !items.length) return;
     const col = document.createElement('section');
     col.className = 'dash-col';
     col.innerHTML = `<button type="button" class="dash-col-head" ${key ? `data-dash-list="${escapeAttr(key)}"` : 'disabled'}><span>${escapeHtml(name)}</span><span class="dash-count">${items.length}</span></button>`;
     const rows = document.createElement('div');
     rows.className = 'dash-rows';
+    rows.dataset.listKey = key || ''; // '' = No list
     items.forEach(t => rows.appendChild(todoRowEl(t)));
     if (!items.length) rows.innerHTML = '<div class="dash-empty">No tasks</div>';
     col.appendChild(rows);
@@ -2559,13 +2563,29 @@ document.addEventListener('pointerdown', e => {
   const row = grip.closest('.row, .todo-row');
   e.preventDefault();
   grip.setPointerCapture(e.pointerId);
-  dragState = { row, container: row.parentElement, moved: false, startY: e.clientY };
+  dragState = { row, container: row.parentElement, from: row.parentElement, moved: false, startY: e.clientY };
   row.classList.add('dragging');
+  document.body.classList.add('is-dragging');
 });
 document.addEventListener('pointermove', e => {
   if (!dragState) return;
-  const { row, container } = dragState;
+  const { row } = dragState;
   if (Math.abs(e.clientY - dragState.startY) > 4) dragState.moved = true;
+  // Near the top or bottom edge, scroll so stacked lists (phone) can be reached.
+  if (e.clientY < 90) window.scrollBy(0, -14);
+  else if (e.clientY > window.innerHeight - 110) window.scrollBy(0, 14);
+  // Dashboard: dragging over another column moves the task into that list.
+  if (dragState.from.matches('.dash-rows')) {
+    const under = document.elementsFromPoint(e.clientX, e.clientY).find(el => el.closest('.dash-col') && !row.contains(el));
+    const target = under?.closest('.dash-col')?.querySelector('.dash-rows');
+    if (target && target !== dragState.container) {
+      target.querySelector('.dash-empty')?.remove();
+      target.appendChild(row);
+      dragState.container = target;
+      dragState.moved = true;
+    }
+  }
+  const { container } = dragState;
   // Slot the row before the first task whose middle is below the pointer.
   const others = dragRowsIn(container).filter(r => r !== row);
   const before = others.find(r => { const b = r.getBoundingClientRect(); return e.clientY < b.top + b.height / 2; });
@@ -2574,10 +2594,16 @@ document.addEventListener('pointermove', e => {
 });
 const endDrag = () => {
   if (!dragState) return;
-  const { row, container, moved } = dragState;
+  const { row, container, from, moved } = dragState;
   row.classList.remove('dragging');
+  document.body.classList.remove('is-dragging');
   dragState = null;
   lastDragEnd = Date.now();
+  if (moved && container !== from && container.dataset.listKey !== undefined) {
+    // Dropped into another Dashboard column: move it to that list.
+    const t = tasks.find(x => x.id === row.dataset.id);
+    if (t) { t.tag = container.dataset.listKey || null; updateTask(t.id, { tag: t.tag }); }
+  }
   if (moved) saveOrder(dragRowsIn(container).map(r => r.dataset.id));
   else if (renderAfterDrag) render();
   renderAfterDrag = false;
