@@ -495,7 +495,7 @@
       </div>
 
       <div class="who-group" id="whoToggle">
-        <button data-who="evan">Evan</button>
+        <button data-who="evan">EHL</button>
         <button data-who="mary">Mary</button>
         <button data-who="sarah">Sarah</button>
       </div>
@@ -992,7 +992,7 @@ try { todoShowCompleted = localStorage.getItem('daily-sync-todo-completed') === 
 let todoForceDetail = false;
 // Phone layout: whether the task bar is showing (opened with the + button).
 let mAdding = false;
-const PROFILE_NAMES = { evan: 'Evan', mary: 'Mary', sarah: 'Sarah' };
+const PROFILE_NAMES = { evan: 'EHL', mary: 'Mary', sarah: 'Sarah' };
 const M_ICON = {
   sun: '<svg viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="3.5" stroke="currentColor" stroke-width="1.5"/><path d="M9 1.5V3.2M9 14.8V16.5M16.5 9H14.8M3.2 9H1.5M14.3 3.7L13.1 4.9M4.9 13.1L3.7 14.3M14.3 14.3L13.1 13.1M4.9 4.9L3.7 3.7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',
   cal: '<svg viewBox="0 0 18 18" fill="none"><rect x="2.5" y="3.5" width="13" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M2.5 7H15.5M6 2V4.5M12 2V4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',
@@ -1172,7 +1172,7 @@ function taskEl(task) {
           ${task.tag ? `<span class="badge">${escapeHtml(task.tag)}</span>` : ''}
           ${task.recurring ? `<span class="badge recur" title="Repeats daily">${ICON_REFRESH} Daily</span>` : ''}
           ${task.source === 'claude' ? '<span class="badge claude" title="Added via Claude">✳ via Claude</span>' : ''}
-          ${task.source === 'evan' ? '<span class="badge evan" title="Assigned by Evan">From Evan</span>' : ''}
+          ${task.source === 'evan' ? '<span class="badge evan" title="Assigned by EHL">From EHL</span>' : ''}
         </div>
         <div class="due-row">
           <span class="due-label">Due date</span>
@@ -1206,7 +1206,7 @@ function basicTaskEl(task) {
         <input class="task-title" value="${escapeAttr(task.title)}">
         <div class="task-meta">
           ${task.source === 'claude' ? '<span class="badge claude" title="Added via Claude">✳ via Claude</span>' : ''}
-          ${task.source === 'evan' ? '<span class="badge evan" title="Assigned by Evan">From Evan</span>' : ''}
+          ${task.source === 'evan' ? '<span class="badge evan" title="Assigned by EHL">From EHL</span>' : ''}
         </div>
         <textarea class="task-notes-edit${task.notes ? '' : ' hidden'}" placeholder="+ Add a note…" rows="1">${escapeHtml(task.notes || '')}</textarea>
         ${photoRowHtml(task.id)}
@@ -1466,7 +1466,7 @@ async function handOffToMary(id, tag, waitingFor) {
     assignee: 'mary',
     tag,
     due_date: localDateStr(checkBack),
-    notes: [t.notes, stepLines, `Evan completed this on ${day}, waiting for ${waitingFor}. Check back ${checkBackLabel}.`].filter(Boolean).join('\n'),
+    notes: [t.notes, stepLines, `EHL completed this on ${day}, waiting for ${waitingFor}. Check back ${checkBackLabel}.`].filter(Boolean).join('\n'),
     status: 'todo',
     source: 'evan',
   });
@@ -1772,7 +1772,7 @@ function render() {
   if (!who) {
     viewTitleEl.textContent = 'Sync Up';
     fullWrap.style.display = '';
-    fullWrap.innerHTML = `<div class="empty">${isMobile() ? 'Tap the circle at the top right to choose Evan, Mary, or Sarah' : 'Choose Evan, Mary, or Sarah in the menu to get started'}</div>`;
+    fullWrap.innerHTML = `<div class="empty">${isMobile() ? 'Tap the circle at the top right to choose EHL, Mary, or Sarah' : 'Choose EHL, Mary, or Sarah in the menu to get started'}</div>`;
     return;
   }
 

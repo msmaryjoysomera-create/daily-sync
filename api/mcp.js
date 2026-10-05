@@ -45,12 +45,12 @@ async function currentTags() {
 const buildTools = ({ mary: tags, evan: evanLists }) => [
   {
     name: 'sync_up_add_task',
-    description: `Add a task to "Sync Up" -- Columbia Cabinets' own daily task tracker/checklist app for Mary, Sarah, and Evan (not Salesforce, not a CRM, not any other task/to-do system). Use this specifically when asked to add something "to Sync Up" or "to the board", or when no other task system is named and the context is clearly Mary/Sarah's daily sync. Mary's categories: ${tags.join(', ')}.${evanLists.length ? ` Evan's lists: ${evanLists.join(', ')}.` : ''} Reuse one of the assignee's existing categories/lists exactly when it clearly fits, instead of inventing a new one.`,
+    description: `Add a task to "Sync Up" -- Columbia Cabinets' own daily task tracker/checklist app for Mary, Sarah, and EHL (Evan) (not Salesforce, not a CRM, not any other task/to-do system). Use this specifically when asked to add something "to Sync Up" or "to the board", or when no other task system is named and the context is clearly Mary/Sarah's daily sync. Mary's categories: ${tags.join(', ')}.${evanLists.length ? ` EHL's (Evan's) lists: ${evanLists.join(', ')}.` : ''} Reuse one of the assignee's existing categories/lists exactly when it clearly fits, instead of inventing a new one.`,
     inputSchema: {
       type: 'object',
       properties: {
         title: { type: 'string', description: 'Short task title, e.g. "Follow up with Adria about Template"' },
-        assignee: { type: 'string', enum: ['mary', 'sarah', 'evan'], description: 'Who the task is for, if a specific person was named' },
+        assignee: { type: 'string', enum: ['mary', 'sarah', 'evan'], description: 'Who the task is for, if a specific person was named ("evan" = EHL, also called Evan)' },
         tag: { type: 'string', description: 'Category for the task -- prefer an existing category listed above when it fits' },
         due_date: { type: 'string', description: 'Due date in YYYY-MM-DD format, only if a date was mentioned' },
         notes: { type: 'string', description: 'Extra context or notes for the task' },
@@ -60,18 +60,18 @@ const buildTools = ({ mary: tags, evan: evanLists }) => [
   },
   {
     name: 'sync_up_list_tasks',
-    description: 'List current open (not-done) tasks on "Sync Up" -- Columbia Cabinets\' own daily task tracker for Mary, Sarah, and Evan (not Salesforce, not a CRM). Optionally filtered to one person.',
+    description: 'List current open (not-done) tasks on "Sync Up" -- Columbia Cabinets\' own daily task tracker for Mary, Sarah, and EHL (Evan) (not Salesforce, not a CRM). Optionally filtered to one person.',
     inputSchema: {
       type: 'object',
       properties: {
-        assignee: { type: 'string', enum: ['mary', 'sarah', 'evan'], description: 'Only list tasks assigned to this person' },
+        assignee: { type: 'string', enum: ['mary', 'sarah', 'evan'], description: 'Only list tasks assigned to this person ("evan" = EHL, also called Evan)' },
       },
     },
   },
 ];
 
 function personName(v) {
-  return { mary: 'Mary', sarah: 'Sarah', evan: 'Evan' }[v] || null;
+  return { mary: 'Mary', sarah: 'Sarah', evan: 'EHL' }[v] || null;
 }
 
 async function callTool(name, args) {

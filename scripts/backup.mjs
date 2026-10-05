@@ -178,7 +178,7 @@ async function main() {
     ...REVIEW_ITEMS.map(item => new Paragraph({ text: `${checked.has(item) ? '☑' : '☐'}  ${item}` })),
     ...await personSection('Mary', 'mary', data),
     ...await personSection('Sarah', 'sarah', data),
-    ...await personSection('Evan', 'evan', data),
+    ...await personSection('EHL', 'evan', data),
   ];
   const unassigned = tasks.filter(t => !['mary', 'sarah', 'evan'].includes(t.assignee));
   if (unassigned.length) {
