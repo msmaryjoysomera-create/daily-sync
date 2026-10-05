@@ -1121,6 +1121,8 @@ function setWho(val) {
     b.style.display = (b.dataset.for === 'evan') === (val === 'evan') ? '' : 'none';
   });
   if (val === 'sarah') reviewNavItem.style.display = 'none';
+  // Sarah's finished tasks are called "Completed" (like EHL's); Mary's stay "Done".
+  document.querySelector('#tasksSection .nav-item[data-view="done"] .nav-item-label').textContent = val === 'sarah' ? 'Completed' : 'Done';
   fabBadge.textContent = { mary: 'M', sarah: 'S', evan: 'E' }[val] || '';
   fabBadge.classList.toggle('show', !!val);
   tasksSection.classList.toggle('hide', !val);
@@ -1882,7 +1884,7 @@ function render() {
     viewTitleEl.textContent = 'Upcoming';
     renderTaskList(visible.filter(isUpcoming).sort(byDue), groupAcrossLists, search ? noMatch : 'Nothing upcoming');
   } else if (currentView.type === 'done') {
-    viewTitleEl.textContent = 'Done';
+    viewTitleEl.textContent = who === 'sarah' ? 'Completed' : 'Done';
     renderDoneList(visible.filter(t => t.status === 'done'));
   } else if (currentView.type === 'tag') {
     // One of Sarah's own lists.
