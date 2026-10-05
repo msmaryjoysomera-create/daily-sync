@@ -260,6 +260,11 @@
   /* Evan's profile: Outlook To Do-style list + detail panel */
   .todo-layout{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:16px;align-items:start}
   .todo-left{display:flex;flex-direction:column;gap:16px;min-width:0}
+  /* Computer: the task bar and details (left column) stay on screen while a
+     long list on the right scrolls. On narrower screens the boxes stack. */
+  @media (min-width:901px){
+    .pane-left, .todo-left{position:sticky;top:16px;align-self:start;max-height:calc(100vh - 32px);overflow-y:auto;scrollbar-width:thin}
+  }
   .todo-addbox{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px}
   .todo-addbox .todo-add{margin-bottom:0}
   .todo-detail-empty{padding:40px 16px;text-align:center;color:var(--muted);font-size:13.5px}
