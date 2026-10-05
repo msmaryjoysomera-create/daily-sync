@@ -79,6 +79,7 @@
   .sidebar-search::placeholder{color:var(--muted)}
 
   .nav-section.hide, .who-group.hide, .sidebar-search.hide{display:none}
+  .nav-sublabel{font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:800;padding:12px 8px 4px}
   .nav-label{font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:800;padding:0 8px;margin-bottom:4px}
   .nav-item{display:flex;align-items:center;gap:8px;width:100%;background:transparent;border:none;border-radius:9px;
     padding:8px;font-size:14px;font-weight:600;color:var(--text);text-align:left}
@@ -824,11 +825,14 @@ const ARCHIVE_DAYS = 3;
 // show under Lists even before they have any tasks.
 const TAG_MARK = 'tag';
 // Mary's tag rows have no assignee (or 'mary'); Evan's lists are his own ('evan').
-const tagOwner = profile => profile === 'evan' ? 'evan' : 'mary';
+const tagOwner = profile => profile === 'evan' || profile === 'sarah' ? profile : 'mary';
 const tagRows = (profile = who) => stickyNotes.filter(n => n.color === TAG_MARK && n.title && (n.assignee || 'mary') === tagOwner(profile))
   .sort((a, b) => (Number(a.body) || 0) - (Number(b.body) || 0) || a.created_at.localeCompare(b.created_at));
 const savedTags = (profile = who) => tagRows(profile).map(n => n.title);
-const ownsTask = (t, profile = who) => tagOwner(profile) === 'evan' ? t.assignee === 'evan' : t.assignee !== 'evan';
+const ownsTask = (t, profile = who) => {
+  const owner = tagOwner(profile);
+  return owner === 'mary' ? t.assignee !== 'evan' && t.assignee !== 'sarah' : t.assignee === owner;
+};
 
 function allTagNames(profile = who) {
   // Plus any tag a task uses that isn't saved (e.g. one Claude made up).
@@ -837,7 +841,10 @@ function allTagNames(profile = who) {
 }
 
 // Tag-wide task updates only touch that profile's tasks.
-const scopeTasks = q => tagOwner(who) === 'evan' ? q.eq('assignee', 'evan') : q.or('assignee.is.null,assignee.neq.evan');
+const scopeTasks = q => tagOwner(who) === 'mary' ? q.or('assignee.is.null,assignee.eq.mary') : q.eq('assignee', tagOwner(who));
+// A list page you can rename/delete: one of Mary's tags, EHL's lists, or
+// Sarah's own lists (her To Do / In Progress / Done are fixed).
+const isTagListView = () => (who === 'sarah' ? currentView.type === 'tag' : currentView.type === 'list') && !!currentView.key;
 
 const findTag = name => allTagNames().find(t => t.toLowerCase() === name.trim().toLowerCase()) || null;
 
@@ -848,7 +855,7 @@ async function createTag(name) {
   const existing = findTag(name);
   if (existing) return existing;
   const order = Math.max(-1, ...tagRows().map(n => Number(n.body) || 0)) + 1;
-  const { data, error } = await sb.from('sticky_notes').insert({ assignee: who === 'evan' ? 'evan' : null, title: name, body: String(order), color: TAG_MARK }).select().single();
+  const { data, error } = await sb.from('sticky_notes').insert({ assignee: who === 'evan' || who === 'sarah' ? who : null, title: name, body: String(order), color: TAG_MARK }).select().single();
   if (error) { alert(error.message); return name; }
   if (!stickyNotes.some(n => n.id === data.id)) stickyNotes.push(data);
   render();
@@ -885,7 +892,7 @@ async function renameTag(oldName, newName) {
     reviewOpenGroups.add(newName);
     try { localStorage.setItem('daily-sync-review-open', JSON.stringify([...reviewOpenGroups])); } catch {}
   }
-  if (currentView.type === 'list' && currentView.key === oldName) currentView.key = newName;
+  if ((currentView.type === 'list' || currentView.type === 'tag') && currentView.key === oldName) currentView.key = newName;
   render();
 }
 
@@ -908,7 +915,7 @@ async function deleteTag(name) {
   }
   tasks.forEach(t => { if (t.tag === name && ownsTask(t)) t.tag = null; });
   stickyNotes = stickyNotes.filter(n => !rowIds.includes(n.id));
-  if (currentView.type === 'list' && currentView.key === name) currentView = { type: who === 'evan' ? 'alltasks' : 'today' };
+  if ((currentView.type === 'list' || currentView.type === 'tag') && currentView.key === name) currentView = { type: who === 'evan' ? 'alltasks' : 'today' };
   selectedTaskId = null;
   render();
 }
@@ -927,7 +934,7 @@ function startRenameTag() {
 function endRenameTag(save) {
   if (!viewTitleRow.classList.contains('renaming')) return;
   viewTitleRow.classList.remove('renaming');
-  if (save && currentView.type === 'list' && currentView.key) renameTag(currentView.key, tagRenameInput.value);
+  if (save && isTagListView()) renameTag(currentView.key, tagRenameInput.value);
 }
 tagRenameInput.addEventListener('keydown', e => {
   if (e.key === 'Enter') { e.preventDefault(); endRenameTag(true); }
@@ -1106,7 +1113,7 @@ function setWho(val) {
   // list names are per profile, so start fresh on his/their default view.
   const evanView = ['myday', 'important', 'planned', 'alltasks', 'completed'].includes(currentView.type);
   const wrongKind = val === 'evan' ? ['today', 'upcoming', 'done', 'review'].includes(currentView.type) : evanView;
-  if (crossing || wrongKind || currentView.type === 'list') currentView = { type: val === 'evan' ? 'myday' : 'today' };
+  if (crossing || wrongKind || currentView.type === 'list' || currentView.type === 'tag') currentView = { type: val === 'evan' ? 'myday' : 'today' };
   localStorage.setItem('daily-sync-who', val);
   [...whoToggle.children].forEach(b => b.classList.toggle('active', b.dataset.who === val));
   recurToggleBtn.style.display = val === 'mary' ? '' : 'none';
@@ -1167,11 +1174,11 @@ function photoRowHtml(taskId) {
 }
 
 function meatballHtml(task, isMary) {
-  const moveHtml = isMary ? `
+  const moveHtml = isMary || who === 'sarah' ? `
     <select class="meatball-move" data-action="move-select">
       <option value="" disabled selected>Move to list…</option>
       ${allTagNames().map(t => `<option value="${escapeAttr(t)}">${escapeHtml(t)}</option>`).join('')}
-      <option value="__untagged__">Untagged</option>
+      <option value="__untagged__">${who === 'sarah' ? 'No list' : 'Untagged'}</option>
     </select>
   ` : '';
   return `
@@ -1566,7 +1573,7 @@ function startNewList(btn) {
     input.blur();
     if (save && name) {
       const created = await createTag(name);
-      currentView = { type: 'list', key: created };
+      currentView = { type: who === 'sarah' ? 'tag' : 'list', key: created };
       selectedTaskId = null;
     }
     closeSheet();
@@ -1721,14 +1728,23 @@ function escapeAttr(s) { return s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': 
 function isDueTodayOrOverdue(t) { return t.status !== 'done' && !!t.due_date && t.due_date <= todayStr(); }
 function isUpcoming(t) { return t.status !== 'done' && !!t.due_date && t.due_date > todayStr(); }
 
-function listNavItemEl(key, label, count, colorIdx) {
+function listNavItemEl(key, label, count, colorIdx, view = 'list') {
   const btn = document.createElement('button');
   btn.type = 'button';
-  btn.className = 'nav-item' + (currentView.type === 'list' && currentView.key === key ? ' active' : '');
-  btn.dataset.view = 'list';
+  btn.className = 'nav-item' + (currentView.type === view && currentView.key === key ? ' active' : '');
+  btn.dataset.view = view;
   btn.dataset.key = key;
   btn.innerHTML = `<span class="nav-dot" style="background:${LIST_DOT_COLORS[colorIdx % LIST_DOT_COLORS.length]}"></span><span class="nav-item-label">${escapeHtml(label)}</span><span class="nav-count">${count}</span>`;
   return btn;
+}
+
+function newListButton() {
+  const add = document.createElement('button');
+  add.type = 'button';
+  add.className = 'nav-item new-list-btn';
+  add.dataset.action = 'new-list';
+  add.innerHTML = '<span class="nav-icon">+</span><span class="nav-item-label">New list</span>';
+  return add;
 }
 
 function renderListsNav() {
@@ -1739,12 +1755,7 @@ function renderListsNav() {
   if (who === 'evan') {
     const open = tasks.filter(t => t.assignee === 'evan' && t.status !== 'done');
     allTagNames().forEach((name, i) => listsNav.appendChild(listNavItemEl(name, name, open.filter(t => t.tag === name).length, i)));
-    const add = document.createElement('button');
-    add.type = 'button';
-    add.className = 'nav-item new-list-btn';
-    add.dataset.action = 'new-list';
-    add.innerHTML = '<span class="nav-icon">+</span><span class="nav-item-label">New list</span>';
-    listsNav.appendChild(add);
+    listsNav.appendChild(newListButton());
     return;
   }
   if (who === 'sarah') {
@@ -1757,6 +1768,14 @@ function renderListsNav() {
       const count = tasks.filter(t => t.assignee === 'sarah' && t.status === s.key).length;
       listsNav.appendChild(listNavItemEl(s.key, s.label, count, i));
     });
+    // Sarah's own lists, under her status lists.
+    const open = tasks.filter(t => t.assignee === 'sarah' && t.status !== 'done');
+    const sub = document.createElement('div');
+    sub.className = 'nav-sublabel';
+    sub.textContent = 'Your lists';
+    listsNav.appendChild(sub);
+    allTagNames().forEach((name, i) => listsNav.appendChild(listNavItemEl(name, name, open.filter(t => t.tag === name).length, i + 3, 'tag')));
+    listsNav.appendChild(newListButton());
   } else {
     const mine = tasks.filter(t => t.assignee === 'mary' && t.status !== 'done');
     const names = allTagNames();
@@ -1803,7 +1822,7 @@ function render() {
   notesWrap.style.display = 'none';
   todoWrap.style.display = 'none';
   dueBanner.classList.remove('show');
-  const tagView = (who === 'mary' || who === 'evan') && currentView.type === 'list' && !!currentView.key;
+  const tagView = isTagListView();
   viewTitleRow.classList.toggle('tag-view', tagView);
   if (!tagView) viewTitleRow.classList.remove('renaming');
 
@@ -1851,7 +1870,7 @@ function render() {
   const doneView = currentView.type === 'done' || (currentView.type === 'list' && who === 'sarah' && currentView.key === 'done');
   addForm.classList.toggle('done-mode', doneView);
   titleInput.placeholder = doneView ? 'Add a completed task…' : 'Add a task…';
-  tagInput.placeholder = who === 'mary' && currentView.type === 'list' && currentView.key ? `Tag: ${currentView.key}` : 'Tag (optional)';
+  tagInput.placeholder = isTagListView() && who !== 'evan' ? `${who === 'sarah' ? 'List' : 'Tag'}: ${currentView.key}` : who === 'sarah' ? 'List (optional)' : 'Tag (optional)';
   const noMatch = 'No matching tasks';
   const pinFirst = (a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0);
   const byDue = (a, b) => pinFirst(a, b) || (a.due_date || '9999').localeCompare(b.due_date || '9999') || a.created_at.localeCompare(b.created_at);
@@ -1877,6 +1896,14 @@ function render() {
   } else if (currentView.type === 'done') {
     viewTitleEl.textContent = 'Done';
     renderDoneList(visible.filter(t => t.status === 'done'));
+  } else if (currentView.type === 'tag') {
+    // One of Sarah's own lists.
+    const key = currentView.key;
+    viewTitleEl.textContent = key;
+    reorderable = !search;
+    const list = visible.filter(t => t.status !== 'done' && t.tag === key)
+      .sort((a, b) => byPosition(false)(a, b) || a.created_at.localeCompare(b.created_at));
+    renderTaskList(list, null, search ? noMatch : 'Nothing in this list yet');
   } else if (currentView.type === 'list') {
     const key = currentView.key;
     if (who === 'sarah') {
@@ -2048,8 +2075,8 @@ document.body.addEventListener('click', e => {
   if (navItem) {
     closeSheet();
     mAdding = false;
-    currentView = navItem.dataset.view === 'list'
-      ? { type: 'list', key: navItem.dataset.key }
+    currentView = navItem.dataset.view === 'list' || navItem.dataset.view === 'tag'
+      ? { type: navItem.dataset.view, key: navItem.dataset.key }
       : { type: navItem.dataset.view };
     selectedTaskId = null;
     if (isMobile()) setSidebar(false);
@@ -2321,9 +2348,9 @@ document.body.addEventListener('change', e => {
   } else if (e.target.classList.contains('meatball-move')) {
     const id = e.target.closest('.task').dataset.id;
     const val = e.target.value;
-    updateTask(id, { tag: val === '__untagged__' ? null : val });
     e.target.value = '';
     document.querySelectorAll('.meatball-wrap.open').forEach(w => w.classList.remove('open'));
+    patchTask(id, { tag: val === '__untagged__' ? null : val }); // move it on screen right away
   }
 });
 
@@ -2347,7 +2374,7 @@ addForm.addEventListener('submit', async e => {
   setAdding(submitBtn, true);
   // A task added while viewing a list (or Today) should land in that view, not vanish.
   const inList = currentView.type === 'list';
-  const listTag = inList && who === 'mary' ? currentView.key || null : null;
+  const listTag = (inList && who === 'mary') || currentView.type === 'tag' ? currentView.key || null : null;
   const listStatus = inList && who === 'sarah' && currentView.key === 'doing' ? 'doing' : 'todo';
   const viewDue = currentView.type === 'today' ? todayStr() : null;
   const doneMode = addForm.classList.contains('done-mode');
