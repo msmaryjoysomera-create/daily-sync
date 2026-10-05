@@ -296,6 +296,22 @@
   .todo-completed-toggle.open .chev{transform:rotate(90deg)}
   .todo-empty{padding:28px 10px;text-align:center;color:var(--muted);font-size:13.5px}
   .todo-detail{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;min-height:280px}
+  /* Dashboard: add bar on top, all lists as columns below, details slide in from the right */
+  .todo-layout.dash-mode{grid-template-columns:minmax(0,1fr)}
+  .todo-layout.dash-mode .todo-left{position:static;max-height:none;overflow:visible}
+  .todo-layout.dash-mode .todo-detail{display:none}
+  .todo-layout.dash-mode.has-selection .todo-detail{display:block;position:fixed;top:0;right:0;bottom:0;width:min(420px,100vw);z-index:60;border-radius:0;border:none;border-left:1px solid var(--line);box-shadow:-8px 0 30px rgba(0,0,0,.12);overflow-y:auto;min-height:0;padding:calc(18px + env(safe-area-inset-top)) 16px 40px}
+  .todo-layout.dash-mode .todo-main{background:transparent;border:none;padding:0}
+  .todo-layout.dash-mode .detail-back{display:inline-flex}
+  .dash-board{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;align-items:start}
+  .dash-col{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 10px 6px}
+  .dash-col-head{display:flex;justify-content:space-between;align-items:center;width:100%;background:none;border:none;font-family:inherit;font-size:13.5px;font-weight:800;color:var(--text);padding:4px 6px 8px;cursor:pointer;text-align:left}
+  .dash-col-head:disabled{cursor:default}
+  .dash-col-head:not(:disabled):hover span:first-child{color:var(--accent)}
+  .dash-count{font-size:12px;font-weight:600;color:var(--muted)}
+  .dash-col .todo-row{padding:8px 6px}
+  .dash-col .todo-row:last-child{border-bottom:none}
+  .dash-empty{padding:8px 6px 12px;font-size:12.5px;color:var(--muted)}
   .todo-layout.add-mode{grid-template-columns:minmax(0,1fr);max-width:760px}
   .todo-layout.add-mode .todo-main{display:none}
   .todo-layout.add-mode .todo-detail{position:static;max-height:none}
@@ -528,6 +544,7 @@
 
       <nav class="nav-section" id="tasksSection">
         <div class="nav-label">Tasks</div>
+        <button type="button" class="nav-item" data-for="evan" data-view="dashboard"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><rect x="2.5" y="2.5" width="5.5" height="5.5" rx="1.2" stroke="currentColor" stroke-width="1.5"/><rect x="10" y="2.5" width="5.5" height="5.5" rx="1.2" stroke="currentColor" stroke-width="1.5"/><rect x="2.5" y="10" width="5.5" height="5.5" rx="1.2" stroke="currentColor" stroke-width="1.5"/><rect x="10" y="10" width="5.5" height="5.5" rx="1.2" stroke="currentColor" stroke-width="1.5"/></svg></span><span class="nav-item-label">Dashboard</span><span class="nav-count" id="countDashboard">0</span></button>
         <button type="button" class="nav-item" data-for="evan" data-view="myday"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="3.5" stroke="currentColor" stroke-width="1.5"/><path d="M9 1.5V3.2M9 14.8V16.5M16.5 9H14.8M3.2 9H1.5M14.3 3.7L13.1 4.9M4.9 13.1L3.7 14.3M14.3 14.3L13.1 13.1M4.9 4.9L3.7 3.7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span><span class="nav-item-label">My Day</span><span class="nav-count" id="countMyDay">0</span></button>
         <button type="button" class="nav-item" data-for="evan" data-view="important"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M12 3.5l2.6 5.3 5.9.9-4.25 4.1 1 5.8L12 16.9l-5.25 2.75 1-5.8L3.5 9.7l5.9-.9z"/></svg></span><span class="nav-item-label">Important</span><span class="nav-count" id="countImportant">0</span></button>
         <button type="button" class="nav-item" data-for="evan" data-view="planned"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><rect x="2.5" y="3.5" width="13" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M2.5 7H15.5M6 2V4.5M12 2V4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span><span class="nav-item-label">Planned</span><span class="nav-count" id="countPlanned">0</span></button>
@@ -1032,6 +1049,7 @@ let todoForceDetail = false;
 let mAdding = false;
 const PROFILE_NAMES = { evan: 'EHL', mary: 'Mary', sarah: 'Sarah' };
 const M_ICON = {
+  grid: '<svg viewBox="0 0 18 18" fill="none"><rect x="2.5" y="2.5" width="5.5" height="5.5" rx="1.2" stroke="currentColor" stroke-width="1.5"/><rect x="10" y="2.5" width="5.5" height="5.5" rx="1.2" stroke="currentColor" stroke-width="1.5"/><rect x="2.5" y="10" width="5.5" height="5.5" rx="1.2" stroke="currentColor" stroke-width="1.5"/><rect x="10" y="10" width="5.5" height="5.5" rx="1.2" stroke="currentColor" stroke-width="1.5"/></svg>',
   sun: '<svg viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="3.5" stroke="currentColor" stroke-width="1.5"/><path d="M9 1.5V3.2M9 14.8V16.5M16.5 9H14.8M3.2 9H1.5M14.3 3.7L13.1 4.9M4.9 13.1L3.7 14.3M14.3 14.3L13.1 13.1M4.9 4.9L3.7 3.7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',
   cal: '<svg viewBox="0 0 18 18" fill="none"><rect x="2.5" y="3.5" width="13" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M2.5 7H15.5M6 2V4.5M12 2V4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',
   list: '<svg viewBox="0 0 18 18" fill="none"><path d="M6.5 4.5H15.5M6.5 9H15.5M6.5 13.5H15.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="3" cy="4.5" r="1" fill="currentColor"/><circle cx="3" cy="9" r="1" fill="currentColor"/><circle cx="3" cy="13.5" r="1" fill="currentColor"/></svg>',
@@ -1040,7 +1058,7 @@ const M_ICON = {
 };
 const isMyDay = t => t.my_day === todayStr();
 const stepsOf = t => Array.isArray(t.steps) ? t.steps : [];
-const TODO_VIEWS = { add: 'Add a Task', myday: 'My Day', important: 'Important', planned: 'Planned', alltasks: 'Tasks', completed: 'Completed' };
+const TODO_VIEWS = { add: 'Add a Task', dashboard: 'Dashboard', myday: 'My Day', important: 'Important', planned: 'Planned', alltasks: 'Tasks', completed: 'Completed' };
 const starSvg = on => `<svg width="18" height="18" viewBox="0 0 24 24" fill="${on ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M12 3.5l2.6 5.3 5.9.9-4.25 4.1 1 5.8L12 16.9l-5.25 2.75 1-5.8L3.5 9.7l5.9-.9z"/></svg>`;
 const SUN_SVG = '<svg width="15" height="15" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="3.5" stroke="currentColor" stroke-width="1.5"/><path d="M9 1.5V3.2M9 14.8V16.5M16.5 9H14.8M3.2 9H1.5M14.3 3.7L13.1 4.9M4.9 13.1L3.7 14.3M14.3 14.3L13.1 13.1M4.9 4.9L3.7 3.7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>';
 const TRASH_SVG = '<svg width="15" height="15" viewBox="0 0 18 18" fill="none"><path d="M3 5h12M7 5V3.5h4V5M5 5l.7 9.5a1 1 0 0 0 1 .9h4.6a1 1 0 0 0 1-.9L13 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
@@ -1111,9 +1129,10 @@ function setWho(val) {
   selectedTaskId = null;
   // Evan's views (My Day, Important...) differ from Mary's and Sarah's, and
   // list names are per profile, so start fresh on his/their default view.
-  const evanView = ['myday', 'important', 'planned', 'alltasks', 'completed'].includes(currentView.type);
+  const evanView = ['dashboard', 'myday', 'important', 'planned', 'alltasks', 'completed'].includes(currentView.type);
   const wrongKind = val === 'evan' ? ['today', 'upcoming', 'done', 'review'].includes(currentView.type) : evanView;
-  if (crossing || wrongKind || currentView.type === 'list' || currentView.type === 'tag') currentView = { type: val === 'evan' ? 'myday' : 'today' };
+  // EHL opens on his Dashboard; Mary and Sarah on Today.
+  if (crossing || wrongKind || currentView.type === 'list' || currentView.type === 'tag') currentView = { type: val === 'evan' ? 'dashboard' : 'today' };
   localStorage.setItem('daily-sync-who', val);
   [...whoToggle.children].forEach(b => b.classList.toggle('active', b.dataset.who === val));
   recurToggleBtn.style.display = val === 'mary' ? '' : 'none';
@@ -1274,7 +1293,7 @@ function todoRowEl(t) {
   div.className = 'todo-row' + (t.status === 'done' ? ' done' : '') + (t.id === selectedTaskId ? ' selected' : '');
   div.dataset.id = t.id;
   const meta = [];
-  if (t.tag && currentView.type !== 'list') meta.push(escapeHtml(t.tag));
+  if (t.tag && currentView.type !== 'list' && currentView.type !== 'dashboard') meta.push(escapeHtml(t.tag));
   if (isMyDay(t) && currentView.type !== 'myday') meta.push('My Day');
   if (t.due_date) {
     const overdue = t.status !== 'done' && t.due_date < todayStr();
@@ -1300,6 +1319,8 @@ function renderTodo() {
   viewTitleEl.textContent = v.type === 'list' ? v.key : (TODO_VIEWS[v.type] || 'Tasks');
   // Add a Task: just the task bar and the new task's details, no list (like Mary's).
   todoWrap.classList.toggle('add-mode', v.type === 'add');
+  todoWrap.classList.toggle('dash-mode', v.type === 'dashboard');
+  if (v.type === 'dashboard') { renderDashboard(); return; }
   if (v.type === 'add') {
     todoAddBox.style.display = '';
     todoAddInput.placeholder = 'Add a task';
@@ -1361,6 +1382,39 @@ function renderTodo() {
       if (todoShowCompleted) done.forEach(t => todoList.appendChild(todoRowEl(t)));
     }
   }
+  renderTodoDetail();
+}
+
+// EHL's Dashboard (his opening page): every open task at once, one column per
+// list (plus "No list"), starred first. Clicking a task opens its details in
+// a side panel; the circle and star work as everywhere else.
+function renderDashboard() {
+  todoAddBox.style.display = '';
+  todoAddInput.placeholder = 'Add a task';
+  let open = tasks.filter(t => t.assignee === 'evan' && t.status !== 'done');
+  if (search) open = open.filter(t => t.title.toLowerCase().includes(search) || (t.notes || '').toLowerCase().includes(search));
+  reorderable = !search;
+  const order = (a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || byPosition(true)(a, b) || b.created_at.localeCompare(a.created_at);
+  const lists = [...allTagNames().map(name => ({ name, key: name })), { name: 'No list', key: null }];
+  const board = document.createElement('div');
+  board.className = 'dash-board';
+  lists.forEach(({ name, key }) => {
+    const items = open.filter(t => (t.tag || null) === key).sort(order);
+    if (key === null && !items.length) return; // only show "No list" when it has tasks
+    if (search && !items.length) return;
+    const col = document.createElement('section');
+    col.className = 'dash-col';
+    col.innerHTML = `<button type="button" class="dash-col-head" ${key ? `data-dash-list="${escapeAttr(key)}"` : 'disabled'}><span>${escapeHtml(name)}</span><span class="dash-count">${items.length}</span></button>`;
+    const rows = document.createElement('div');
+    rows.className = 'dash-rows';
+    items.forEach(t => rows.appendChild(todoRowEl(t)));
+    if (!items.length) rows.innerHTML = '<div class="dash-empty">No tasks</div>';
+    col.appendChild(rows);
+    board.appendChild(col);
+  });
+  todoList.innerHTML = '';
+  if (!board.children.length) todoList.innerHTML = `<div class="todo-empty">${search ? 'No matching tasks' : 'No open tasks'}</div>`;
+  else todoList.appendChild(board);
   renderTodoDetail();
 }
 
@@ -1602,7 +1656,7 @@ document.addEventListener('keydown', e => {
 // --- Phone layout ---
 function mobileTabs() {
   const first = who === 'evan'
-    ? [{ view: 'myday', label: 'My Day', icon: M_ICON.sun }, { view: 'planned', label: 'Planned', icon: M_ICON.cal }]
+    ? [{ view: 'dashboard', label: 'Dashboard', icon: M_ICON.grid }, { view: 'myday', label: 'My Day', icon: M_ICON.sun }]
     : [{ view: 'today', label: 'Today', icon: M_ICON.sun }, { view: 'upcoming', label: 'Upcoming', icon: M_ICON.cal }];
   return [...first,
     { sheet: 'lists', label: 'Lists', icon: M_ICON.list },
@@ -1787,6 +1841,7 @@ function updateNavCounts() {
   document.getElementById('countImportant').textContent = open.filter(t => t.pinned).length;
   document.getElementById('countPlanned').textContent = open.filter(t => t.due_date).length;
   document.getElementById('countAllTasks').textContent = open.length;
+  document.getElementById('countDashboard').textContent = open.length;
 }
 
 function updateActiveNav() {
@@ -2115,6 +2170,13 @@ document.body.addEventListener('click', e => {
   if (e.target.closest('[data-action="todo-completed"]')) {
     todoShowCompleted = !todoShowCompleted;
     try { localStorage.setItem('daily-sync-todo-completed', todoShowCompleted ? '1' : '0'); } catch {}
+    render();
+    return;
+  }
+  const dashList = e.target.closest('[data-dash-list]');
+  if (dashList) {
+    currentView = { type: 'list', key: dashList.dataset.dashList };
+    selectedTaskId = null;
     render();
     return;
   }
