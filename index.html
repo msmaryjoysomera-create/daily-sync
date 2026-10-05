@@ -1759,22 +1759,10 @@ function renderListsNav() {
     return;
   }
   if (who === 'sarah') {
-    const statusDefs = [
-      { key: 'todo', label: 'To Do' },
-      { key: 'doing', label: 'In Progress' },
-      { key: 'done', label: 'Done' },
-    ];
-    statusDefs.forEach((s, i) => {
-      const count = tasks.filter(t => t.assignee === 'sarah' && t.status === s.key).length;
-      listsNav.appendChild(listNavItemEl(s.key, s.label, count, i));
-    });
-    // Sarah's own lists, under her status lists.
+    // Sarah: To Do (open tasks not in one of her lists), then her own lists.
     const open = tasks.filter(t => t.assignee === 'sarah' && t.status !== 'done');
-    const sub = document.createElement('div');
-    sub.className = 'nav-sublabel';
-    sub.textContent = 'Your lists';
-    listsNav.appendChild(sub);
-    allTagNames().forEach((name, i) => listsNav.appendChild(listNavItemEl(name, name, open.filter(t => t.tag === name).length, i + 3, 'tag')));
+    listsNav.appendChild(listNavItemEl('todo', 'To Do', open.filter(t => !t.tag).length, 0));
+    allTagNames().forEach((name, i) => listsNav.appendChild(listNavItemEl(name, name, open.filter(t => t.tag === name).length, i + 1, 'tag')));
     listsNav.appendChild(newListButton());
   } else {
     const mine = tasks.filter(t => t.assignee === 'mary' && t.status !== 'done');
@@ -1909,7 +1897,8 @@ function render() {
     if (who === 'sarah') {
       viewTitleEl.textContent = { todo: 'To Do', doing: 'In Progress', done: 'Done' }[key] || key;
       reorderable = key !== 'done' && !search;
-      const list = visible.filter(t => t.status === key)
+      // To Do: every open task that isn't in one of her lists (in progress ones too).
+      const list = visible.filter(t => key === 'todo' ? t.status !== 'done' && !t.tag : t.status === key)
         .sort((a, b) => key === 'done' ? (b.completed_at || '').localeCompare(a.completed_at || '') : byPosition(false)(a, b) || a.created_at.localeCompare(b.created_at));
       renderTaskList(list, null, search ? noMatch : 'Nothing here');
     } else {
