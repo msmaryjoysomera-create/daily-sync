@@ -39,6 +39,7 @@ window.fetch = async (input, init = {}) => {
     return json({ access_token: 'mock', refresh_token: 'mock-refresh', token_type: 'bearer', expires_in: 3600, expires_at: exp,
       user: { id: 'u1', email: 'mary@ccabinet.com', aud: 'authenticated', role: 'authenticated' } });
   }
+  if (url.pathname.startsWith('/storage/v1/')) return json({ Key: url.pathname.split('/object/')[1] || 'mock' }); // photo uploads
   const table = url.pathname.split('/').pop();
   const rows = window.__db[table] || (window.__db[table] = []);
   const method = (init.method || 'GET').toUpperCase();

@@ -274,6 +274,10 @@
   .todo-main{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;min-width:0}
   .todo-add{display:flex;align-items:center;gap:10px;background:var(--card-2);border:1px solid var(--line);border-radius:10px;padding:0 14px;margin-bottom:8px}
   .todo-add-plus{font-size:20px;color:var(--accent);line-height:1}
+  .todo-add-photo{flex:none;display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;color:var(--muted);cursor:pointer}
+  .todo-add-photo:hover{background:var(--card);color:var(--text)}
+  .todo-add-chip{flex:none;background:var(--accent-dim);color:var(--accent);border:none;border-radius:999px;padding:4px 10px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap}
+  .todo-add-chip[hidden]{display:none}
   .todo-add-list{flex:none;max-width:42%;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:5px 8px;font-family:inherit;font-size:12.5px;color:var(--text)}
   .todo-add input{flex:1;border:none;background:transparent;padding:12px 0;font-size:14px;color:var(--text);font-family:inherit;outline:none}
   .todo-row{display:flex;align-items:center;gap:12px;padding:10px;border-radius:10px;cursor:pointer;border-bottom:1px solid var(--line)}
@@ -650,6 +654,8 @@
             <span class="todo-add-plus">+</span>
             <input type="text" id="todoAddInput" placeholder="Add a task">
             <select id="todoAddList" class="todo-add-list" aria-label="List"></select>
+            <button type="button" class="todo-add-chip" id="todoAddPhotoChip" hidden title="Remove photo">Photo ✕</button>
+            <label class="todo-add-photo" title="Add a photo"><svg width="17" height="17" viewBox="0 0 18 18" fill="none"><rect x="2" y="4.5" width="14" height="10.5" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M6.5 4.5l1-2h3l1 2" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><circle cx="9" cy="9.8" r="2.6" stroke="currentColor" stroke-width="1.5"/></svg><input type="file" accept="image/*" id="todoAddPhoto" hidden></label>
           </form>
         </section>
         <section class="todo-detail" id="todoDetail"></section>
@@ -1053,6 +1059,8 @@ try { todoShowCompleted = localStorage.getItem('daily-sync-todo-completed') === 
 let todoForceDetail = false;
 // Phone layout: whether the task bar is showing (opened with the + button).
 let mAdding = false;
+// EHL's add bar: a photo picked before adding, attached once the task exists.
+let todoPendingPhoto = null;
 const PROFILE_NAMES = { evan: 'EHL', mary: 'Mary', sarah: 'Sarah' };
 const M_ICON = {
   grid: '<svg viewBox="0 0 18 18" fill="none"><rect x="2.5" y="2.5" width="5.5" height="5.5" rx="1.2" stroke="currentColor" stroke-width="1.5"/><rect x="10" y="2.5" width="5.5" height="5.5" rx="1.2" stroke="currentColor" stroke-width="1.5"/><rect x="2.5" y="10" width="5.5" height="5.5" rx="1.2" stroke="currentColor" stroke-width="1.5"/><rect x="10" y="10" width="5.5" height="5.5" rx="1.2" stroke="currentColor" stroke-width="1.5"/></svg>',
@@ -1605,6 +1613,20 @@ async function handOffToMary(id, tag, waitingFor) {
   });
 }
 
+const todoAddPhoto = document.getElementById('todoAddPhoto');
+const todoAddPhotoChip = document.getElementById('todoAddPhotoChip');
+function setPendingPhoto(file) {
+  todoPendingPhoto = file || null;
+  todoAddPhoto.value = '';
+  todoAddPhotoChip.hidden = !todoPendingPhoto;
+  todoAddPhotoChip.textContent = todoPendingPhoto ? 'Photo ✕' : '';
+}
+todoAddPhoto.addEventListener('change', () => {
+  setPendingPhoto(todoAddPhoto.files[0]);
+  todoAddInput.focus();
+});
+todoAddPhotoChip.addEventListener('click', () => setPendingPhoto(null));
+
 let todoAddBusy = false;
 todoAddForm.addEventListener('submit', async e => {
   e.preventDefault();
@@ -1633,6 +1655,11 @@ todoAddForm.addEventListener('submit', async e => {
   if (!added) { todoAddInput.value = title; todoAddInput.focus(); return; } // keep it to retry
   if (!tasks.some(t => t.id === added.id)) tasks.push(added);
   if (v.type === 'add' || !isMobile()) selectedTaskId = added.id; // open it below for steps, date, notes
+  if (todoPendingPhoto) {
+    const file = todoPendingPhoto;
+    setPendingPhoto(null);
+    uploadPhoto(added.id, file).then(fetchPhotos);
+  }
   render();
   todoAddInput.focus();
 });
