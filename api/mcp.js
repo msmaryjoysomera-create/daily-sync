@@ -56,6 +56,9 @@ const buildTools = ({ mary: tags, evan: evanLists, sarah: sarahLists }) => [
         tag: { type: 'string', description: "Which of that person's lists the task goes in -- exactly one of the names listed above. Required: if the user didn't say, ask which list before adding." },
         due_date: { type: 'string', description: 'Due date in YYYY-MM-DD format, only if a date was mentioned' },
         notes: { type: 'string', description: 'Extra context or notes for the task' },
+        phone: { type: 'string', description: "Contact phone number for the task, if one was mentioned (e.g. '336-686-5090')" },
+        email: { type: 'string', description: 'Contact email address for the task, if one was mentioned' },
+        salesforce_url: { type: 'string', description: 'Link to the related Salesforce record, if one was given' },
       },
       required: ['title', 'assignee', 'tag'],
     },
@@ -105,6 +108,9 @@ async function callTool(name, args) {
       tag,
       due_date: args.due_date || null,
       notes: args.notes ? String(args.notes).trim() : null,
+      phone: args.phone ? String(args.phone).trim() : null,
+      email: args.email ? String(args.email).trim() : null,
+      sf_url: args.salesforce_url ? (/^https?:\/\//i.test(String(args.salesforce_url).trim()) ? String(args.salesforce_url).trim() : 'https://' + String(args.salesforce_url).trim()) : null,
       status: 'todo',
       source: 'claude',
     }).select().single();
@@ -115,6 +121,8 @@ async function callTool(name, args) {
     if (who) bits.push(`for ${who}`);
     if (data.tag) bits.push(`under "${data.tag}"`);
     if (data.due_date) bits.push(`due ${data.due_date}`);
+    const contact = [data.phone && 'phone', data.email && 'email', data.sf_url && 'Salesforce link'].filter(Boolean);
+    if (contact.length) bits.push(`with ${contact.join(', ')}`);
     return { content: [{ type: 'text', text: bits.join(' ') + '.' }] };
   }
 

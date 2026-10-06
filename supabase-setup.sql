@@ -120,3 +120,9 @@ create policy "team only" on daily_review for all to authenticated using ((auth.
 create policy "team only" on task_photos for all to authenticated using ((auth.jwt() ->> 'email') = 'mary@ccabinet.com') with check ((auth.jwt() ->> 'email') = 'mary@ccabinet.com');
 create policy "team only" on sticky_notes for all to authenticated using ((auth.jwt() ->> 'email') = 'mary@ccabinet.com') with check ((auth.jwt() ->> 'email') = 'mary@ccabinet.com');
 create policy "team only task-photos" on storage.objects for all to authenticated using (bucket_id = 'task-photos' and (auth.jwt() ->> 'email') = 'mary@ccabinet.com') with check (bucket_id = 'task-photos' and (auth.jwt() ->> 'email') = 'mary@ccabinet.com');
+
+-- EHL task contact fields (shown in his task details; the Claude connector
+-- can fill them too).
+alter table tasks add column if not exists sf_url text;
+alter table tasks add column if not exists phone text;
+alter table tasks add column if not exists email text;

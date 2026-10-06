@@ -337,6 +337,16 @@
   @media (hover:none){ .todo-step .icon-btn{opacity:.6} }
   .todo-step-plus{width:16px;text-align:center;color:var(--accent);font-size:16px;line-height:1}
   .todo-step .step-add::placeholder{color:var(--accent)}
+  .todo-contact-head{padding:8px 12px 6px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);border-bottom:1px solid var(--line)}
+  .contact-row{display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid var(--line);color:var(--muted);min-height:40px}
+  .contact-row:last-child{border-bottom:none}
+  .contact-row svg{flex:none}
+  .contact-link{flex:1;min-width:0;color:var(--accent);font-weight:600;font-size:13.5px;text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .contact-link:hover{text-decoration:underline}
+  .contact-input{flex:1;min-width:0;border:none;background:transparent;font-family:inherit;font-size:13.5px;color:var(--text);outline:none;padding:2px 0}
+  .contact-input::placeholder{color:var(--muted)}
+  .row-contact-icons{display:inline-flex;gap:4px;align-items:center;vertical-align:-2px}
+  .row-contact-icons svg{width:12px;height:12px}
   .todo-section{border:1px solid var(--line);border-radius:10px;margin-top:12px;overflow:hidden}
   .todo-opt{display:flex;align-items:center;gap:10px;width:100%;background:none;border:none;border-bottom:1px solid var(--line);padding:10px 12px;font-family:inherit;font-size:13px;color:var(--text);cursor:pointer;text-align:left}
   .todo-opt:last-child{border-bottom:none}
@@ -442,6 +452,14 @@
   .lock-btn{width:100%;background:var(--accent);color:#fff;border:none;border-radius:10px;padding:12px;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer}
   .lock-btn:disabled{opacity:.6}
   .lock-error{min-height:18px;color:#B3261E;font-size:13px;text-align:center}
+  .refresh-btn svg{transition:transform .2s}
+  .refresh-btn.spinning svg, .ptr.spinning svg{animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  /* Phone: pull-down-to-refresh indicator */
+  .ptr{position:fixed;left:50%;top:calc(8px + env(safe-area-inset-top));z-index:65;width:40px;height:40px;margin-left:-20px;border-radius:50%;
+    background:var(--card);border:1px solid var(--line);box-shadow:0 4px 14px rgba(0,0,0,.12);color:var(--accent);
+    display:flex;align-items:center;justify-content:center;transform:translateY(-70px);opacity:0;pointer-events:none}
+  .ptr.ready{color:#fff;background:var(--accent);border-color:var(--accent)}
   .toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,20px);opacity:0;pointer-events:none;z-index:80;display:flex;align-items:center;gap:14px;
     background:#211C18;color:#fff;border-radius:12px;padding:10px 10px 10px 16px;font-size:13.5px;box-shadow:0 8px 24px rgba(0,0,0,.2);transition:opacity .18s ease,transform .18s ease;max-width:calc(100vw - 32px)}
   .toast.show{opacity:1;transform:translate(-50%,0);pointer-events:auto}
@@ -595,6 +613,7 @@
           </div>
         </div>
       </div>
+      <button type="button" id="refreshBtn" class="print-btn refresh-btn" title="Refresh"><svg width="14" height="14" viewBox="0 0 18 18" fill="none"><path d="M14.5 9a5.5 5.5 0 1 1-1.6-3.9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M14.5 3.5V6.5H11.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg> Refresh</button>
       <button type="button" id="printBtn" class="print-btn" title="Print or export"><svg width="14" height="14" viewBox="0 0 18 18" fill="none"><path d="M5 6.5V2.5H13V6.5" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><rect x="2.5" y="6.5" width="13" height="6" rx="1.2" stroke="currentColor" stroke-width="1.5"/><rect x="5" y="10.5" width="8" height="5" stroke="currentColor" stroke-width="1.5"/></svg> Print</button>
       <button type="button" class="m-profile" id="mProfileBtn" data-m-sheet="profile" aria-label="Switch profile"></button>
     </div>
@@ -706,6 +725,8 @@
       <p class="passcode-note">Devices that are already unlocked stay unlocked. To make everyone enter the new passcode, use “Lock all devices” afterward.</p>
     </form>
   </div>
+
+  <div class="ptr" id="ptr" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 18 18" fill="none"><path d="M14.5 9a5.5 5.5 0 1 1-1.6-3.9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M14.5 3.5V6.5H11.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
 
   <div class="toast" id="toast" role="status" aria-live="polite"><span id="toastText"></span><button type="button" id="toastUndo">Undo</button></div>
 
@@ -1058,6 +1079,22 @@ let dueEditingId = null;
 let todoShowCompleted = false;
 try { todoShowCompleted = localStorage.getItem('daily-sync-todo-completed') === '1'; } catch {}
 let todoForceDetail = false;
+// EHL's task contact fields (Salesforce link, phone, email): which one is being edited.
+let contactEditing = null; // { id, field }
+const CONTACT_ICONS = {
+  sf_url: '<svg width="15" height="15" viewBox="0 0 18 18" fill="none"><path d="M5.2 14.5h7.6a3.4 3.4 0 0 0 .5-6.77A4.5 4.5 0 0 0 4.7 6.6 3.95 3.95 0 0 0 5.2 14.5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>',
+  phone: '<svg width="15" height="15" viewBox="0 0 18 18" fill="none"><path d="M4 2.8h2.6l1.2 3.1-1.6 1a8.6 8.6 0 0 0 4.9 4.9l1-1.6 3.1 1.2V14a1.4 1.4 0 0 1-1.5 1.4A11.9 11.9 0 0 1 2.6 4.3 1.4 1.4 0 0 1 4 2.8z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>',
+  email: '<svg width="15" height="15" viewBox="0 0 18 18" fill="none"><rect x="2.3" y="3.8" width="13.4" height="10.4" rx="1.6" stroke="currentColor" stroke-width="1.5"/><path d="M2.8 5l6.2 4.6L15.2 5" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>',
+};
+const PENCIL_SVG = '<svg width="13" height="13" viewBox="0 0 18 18" fill="none"><path d="M11.8 3.2l3 3L6.5 14.5l-3.6.6.6-3.6z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>';
+const CONTACT_FIELDS = [
+  { key: 'sf_url', placeholder: 'Paste Salesforce link', inputmode: 'url',
+    href: v => /^https?:\/\//i.test(v) ? v : 'https://' + v, label: () => 'Open in Salesforce', newTab: true },
+  { key: 'phone', placeholder: 'Phone number', inputmode: 'tel',
+    href: v => 'tel:' + v.replace(/[^\d+]/g, ''), label: v => v },
+  { key: 'email', placeholder: 'Email address', inputmode: 'email',
+    href: v => 'mailto:' + v, label: v => v },
+];
 // Phone layout: whether the task bar is showing (opened with the + button).
 let mAdding = false;
 // EHL's add bar: a photo picked before adding, attached once the task exists.
@@ -1317,6 +1354,8 @@ function todoRowEl(t) {
   const steps = stepsOf(t);
   if (steps.length) meta.push(`${steps.filter(s => s.done).length} of ${steps.length}`);
   if (t.notes) meta.push('Note');
+  const contactIcons = CONTACT_FIELDS.filter(f => t[f.key]).map(f => CONTACT_ICONS[f.key]).join('');
+  if (contactIcons) meta.push(`<span class="row-contact-icons" title="Has contact info">${contactIcons}</span>`);
   div.innerHTML = `
     <button type="button" class="todo-check" data-action="todo-toggle" aria-label="${t.status === 'done' ? 'Mark not complete' : 'Mark complete'}"></button>
     <div class="todo-row-body">
@@ -1445,6 +1484,17 @@ function renderDashboard() {
   renderTodoDetail();
 }
 
+// --- EHL task contact fields ---
+function contactRowHtml(task, f) {
+  const val = task[f.key];
+  const editing = contactEditing && contactEditing.id === task.id && contactEditing.field === f.key;
+  if (val && !editing) {
+    return `<div class="contact-row">${CONTACT_ICONS[f.key]}<a class="contact-link" href="${escapeAttr(f.href(val))}"${f.newTab ? ' target="_blank" rel="noopener"' : ''}>${escapeHtml(f.label(val))}</a>
+      <button type="button" class="icon-btn contact-edit" data-action="contact-edit" data-field="${f.key}" title="Edit">${PENCIL_SVG}</button></div>`;
+  }
+  return `<div class="contact-row">${CONTACT_ICONS[f.key]}<input type="text" class="contact-input" data-field="${f.key}" inputmode="${f.inputmode}" autocomplete="off" placeholder="${f.placeholder}" value="${escapeAttr(val || '')}" aria-label="${f.placeholder}"></div>`;
+}
+
 function renderTodoDetail() {
   const task = selectedTaskId ? tasks.find(t => t.id === selectedTaskId && t.assignee === 'evan') : null;
   if (!task) selectedTaskId = null;
@@ -1482,6 +1532,10 @@ function renderTodoDetail() {
           <button type="button" class="icon-btn" data-action="step-delete" title="Remove step">${ICON_X}</button>
         </div>`).join('')}
       <div class="todo-step"><span class="todo-step-plus">+</span><input class="step-add" placeholder="${steps.length ? 'Next step' : 'Add step'}" aria-label="Add step"></div>
+    </div>
+    <div class="todo-section todo-contact">
+      <div class="todo-contact-head">Contact</div>
+      ${CONTACT_FIELDS.map(f => contactRowHtml(task, f)).join('')}
     </div>
     <div class="todo-section">
       <button type="button" class="todo-opt${isMyDay(task) ? ' on' : ''}" data-action="toggle-myday">${SUN_SVG}${isMyDay(task) ? 'Added to My Day' : 'Add to My Day'}</button>
@@ -1692,6 +1746,10 @@ function startNewList(btn) {
   input.addEventListener('blur', () => finish(true));
 }
 
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && e.target.matches('.contact-input')) { e.preventDefault(); e.target.blur(); }
+  if (e.key === 'Escape' && e.target.matches('.contact-input')) { contactEditing = null; todoForceDetail = true; e.target.blur(); render(); }
+});
 document.addEventListener('keydown', e => {
   if (e.key !== 'Enter' || !e.target.matches('.todo-card .step-add')) return;
   e.preventDefault();
@@ -2223,6 +2281,16 @@ document.body.addEventListener('click', e => {
     render();
     return;
   }
+  const contactEditBtn = e.target.closest('[data-action="contact-edit"]');
+  if (contactEditBtn) {
+    contactEditing = { id: contactEditBtn.closest('.task').dataset.id, field: contactEditBtn.dataset.field };
+    todoForceDetail = true;
+    render();
+    const input = todoDetail.querySelector(`.contact-input[data-field="${contactEditBtn.dataset.field}"]`);
+    input?.focus();
+    input?.select();
+    return;
+  }
   const dashList = e.target.closest('[data-dash-list]');
   if (dashList) {
     currentView = { type: 'list', key: dashList.dataset.dashList };
@@ -2459,6 +2527,14 @@ document.body.addEventListener('change', e => {
     const id = e.target.closest('.task').dataset.id;
     dueEditingId = null;
     updateTask(id, { due_date: e.target.value || null });
+  } else if (e.target.classList.contains('contact-input')) {
+    const id = e.target.closest('.task').dataset.id;
+    const field = e.target.dataset.field;
+    let v = e.target.value.trim();
+    if (field === 'sf_url' && v && !/^https?:\/\//i.test(v)) v = 'https://' + v;
+    contactEditing = null;
+    todoForceDetail = true;
+    patchTask(id, { [field]: v || null });
   } else if (e.target.classList.contains('step-text')) {
     const stepId = e.target.closest('.todo-step').dataset.step;
     const text = e.target.value.trim();
@@ -2741,6 +2817,62 @@ document.getElementById('recapCopy').addEventListener('click', async e => {
   catch { recapText.select(); document.execCommand('copy'); }
   e.target.textContent = 'Copied';
   setTimeout(() => { e.target.textContent = 'Copy'; }, 1500);
+});
+
+// --- Refresh (button on computers, pull down on phones) ---
+const refreshBtn = document.getElementById('refreshBtn');
+const ptr = document.getElementById('ptr');
+let refreshing = false;
+async function refreshAll() {
+  if (refreshing) return;
+  if (!appStarted) { boot(); return; }
+  refreshing = true;
+  refreshBtn.classList.add('spinning');
+  try {
+    if (session && session.expires_at * 1000 - Date.now() < 5 * 60 * 1000) await refreshAuth();
+    await Promise.all([fetchTasks(), fetchReviewState(), fetchPhotos(), fetchStickyNotes()]);
+  } finally {
+    refreshing = false;
+    refreshBtn.classList.remove('spinning');
+  }
+}
+refreshBtn.addEventListener('click', refreshAll);
+
+// Pull down from the very top of the page to refresh (phones; also handy in the
+// home-screen app, which has no browser refresh). Skipped while a pop-up,
+// full-screen task, or drag is open.
+let pullY = null, pullDy = 0;
+const PULL_TRIGGER = 70;
+document.addEventListener('touchstart', e => {
+  if (window.scrollY > 0 || refreshing || dragState || mSheet.classList.contains('open')) return;
+  if (e.target.closest('input, textarea, select, .todo-detail, #detailPane, .modal, .lock')) return;
+  if (document.querySelector('.pane-layout.has-selection, .todo-layout.has-selection') && isMobile()) return;
+  pullY = e.touches[0].clientY;
+  pullDy = 0;
+}, { passive: true });
+document.addEventListener('touchmove', e => {
+  if (pullY === null) return;
+  pullDy = e.touches[0].clientY - pullY;
+  if (pullDy <= 0 || window.scrollY > 0) { pullDy = 0; ptr.style.opacity = '0'; ptr.style.transform = 'translateY(-70px)'; return; }
+  e.preventDefault();
+  const shift = Math.min(pullDy * 0.55, 90);
+  ptr.style.opacity = String(Math.min(pullDy / PULL_TRIGGER, 1));
+  ptr.style.transform = `translateY(${shift - 10}px) rotate(${pullDy * 2.5}deg)`;
+  ptr.classList.toggle('ready', pullDy >= PULL_TRIGGER);
+}, { passive: false });
+document.addEventListener('touchend', async () => {
+  if (pullY === null) return;
+  const go = pullDy >= PULL_TRIGGER;
+  pullY = null;
+  pullDy = 0;
+  ptr.classList.remove('ready');
+  if (!go) { ptr.style.opacity = '0'; ptr.style.transform = 'translateY(-70px)'; return; }
+  ptr.style.transform = 'translateY(40px)';
+  ptr.classList.add('spinning');
+  await refreshAll();
+  ptr.classList.remove('spinning');
+  ptr.style.opacity = '0';
+  ptr.style.transform = 'translateY(-70px)';
 });
 
 // --- Undo ---
