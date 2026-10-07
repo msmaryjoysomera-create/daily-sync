@@ -14,11 +14,13 @@ db = {
   "tasks": [task(1, "MOCK Mary follow up", "mary", "Follow Up"), task(2, "MOCK Sarah to do", "sarah"),
             task(3, "MOCK Sarah doing", "sarah", None, "doing"), task(4, "MOCK EHL task", "evan"),
             task(5, "MOCK EHL call client", "evan", "Follow Up"), task(6, "MOCK EHL deck", "evan", "Projects"),
-            {**task(7, "MOCK EHL starred", "evan", "Follow Up"), "pinned": True}, task(8, "MOCK EHL finished", "evan", "Projects", "done")],
+            {**task(7, "MOCK EHL starred", "evan", "Follow Up"), "pinned": True}, task(8, "MOCK EHL finished", "evan", "Projects", "done"),
+            task(9, "MOCK Sarah credit ECG", "sarah", "Credits")],
   "sticky_notes": [{"id": "g1", "assignee": None, "color": "tag", "title": "Follow Up", "body": "0", "created_at": now, "updated_at": now},
                    {"id": "g2", "assignee": "evan", "color": "tag", "title": "Follow Up", "body": "0", "created_at": now, "updated_at": now},
                    {"id": "g3", "assignee": "evan", "color": "tag", "title": "Projects", "body": "1", "created_at": now, "updated_at": now},
-                   {"id": "g4", "assignee": "evan", "color": "tag", "title": "Schedule", "body": "2", "created_at": now, "updated_at": now}],
+                   {"id": "g4", "assignee": "evan", "color": "tag", "title": "Schedule", "body": "2", "created_at": now, "updated_at": now},
+                   {"id": "g5", "assignee": "sarah", "color": "tag", "title": "Credits", "body": "0", "created_at": now, "updated_at": now}],
   "task_photos": [], "daily_review": [],
 }
 c = open('/Users/marysomera/daily-sync/index.html').read()

@@ -308,6 +308,13 @@
   .todo-layout.dash-mode.has-selection .todo-detail{display:block;position:fixed;top:0;right:0;bottom:0;width:min(420px,100vw);z-index:60;border-radius:0;border:none;border-left:1px solid var(--line);box-shadow:-8px 0 30px rgba(0,0,0,.12);overflow-y:auto;min-height:0;padding:calc(18px + env(safe-area-inset-top)) 16px 40px}
   .todo-layout.dash-mode .todo-main{background:transparent;border:none;padding:0}
   .todo-layout.dash-mode .detail-back{display:inline-flex}
+  .pane-layout.dash-mode{grid-template-columns:minmax(0,1fr)}
+  .pane-layout.dash-mode .pane-left{position:static;max-height:none;overflow:visible}
+  .pane-layout.dash-mode .box2{display:none}
+  .pane-layout.dash-mode.has-selection .box2{display:block;position:fixed;top:0;right:0;bottom:0;width:min(440px,100vw);z-index:60;border-radius:0;border:none;border-left:1px solid var(--line);box-shadow:-8px 0 30px rgba(0,0,0,.12);overflow-y:auto;min-height:0;padding:calc(18px + env(safe-area-inset-top)) 16px 40px}
+  .pane-layout.dash-mode .box3{background:transparent;border:none;box-shadow:none;padding:0}
+  .pane-layout.dash-mode .detail-back{display:inline-flex}
+  .dash-col .row{margin:0;border-radius:9px}
   .dash-board{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;align-items:start}
   .dash-col{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 10px 6px}
   .dash-col-head{display:flex;justify-content:space-between;align-items:center;width:100%;background:none;border:none;font-family:inherit;font-size:13.5px;font-weight:800;color:var(--text);padding:4px 6px 8px;cursor:pointer;text-align:left}
@@ -577,6 +584,7 @@
         <button type="button" class="nav-item" data-for="evan" data-view="planned"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><rect x="2.5" y="3.5" width="13" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M2.5 7H15.5M6 2V4.5M12 2V4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span><span class="nav-item-label">Planned</span><span class="nav-count" id="countPlanned">0</span></button>
         <button type="button" class="nav-item" data-for="evan" data-view="alltasks"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><path d="M3 8L9 3l6 5v6.5a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></span><span class="nav-item-label">Tasks</span><span class="nav-count" id="countAllTasks">0</span></button>
         <button type="button" class="nav-item" data-for="evan" data-view="completed"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="7" stroke="currentColor" stroke-width="1.5"/><path d="M5.8 9.2L7.8 11.2L12.2 6.6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="nav-item-label">Completed</span></button>
+        <button type="button" class="nav-item" data-for="sarah" data-view="dashboard"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><rect x="2.5" y="2.5" width="5.5" height="5.5" rx="1.2" stroke="currentColor" stroke-width="1.5"/><rect x="10" y="2.5" width="5.5" height="5.5" rx="1.2" stroke="currentColor" stroke-width="1.5"/><rect x="2.5" y="10" width="5.5" height="5.5" rx="1.2" stroke="currentColor" stroke-width="1.5"/><rect x="10" y="10" width="5.5" height="5.5" rx="1.2" stroke="currentColor" stroke-width="1.5"/></svg></span><span class="nav-item-label">Dashboard</span><span class="nav-count" id="countSarahDash">0</span></button>
         <button type="button" class="nav-item" data-for="ms" data-view="upcoming"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><rect x="2.5" y="3.5" width="13" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M2.5 7H15.5M6 2V4.5M12 2V4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span><span class="nav-item-label">Upcoming</span><span class="nav-count" id="countUpcoming">0</span></button>
         <button type="button" class="nav-item" data-for="ms" data-view="today"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="3.5" stroke="currentColor" stroke-width="1.5"/><path d="M9 1.5V3.2M9 14.8V16.5M16.5 9H14.8M3.2 9H1.5M14.3 3.7L13.1 4.9M4.9 13.1L3.7 14.3M14.3 14.3L13.1 13.1M4.9 4.9L3.7 3.7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span><span class="nav-item-label">Today</span><span class="nav-count" id="countToday">0</span></button>
         <button type="button" class="nav-item" data-for="ms" data-view="done"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="7" stroke="currentColor" stroke-width="1.5"/><path d="M5.8 9.2L7.8 11.2L12.2 6.6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="nav-item-label">Done</span></button>
@@ -1173,23 +1181,30 @@ sidebarBackdrop.addEventListener('click', () => setSidebar(false));
 setSidebar(isMobile() ? false : localStorage.getItem('daily-sync-sidebar') !== 'closed');
 
 // --- profile ---
+const PROFILE_VIEWS = {
+  evan: ['dashboard', 'add', 'myday', 'important', 'planned', 'alltasks', 'completed', 'list', 'notes'],
+  sarah: ['dashboard', 'add', 'today', 'upcoming', 'done', 'list', 'tag', 'notes'],
+  mary: ['add', 'today', 'upcoming', 'done', 'review', 'list', 'notes'],
+};
+let firstProfileSet = true;
+
 function setWho(val) {
   if (noteTimer) saveNote(); // finish saving under the profile it was typed in
   noteRef = null;
-  const crossing = (who === 'evan') !== (val === 'evan');
+  const switching = firstProfileSet || who !== val;
+  firstProfileSet = false;
   who = val;
   selectedTaskId = null;
-  // Evan's views (My Day, Important...) differ from Mary's and Sarah's, and
-  // list names are per profile, so start fresh on his/their default view.
-  const evanView = ['dashboard', 'myday', 'important', 'planned', 'alltasks', 'completed'].includes(currentView.type);
-  const wrongKind = val === 'evan' ? ['today', 'upcoming', 'done', 'review'].includes(currentView.type) : evanView;
-  // EHL opens on his Dashboard; Mary and Sarah on Today.
-  if (crossing || wrongKind || currentView.type === 'list' || currentView.type === 'tag') currentView = { type: val === 'evan' ? 'dashboard' : 'today' };
+  // Each profile has its own pages (and list names), so opening a profile
+  // starts on its home page: EHL's and Sarah's Dashboard, Mary's Today.
+  const allowed = PROFILE_VIEWS[val] || PROFILE_VIEWS.mary;
+  if (val && (switching || !allowed.includes(currentView.type))) currentView = { type: val === 'mary' ? 'today' : 'dashboard' };
   localStorage.setItem('daily-sync-who', val);
   [...whoToggle.children].forEach(b => b.classList.toggle('active', b.dataset.who === val));
   recurToggleBtn.style.display = val === 'mary' ? '' : 'none';
   document.querySelectorAll('#tasksSection .nav-item[data-for]').forEach(b => {
-    b.style.display = (b.dataset.for === 'evan') === (val === 'evan') ? '' : 'none';
+    const f = b.dataset.for; // 'evan', 'sarah', or 'ms' (Mary and Sarah)
+    b.style.display = f === val || (f === 'ms' && (val === 'mary' || val === 'sarah')) ? '' : 'none';
   });
   if (val === 'sarah') reviewNavItem.style.display = 'none';
   // Sarah's finished tasks are called "Completed" (like EHL's); Mary's stay "Done".
@@ -1451,6 +1466,36 @@ function renderTodo() {
 // EHL's Dashboard (his opening page): every open task at once, one column per
 // list (plus "No list"), starred first. Clicking a task opens its details in
 // a side panel; the circle and star work as everywhere else.
+// Sarah's Dashboard (her opening page): every open task, one column per list --
+// To Do (tasks not in one of her lists) first, then her own lists.
+function renderSarahDashboard(visible) {
+  viewTitleEl.textContent = 'Dashboard';
+  reorderable = !search;
+  const open = visible.filter(t => t.status !== 'done');
+  const order = (a, b) => byPosition(false)(a, b) || a.created_at.localeCompare(b.created_at);
+  const lists = [{ name: 'To Do', key: null, view: 'list', viewKey: 'todo' },
+    ...allTagNames().map(n => ({ name: n, key: n, view: 'tag', viewKey: n }))];
+  const wrap = document.createElement('div');
+  wrap.className = 'dash-board';
+  lists.forEach(l => {
+    const items = open.filter(t => (t.tag || null) === l.key).sort(order);
+    if (search && !items.length) return;
+    const col = document.createElement('section');
+    col.className = 'dash-col';
+    col.innerHTML = `<button type="button" class="dash-col-head" data-dash-list="${escapeAttr(l.viewKey)}" data-dash-type="${l.view}"><span>${escapeHtml(l.name)}</span><span class="dash-count">${items.length}</span></button>`;
+    const rows = document.createElement('div');
+    rows.className = 'dash-rows';
+    rows.dataset.listKey = l.key || ''; // '' = To Do (no list)
+    items.forEach(t => rows.appendChild(rowEl(t)));
+    if (!items.length) rows.innerHTML = '<div class="dash-empty">No tasks</div>';
+    col.appendChild(rows);
+    wrap.appendChild(col);
+  });
+  board.innerHTML = '';
+  if (!wrap.children.length) board.innerHTML = `<div class="empty">${search ? 'No matching tasks' : 'No open tasks'}</div>`;
+  else board.appendChild(wrap);
+}
+
 function renderDashboard() {
   todoAddBox.style.display = '';
   todoAddInput.placeholder = 'Add a task';
@@ -1765,7 +1810,9 @@ document.addEventListener('keydown', e => {
 function mobileTabs() {
   const first = who === 'evan'
     ? [{ view: 'dashboard', label: 'Dashboard', icon: M_ICON.grid }, { view: 'myday', label: 'My Day', icon: M_ICON.sun }]
-    : [{ view: 'today', label: 'Today', icon: M_ICON.sun }, { view: 'upcoming', label: 'Upcoming', icon: M_ICON.cal }];
+    : who === 'sarah'
+      ? [{ view: 'dashboard', label: 'Dashboard', icon: M_ICON.grid }, { view: 'today', label: 'Today', icon: M_ICON.sun }]
+      : [{ view: 'today', label: 'Today', icon: M_ICON.sun }, { view: 'upcoming', label: 'Upcoming', icon: M_ICON.cal }];
   return [...first,
     { sheet: 'lists', label: 'Lists', icon: M_ICON.list },
     { view: 'notes', label: 'Notes', icon: M_ICON.note },
@@ -1950,6 +1997,7 @@ function updateNavCounts() {
   document.getElementById('countPlanned').textContent = open.filter(t => t.due_date).length;
   document.getElementById('countAllTasks').textContent = open.length;
   document.getElementById('countDashboard').textContent = open.length;
+  document.getElementById('countSarahDash').textContent = open.length;
 }
 
 function updateActiveNav() {
@@ -2019,6 +2067,7 @@ function render() {
 
   paneLayout.style.display = '';
   paneLayout.classList.toggle('add-mode', currentView.type === 'add');
+  paneLayout.classList.toggle('dash-mode', currentView.type === 'dashboard');
   // On Done, the task bar logs something already finished: no tag, date, or Daily.
   const doneView = currentView.type === 'done' || (currentView.type === 'list' && who === 'sarah' && currentView.key === 'done');
   addForm.classList.toggle('done-mode', doneView);
@@ -2029,7 +2078,9 @@ function render() {
   const byDue = (a, b) => pinFirst(a, b) || (a.due_date || '9999').localeCompare(b.due_date || '9999') || a.created_at.localeCompare(b.created_at);
   const groupAcrossLists = who === 'mary' ? groupByTag : groupByStatus;
 
-  if (currentView.type === 'add') {
+  if (currentView.type === 'dashboard') {
+    renderSarahDashboard(visible);
+  } else if (currentView.type === 'add') {
     // Just the task bar (Box 1) and the new task's details (Box 2), no list.
     viewTitleEl.textContent = 'Add a Task';
     board.innerHTML = '';
@@ -2293,7 +2344,7 @@ document.body.addEventListener('click', e => {
   }
   const dashList = e.target.closest('[data-dash-list]');
   if (dashList) {
-    currentView = { type: 'list', key: dashList.dataset.dashList };
+    currentView = { type: dashList.dataset.dashType || 'list', key: dashList.dataset.dashList };
     selectedTaskId = null;
     render();
     return;
