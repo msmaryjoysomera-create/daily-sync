@@ -305,13 +305,13 @@
   .todo-layout.dash-mode{grid-template-columns:minmax(0,1fr)}
   .todo-layout.dash-mode .todo-left{position:static;max-height:none;overflow:visible}
   .todo-layout.dash-mode .todo-detail{display:none}
-  .todo-layout.dash-mode.has-selection .todo-detail{display:block;position:fixed;top:0;right:0;bottom:0;width:min(420px,100vw);z-index:60;border-radius:0;border:none;border-left:1px solid var(--line);box-shadow:-8px 0 30px rgba(0,0,0,.12);overflow-y:auto;min-height:0;padding:calc(18px + env(safe-area-inset-top)) 16px 40px}
+  .todo-layout.dash-mode.has-selection .todo-detail{display:block;position:fixed;top:0;right:0;bottom:0;width:min(100vw,clamp(440px,42vw,760px));z-index:60;border-radius:0;border:none;border-left:1px solid var(--line);box-shadow:-8px 0 30px rgba(0,0,0,.12);overflow-y:auto;min-height:0;padding:calc(18px + env(safe-area-inset-top)) 16px 40px}
   .todo-layout.dash-mode .todo-main{background:transparent;border:none;padding:0}
   .todo-layout.dash-mode .detail-back{display:inline-flex}
   .pane-layout.dash-mode{grid-template-columns:minmax(0,1fr)}
   .pane-layout.dash-mode .pane-left{position:static;max-height:none;overflow:visible}
   .pane-layout.dash-mode .box2{display:none}
-  .pane-layout.dash-mode.has-selection .box2{display:block;position:fixed;top:0;right:0;bottom:0;width:min(440px,100vw);z-index:60;border-radius:0;border:none;border-left:1px solid var(--line);box-shadow:-8px 0 30px rgba(0,0,0,.12);overflow-y:auto;min-height:0;padding:calc(18px + env(safe-area-inset-top)) 16px 40px}
+  .pane-layout.dash-mode.has-selection .box2{display:block;position:fixed;top:0;right:0;bottom:0;width:min(100vw,clamp(440px,42vw,760px));z-index:60;border-radius:0;border:none;border-left:1px solid var(--line);box-shadow:-8px 0 30px rgba(0,0,0,.12);overflow-y:auto;min-height:0;padding:calc(18px + env(safe-area-inset-top)) 16px 40px}
   .pane-layout.dash-mode .box3{background:transparent;border:none;box-shadow:none;padding:0}
   .pane-layout.dash-mode .detail-back{display:inline-flex}
   .dash-col .row{margin:0;border-radius:9px}
@@ -3034,6 +3034,17 @@ async function updateTask(id, fields) {
   const { error } = await sb.from('tasks').update({ ...fields, updated_at: new Date().toISOString() }).eq('id', id);
   if (error) alert(error.message);
 }
+
+// --- Dashboards: clicking anywhere outside the open task panel closes it ---
+// (Clicking another task still switches to it.) Runs before the other click
+// handlers so what was clicked still works; the redraw waits until they finish.
+document.addEventListener('click', e => {
+  if (currentView.type !== 'dashboard' || !selectedTaskId || !e.target.isConnected) return;
+  if (Date.now() - lastDragEnd < 350) return;
+  if (e.target.closest('.box2, .todo-detail, .row, .todo-row, .modal, .m-sheet, .toast')) return;
+  selectedTaskId = null;
+  setTimeout(() => { if (!selectedTaskId) render(); }, 0);
+}, true);
 
 // --- Drag to reorder ---
 const dragRowsIn = container => [...container.children].filter(r => (r.matches('.row, .todo-row')) && !r.classList.contains('done'));
