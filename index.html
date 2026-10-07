@@ -328,6 +328,13 @@
   .dash-col{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 10px 6px}
   .dash-col-head{display:flex;justify-content:space-between;align-items:center;width:100%;background:none;border:none;font-family:inherit;font-size:13.5px;font-weight:800;color:var(--text);padding:4px 6px 8px;cursor:pointer;text-align:left}
   .dash-col-head:disabled{cursor:default}
+  .dash-col-top{display:flex;align-items:center;gap:2px}
+  .dash-col-top .dash-col-head{flex:1;min-width:0}
+  .col-grip{flex:none;display:flex;align-items:center;justify-content:center;width:22px;height:28px;margin:-4px -4px 4px 0;color:var(--muted);cursor:grab;touch-action:none;opacity:.45;border-radius:6px}
+  .col-grip:hover{opacity:1;color:var(--text);background:var(--hover,rgba(0,0,0,.05))}
+  .dash-col.col-dragging{box-shadow:0 10px 28px rgba(0,0,0,.16);outline:2px solid var(--accent);position:relative;z-index:5;opacity:.92}
+  .dash-col.col-dragging .col-grip{cursor:grabbing;opacity:1}
+  body.offline .col-grip{display:none}
   .dash-col-head:not(:disabled):hover span:first-child{color:var(--accent)}
   .dash-count{font-size:12px;font-weight:600;color:var(--muted)}
   .dash-col .todo-row{padding:8px 6px}
@@ -988,6 +995,8 @@ async function renameTag(oldName, newName) {
     try { localStorage.setItem('daily-sync-review-open', JSON.stringify([...reviewOpenGroups])); } catch {}
   }
   if ((currentView.type === 'list' || currentView.type === 'tag') && currentView.key === oldName) currentView.key = newName;
+  const dashLists = who === 'mary' ? maryDashChoices() : null;
+  if (dashLists?.includes(oldName)) saveDashLists(dashLists.map(id => id === oldName ? newName : id));
   render();
 }
 
@@ -1541,7 +1550,8 @@ function maryDashColumns(open) {
     { id: DASH_UNTAGGED, name: 'Untagged', items: open.filter(t => !t.tag && !isHandoff(t)), key: '', view: 'list', viewKey: '' },
   ];
   const chosen = maryDashChoices();
-  return chosen ? all.filter(col => chosen.includes(col.id)) : all.filter(col => col.items.length);
+  // The saved list is also the column order (set by dragging a column's grip).
+  return chosen ? chosen.map(id => all.find(col => col.id === id)).filter(Boolean) : all.filter(col => col.items.length);
 }
 function renderMaryDashboard(visible) {
   viewTitleEl.textContent = 'Dashboard';
@@ -1557,8 +1567,10 @@ function renderMaryDashboard(visible) {
     if (search && !items.length) return;
     const sec = document.createElement('section');
     sec.className = 'dash-col';
+    sec.dataset.colId = col.id;
     if (col.noDrop) sec.dataset.noDrop = '1';
-    sec.innerHTML = `<button type="button" class="dash-col-head" ${col.view === 'handoffs' ? 'data-dash-view="handoffs"' : `data-dash-list="${escapeAttr(col.viewKey)}" data-dash-type="list"`}><span>${escapeHtml(col.name)}</span><span class="dash-count">${items.length}</span></button>`;
+    const grip = search ? '' : '<span class="col-grip" data-col-drag title="Drag to move this list" aria-hidden="true"><svg width="12" height="16" viewBox="0 0 12 16" fill="currentColor"><circle cx="3.5" cy="3" r="1.4"/><circle cx="8.5" cy="3" r="1.4"/><circle cx="3.5" cy="8" r="1.4"/><circle cx="8.5" cy="8" r="1.4"/><circle cx="3.5" cy="13" r="1.4"/><circle cx="8.5" cy="13" r="1.4"/></svg></span>';
+    sec.innerHTML = `<div class="dash-col-top">${grip}<button type="button" class="dash-col-head" ${col.view === 'handoffs' ? 'data-dash-view="handoffs"' : `data-dash-list="${escapeAttr(col.viewKey)}" data-dash-type="list"`}><span>${escapeHtml(col.name)}</span><span class="dash-count">${items.length}</span></button></div>`;
     const rows = document.createElement('div');
     rows.className = 'dash-rows';
     if (!col.noDrop) rows.dataset.listKey = col.key;
@@ -1579,7 +1591,9 @@ function renderMaryDashboard(visible) {
 function openDashPicker() {
   const open = tasks.filter(t => t.assignee === 'mary' && t.status !== 'done');
   const shown = new Set(maryDashColumns(open).map(c => c.id));
-  const options = [...allTagNames().map(n => [n, n]), [DASH_HANDOFFS, 'EHL Hand-offs'], [DASH_UNTAGGED, 'Untagged']];
+  const names = { [DASH_HANDOFFS]: 'EHL Hand-offs', [DASH_UNTAGGED]: 'Untagged' };
+  const ids = [...shown, ...[...allTagNames(), DASH_HANDOFFS, DASH_UNTAGGED].filter(id => !shown.has(id))];
+  const options = ids.map(id => [id, names[id] || id]);
   document.getElementById('dashPickList').innerHTML = options.map(([id, name]) => {
     const count = id === DASH_HANDOFFS ? open.filter(isHandoff).length : id === DASH_UNTAGGED ? open.filter(t => !t.tag && !isHandoff(t)).length : open.filter(t => t.tag === id).length;
     return `<label class="dash-pick-item"><input type="checkbox" value="${escapeAttr(id)}"${shown.has(id) ? ' checked' : ''}><span>${escapeHtml(name)}</span><span class="dash-count">${count}</span></label>`;
@@ -1589,9 +1603,13 @@ function openDashPicker() {
 async function saveDashPicker() {
   if (blockedOffline()) return;
   const lists = [...document.querySelectorAll('#dashPickList input:checked')].map(i => i.value);
-  const body = JSON.stringify({ lists });
-  const row = maryDashPrefsRow();
   document.getElementById('dashPickModal').classList.remove('open');
+  saveDashLists(lists);
+}
+async function saveDashLists(lists) {
+  if (blockedOffline()) return;
+  const body = JSON.stringify({ lists: [...new Set(lists)] });
+  const row = maryDashPrefsRow();
   if (row) {
     row.body = body;
     render();
@@ -3059,6 +3077,48 @@ const endDrag = () => {
 };
 document.addEventListener('pointerup', endDrag);
 document.addEventListener('pointercancel', endDrag);
+
+// --- Mary's Dashboard: drag a column's grip to change the column order ---
+let colDrag = null;
+document.addEventListener('pointerdown', e => {
+  const grip = e.target.closest('[data-col-drag]');
+  if (!grip || e.button > 0) return;
+  const col = grip.closest('.dash-col');
+  e.preventDefault();
+  grip.setPointerCapture(e.pointerId);
+  colDrag = { col, wrap: col.parentElement, moved: false, x: e.clientX, y: e.clientY };
+  col.classList.add('col-dragging');
+  document.body.classList.add('is-dragging');
+});
+document.addEventListener('pointermove', e => {
+  if (!colDrag) return;
+  const { col, wrap } = colDrag;
+  if (Math.abs(e.clientX - colDrag.x) + Math.abs(e.clientY - colDrag.y) > 5) colDrag.moved = true;
+  if (e.clientY < 90) window.scrollBy(0, -14);
+  else if (e.clientY > window.innerHeight - 110) window.scrollBy(0, 14);
+  const target = document.elementsFromPoint(e.clientX, e.clientY).map(el => el.closest('.dash-col')).find(c => c && c !== col && c.parentElement === wrap);
+  if (!target) return;
+  const r = target.getBoundingClientRect();
+  // Side-by-side columns (computer): left/right half decides. Stacked (phone): top/bottom half.
+  const stacked = r.width > wrap.clientWidth * 0.8;
+  const before = stacked ? e.clientY < r.top + r.height / 2 : e.clientX < r.left + r.width / 2;
+  if (before) { if (col.nextElementSibling !== target) wrap.insertBefore(col, target); }
+  else if (target.nextElementSibling !== col) target.after(col);
+});
+const endColDrag = () => {
+  if (!colDrag) return;
+  const { col, wrap, moved } = colDrag;
+  col.classList.remove('col-dragging');
+  document.body.classList.remove('is-dragging');
+  colDrag = null;
+  lastDragEnd = Date.now();
+  if (!moved) return;
+  const order = [...wrap.querySelectorAll('.dash-col')].map(c => c.dataset.colId);
+  const earlier = maryDashChoices() || [];
+  saveDashLists([...order, ...earlier.filter(id => !order.includes(id))]);
+};
+document.addEventListener('pointerup', endColDrag);
+document.addEventListener('pointercancel', endColDrag);
 
 async function saveOrder(ids) {
   if (blockedOffline()) return;
