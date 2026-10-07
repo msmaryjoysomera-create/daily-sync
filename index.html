@@ -136,7 +136,7 @@
     .pane-layout.add-mode .detail-back{display:none}
   }
   .row-date{flex:none;font-size:12px;color:var(--muted);white-space:nowrap}
-  form.add.done-mode .tag-wrap, form.add.done-mode #dueInput, form.add.done-mode #recurToggleBtn{display:none !important}
+  form.add.done-mode .tag-wrap, form.add.done-mode #dueInput, form.add.done-mode #repeatInput{display:none !important}
 
   @media (max-width:900px){
     .pane-layout{grid-template-columns:minmax(0,1fr)}
@@ -362,6 +362,12 @@
   .todo-opt select{margin-left:auto;background:var(--card-2);border:1px solid var(--line);border-radius:8px;padding:4px 6px;font-family:inherit;font-size:12.5px;color:var(--text)}
   .todo-section .due-row{margin:0;padding:8px 12px;border-bottom:1px solid var(--line)}
   .todo-card .task-notes-edit{margin-top:12px;width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-family:inherit;font-size:13.5px;line-height:1.5;min-height:calc(1.5em * 4 + 20px);background:var(--card-2);color:var(--text);resize:vertical}
+  .repeat-select, .task-repeat-select{background:var(--card-2);border:1px solid var(--line);border-radius:8px;padding:5px 8px;font-family:inherit;font-size:12.5px;color:var(--text)}
+  .todo-opt .task-repeat-select{margin-left:auto}
+  .nav-count.new{background:var(--accent);color:#fff;font-weight:800}
+  .new-pill{flex:none;background:var(--accent);color:#fff;border-radius:999px;padding:1px 7px;font-size:10.5px;font-weight:800;letter-spacing:.02em}
+  .m-tab{position:relative}
+  .m-dot{position:absolute;top:2px;left:calc(50% + 6px);width:9px;height:9px;border-radius:50%;background:var(--accent);border:2px solid var(--card)}
   .handoff-sub{font-size:12px;color:var(--muted)}
   .handoff-chips{display:flex;flex-wrap:wrap;gap:6px}
   .handoff-chip{background:var(--card);border:1px solid var(--line);border-radius:999px;padding:5px 11px;font-family:inherit;font-size:12.5px;font-weight:600;color:var(--text);cursor:pointer}
@@ -669,7 +675,9 @@
           </span>
           <input type="date" id="dueInput">
           <button type="button" class="notes-toggle" id="notesToggleBtn">+ note</button>
-          <button type="button" class="notes-toggle recur-toggle" id="recurToggleBtn" title="Repeat this task every day"><svg width="13" height="13" viewBox="0 0 18 18" fill="none"><path d="M14.5 9a5.5 5.5 0 1 1-1.6-3.9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M14.5 3.5V6.5H11.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg> Daily</button>
+          <select id="repeatInput" class="repeat-select" aria-label="Repeat" title="Repeat">
+            <option value="">Doesn't repeat</option><option value="daily">Daily</option><option value="weekdays">Weekdays</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option>
+          </select>
           <button type="submit" class="add-submit">Add</button>
         </div>
         <textarea id="notesInput" placeholder="Notes / blockers…"></textarea>
@@ -837,7 +845,7 @@ const titleInput = document.getElementById('titleInput');
 const dueInput = document.getElementById('dueInput');
 const notesInput = document.getElementById('notesInput');
 const notesToggleBtn = document.getElementById('notesToggleBtn');
-const recurToggleBtn = document.getElementById('recurToggleBtn');
+const repeatInput = document.getElementById('repeatInput');
 const board = document.getElementById('board');
 const reviewList = document.getElementById('reviewList');
 const tagInput = document.getElementById('tagInput');
@@ -1105,6 +1113,21 @@ let contactEditing = null; // { id, field }
 const DEFAULT_REASONS = ['Reply', 'Quote', 'Document', 'Payment', 'Signature', 'To schedule'];
 const REASON_MARK = 'reason'; // EHL's own extra reasons: sticky_notes rows (color 'reason')
 let handoffDraft = null; // { id, reason, checkBack, note } while EHL fills in the box
+// "New" hand-offs: ones created since Mary last opened the page (per device).
+const HANDOFFS_SEEN_KEY = 'daily-sync-handoffs-seen';
+let handoffsSeenAtOpen = null; // what "seen" was when she opened the page (for the New tags)
+function handoffsSeen() {
+  let v = null;
+  try { v = localStorage.getItem(HANDOFFS_SEEN_KEY); } catch {}
+  if (!v) { v = new Date().toISOString(); try { localStorage.setItem(HANDOFFS_SEEN_KEY, v); } catch {} }
+  return v;
+}
+const newHandoffs = () => { const seen = handoffsSeen(); return tasks.filter(t => isHandoff(t) && (t.created_at || '') > seen); };
+// Repeating tasks: when one is checked off, a fresh copy with the next due
+// date is created (the done one stays in Completed as a record).
+const REPEAT_LABELS = { daily: 'Daily', weekdays: 'Weekdays', weekly: 'Weekly', monthly: 'Monthly' };
+const repeatOf = t => t.repeat || (t.recurring ? 'daily' : null); // "recurring" = older Daily tasks
+const repeatOptions = sel => `<option value="">Doesn't repeat</option>` + Object.entries(REPEAT_LABELS).map(([k, l]) => `<option value="${k}"${k === sel ? ' selected' : ''}>${l}</option>`).join('');
 const isHandoff = t => t.assignee === 'mary' && t.source === 'evan' && !t.tag && t.status !== 'done';
 const CONTACT_ICONS = {
   sf_url: '<svg width="15" height="15" viewBox="0 0 18 18" fill="none"><path d="M5.2 14.5h7.6a3.4 3.4 0 0 0 .5-6.77A4.5 4.5 0 0 0 4.7 6.6 3.95 3.95 0 0 0 5.2 14.5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>',
@@ -1150,7 +1173,6 @@ let noteSaving = null;
 let noteForceFill = false;
 let showArchived = false;
 let firstLoad = true;
-let recurActive = false;
 let currentView = { type: 'today' };
 let selectedTaskId = null;
 updateTagOptions();
@@ -1218,7 +1240,7 @@ function setWho(val) {
   if (val && (switching || !allowed.includes(currentView.type))) currentView = { type: val === 'mary' ? 'today' : 'dashboard' };
   localStorage.setItem('daily-sync-who', val);
   [...whoToggle.children].forEach(b => b.classList.toggle('active', b.dataset.who === val));
-  recurToggleBtn.style.display = val === 'mary' ? '' : 'none';
+  repeatInput.style.display = val === 'evan' ? 'none' : '';
   document.querySelectorAll('#tasksSection .nav-item[data-for]').forEach(b => {
     const f = b.dataset.for; // 'evan', 'sarah', or 'ms' (Mary and Sarah)
     b.style.display = f === val || (f === 'ms' && (val === 'mary' || val === 'sarah')) ? '' : 'none';
@@ -1242,10 +1264,6 @@ notesToggleBtn.addEventListener('click', () => {
   notesInput.classList.toggle('show');
 });
 
-recurToggleBtn.addEventListener('click', () => {
-  recurActive = !recurActive;
-  recurToggleBtn.classList.toggle('active', recurActive);
-});
 
 printBtn.addEventListener('click', () => window.print());
 
@@ -1313,7 +1331,7 @@ function taskEl(task) {
         <div class="task-meta">
           ${dueBadge(task)}
           ${task.tag ? `<span class="badge">${escapeHtml(task.tag)}</span>` : ''}
-          ${task.recurring ? `<span class="badge recur" title="Repeats daily">${ICON_REFRESH} Daily</span>` : ''}
+          ${repeatOf(task) ? `<span class="badge recur" title="Repeats">${ICON_REFRESH} ${REPEAT_LABELS[repeatOf(task)]}</span>` : ''}
           ${task.source === 'claude' ? '<span class="badge claude" title="Added via Claude">✳ via Claude</span>' : ''}
           ${task.source === 'evan' ? '<span class="badge evan" title="Assigned by EHL">From EHL</span>' : ''}
           ${task.waiting_on ? `<span class="badge waiting">Waiting on: ${escapeHtml(task.waiting_on)}</span>` : ''}
@@ -1325,6 +1343,7 @@ function taskEl(task) {
             : `<button type="button" class="due-none" data-action="set-due" title="Add a due date">None</button>`}
           ${task.due_date ? `<button type="button" class="icon-btn" data-action="clear-due" title="Remove due date">${ICON_X}</button>` : ''}
         </div>
+        ${task.status !== 'done' ? `<div class="due-row"><span class="due-label">Repeat</span><select class="task-repeat-select">${repeatOptions(repeatOf(task))}</select></div>` : ''}
         <textarea class="task-notes-edit${task.notes ? '' : ' hidden'}" placeholder="+ Add a note…" rows="1">${escapeHtml(task.notes || '')}</textarea>
         ${photoRowHtml(task.id)}
         <div class="task-history">${historyLine}</div>
@@ -1352,7 +1371,9 @@ function basicTaskEl(task) {
           ${task.source === 'claude' ? '<span class="badge claude" title="Added via Claude">✳ via Claude</span>' : ''}
           ${task.source === 'evan' ? '<span class="badge evan" title="Assigned by EHL">From EHL</span>' : ''}
           ${task.waiting_on ? `<span class="badge waiting">Waiting on: ${escapeHtml(task.waiting_on)}</span>` : ''}
+          ${repeatOf(task) ? `<span class="badge recur" title="Repeats">${ICON_REFRESH} ${REPEAT_LABELS[repeatOf(task)]}</span>` : ''}
         </div>
+        ${task.status !== 'done' ? `<div class="due-row"><span class="due-label">Repeat</span><select class="task-repeat-select">${repeatOptions(repeatOf(task))}</select></div>` : ''}
         <textarea class="task-notes-edit${task.notes ? '' : ' hidden'}" placeholder="+ Add a note…" rows="1">${escapeHtml(task.notes || '')}</textarea>
         ${photoRowHtml(task.id)}
       </div>
@@ -1385,6 +1406,7 @@ function todoRowEl(t) {
   }
   const steps = stepsOf(t);
   if (steps.length) meta.push(`${steps.filter(s => s.done).length} of ${steps.length}`);
+  if (repeatOf(t)) meta.push(`Repeats ${REPEAT_LABELS[repeatOf(t)].toLowerCase()}`);
   if (t.notes) meta.push('Note');
   const contactIcons = CONTACT_FIELDS.filter(f => t[f.key]).map(f => CONTACT_ICONS[f.key]).join('');
   if (contactIcons) meta.push(`<span class="row-contact-icons" title="Has contact info">${contactIcons}</span>`);
@@ -1637,6 +1659,7 @@ function renderTodoDetail() {
         ${task.due_date ? `<button type="button" class="icon-btn" data-action="clear-due" title="Remove due date">${ICON_X}</button>` : ''}
       </div>
       <button type="button" class="todo-opt" data-action="add-photo"><svg width="15" height="15" viewBox="0 0 18 18" fill="none"><rect x="2" y="3.5" width="14" height="11" rx="2" stroke="currentColor" stroke-width="1.5"/><circle cx="6.5" cy="7.5" r="1.3" stroke="currentColor" stroke-width="1.3"/><path d="M2.5 13l4-3.5 3 2.5 2.5-2 3.5 3" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>Add a photo</button>
+      ${task.status !== 'done' ? `<label class="todo-opt">${ICON_REFRESH}Repeat<select class="task-repeat-select">${repeatOptions(repeatOf(task))}</select></label>` : ''}
       <label class="todo-opt">List
         <select class="todo-list-select">
           ${task.tag ? '' : '<option value="" selected disabled>Choose a list…</option>'}
@@ -1671,9 +1694,11 @@ function toggleTodoDone(id) {
   const t = tasks.find(x => x.id === id);
   if (!t) return;
   const done = t.status !== 'done';
-  const before = snapshot(t, ['status', 'completed_at', 'completed_by']);
-  patchTask(id, { status: done ? 'done' : 'todo', completed_at: done ? new Date().toISOString() : null, completed_by: done ? who : null });
-  if (done) showToast(`Completed "${shortTitle(t.title)}"`, () => patchTask(id, before));
+  const rule = done ? repeatOf(t) : null;
+  const before = snapshot(t, ['status', 'completed_at', 'completed_by', 'repeat', 'recurring']);
+  const copy = { ...t };
+  patchTask(id, { status: done ? 'done' : 'todo', completed_at: done ? new Date().toISOString() : null, completed_by: done ? who : null, ...(rule ? { repeat: null, recurring: false } : {}) });
+  if (done) afterComplete(copy, rule, () => patchTask(id, before));
 }
 
 function updateSteps(id, change) {
@@ -1884,7 +1909,8 @@ function renderMobileChrome() {
   const tabs = mobileTabs();
   const tabViews = tabs.map(t => t.view).filter(Boolean);
   const activeTab = tabViews.includes(currentView.type) ? currentView.type : currentView.type === 'list' ? 'lists' : 'more';
-  mTabbar.innerHTML = tabs.map(t => `<button type="button" class="m-tab${(t.view || t.sheet) === activeTab ? ' active' : ''}" ${t.view ? `data-m-view="${t.view}"` : `data-m-sheet="${t.sheet}"`}>${t.icon}<span>${t.label}</span></button>`).join('');
+  const moreDot = who === 'mary' && currentView.type !== 'handoffs' && newHandoffs().length > 0;
+  mTabbar.innerHTML = tabs.map(t => `<button type="button" class="m-tab${(t.view || t.sheet) === activeTab ? ' active' : ''}" ${t.view ? `data-m-view="${t.view}"` : `data-m-sheet="${t.sheet}"`}>${t.icon}<span>${t.label}</span>${t.sheet === 'more' && moreDot ? '<i class="m-dot"></i>' : ''}</button>`).join('');
   const noFab = !who || currentView.type === 'add' || (who === 'evan' && currentView.type === 'completed');
   mFab.classList.toggle('hide', noFab);
   mFab.classList.toggle('open', mAdding);
@@ -2056,7 +2082,10 @@ function updateNavCounts() {
   document.getElementById('countAllTasks').textContent = open.length;
   document.getElementById('countDashboard').textContent = open.length;
   document.getElementById('countSarahDash').textContent = open.length;
-  document.getElementById('countHandoffs').textContent = tasks.filter(isHandoff).length;
+  const hc = document.getElementById('countHandoffs');
+  const fresh = currentView.type === 'handoffs' ? 0 : newHandoffs().length;
+  hc.textContent = fresh ? `${fresh} new` : tasks.filter(isHandoff).length;
+  hc.classList.toggle('new', !!fresh);
 }
 
 function updateActiveNav() {
@@ -2070,6 +2099,7 @@ const VIEW_TITLES = { today: 'Today', upcoming: 'Upcoming', done: 'Completed', r
 function render() {
   if (dragState) { renderAfterDrag = true; return; } // don't rebuild rows mid-drag
   reorderable = false;
+  if (currentView.type !== 'handoffs') handoffsSeenAtOpen = null;
   if (offlineMode) queueMicrotask(applyOfflineReadOnly);
   renderListsNav();
   updateNavCounts();
@@ -2145,6 +2175,9 @@ function render() {
     board.innerHTML = '';
   } else if (currentView.type === 'handoffs') {
     viewTitleEl.textContent = 'EHL Hand-offs';
+    // Opening the page counts as seeing them; keep the New tags for this visit.
+    if (!handoffsSeenAtOpen) handoffsSeenAtOpen = handoffsSeen();
+    try { localStorage.setItem(HANDOFFS_SEEN_KEY, new Date().toISOString()); } catch {}
     const list = visible.filter(isHandoff).sort(byDue);
     renderTaskList(list, groupByWaiting, search ? noMatch : 'Nothing handed off right now');
   } else if (currentView.type === 'review') {
@@ -2223,6 +2256,7 @@ function rowEl(task) {
   div.dataset.id = task.id;
   const doneDate = task.status === 'done' && task.completed_at
     ? `<span class="row-date" title="Completed ${escapeAttr(new Date(task.completed_at).toLocaleString())}">${completedLabel(task.completed_at)}</span>` : '';
+  const isNew = currentView.type === 'handoffs' && handoffsSeenAtOpen && (task.created_at || '') > handoffsSeenAtOpen;
   const checkBack = currentView.type === 'handoffs' && task.due_date
     ? `<span class="row-date${task.due_date <= todayStr() ? ' overdue' : ''}">Check back ${dueLabel(task.due_date)}</span>` : '';
   const discussed = discussedToday.has(task.id);
@@ -2230,7 +2264,7 @@ function rowEl(task) {
     ? `<button type="button" class="discuss-chip${discussed ? ' on' : ''}" data-action="discuss" aria-pressed="${discussed}">${discussed ? '✓ Discussed' : 'Discussed?'}</button>` : '';
   if (chip && discussed) div.classList.add('discussed');
   const grip = reorderable && task.status !== 'done' ? `<span class="drag-grip" data-drag title="Drag to reorder" aria-hidden="true"><svg width="12" height="16" viewBox="0 0 12 16" fill="currentColor"><circle cx="3.5" cy="3" r="1.4"/><circle cx="8.5" cy="3" r="1.4"/><circle cx="3.5" cy="8" r="1.4"/><circle cx="8.5" cy="8" r="1.4"/><circle cx="3.5" cy="13" r="1.4"/><circle cx="8.5" cy="13" r="1.4"/></svg></span>` : '';
-  div.innerHTML = `<button class="status-btn ${task.status === 'todo' ? '' : task.status}" title="Change status"></button><span class="row-title">${escapeHtml(task.title)}</span>${doneDate}${checkBack}${chip}${grip}`;
+  div.innerHTML = `<button class="status-btn ${task.status === 'todo' ? '' : task.status}" title="Change status"></button><span class="row-title">${escapeHtml(task.title)}</span>${isNew ? '<span class="new-pill">New</span>' : ''}${doneDate}${checkBack}${chip}${grip}`;
   return div;
 }
 
@@ -2678,6 +2712,12 @@ document.body.addEventListener('change', e => {
     const id = e.target.closest('.task').dataset.id;
     dueEditingId = null;
     updateTask(id, { due_date: e.target.value || null });
+  } else if (e.target.classList.contains('task-repeat-select')) {
+    const id = e.target.closest('.task').dataset.id;
+    const t = tasks.find(x => x.id === id);
+    const rule = e.target.value || null;
+    // Repeating needs a date to repeat from: start today if the task has none.
+    patchTask(id, { repeat: rule, recurring: false, ...(rule && t && !t.due_date ? { due_date: todayStr() } : {}) });
   } else if (e.target.classList.contains('contact-input')) {
     const id = e.target.closest('.task').dataset.id;
     const field = e.target.dataset.field;
@@ -2741,7 +2781,7 @@ addForm.addEventListener('submit', async e => {
   const listStatus = inList && who === 'sarah' && currentView.key === 'doing' ? 'doing' : 'todo';
   const viewDue = currentView.type === 'today' ? todayStr() : null;
   const doneMode = addForm.classList.contains('done-mode');
-  const typed = { tag: tagInput.value, due: dueInput.value, notes: notesInput.value, recur: recurActive };
+  const typed = { tag: tagInput.value, due: dueInput.value, notes: notesInput.value, repeat: repeatInput.value };
   try {
     // A typed tag that doesn't exist yet becomes a new saved tag (and a new list).
     const typedTag = !doneMode && typed.tag.trim() ? await createTag(typed.tag) : null;
@@ -2759,7 +2799,9 @@ addForm.addEventListener('submit', async e => {
       due_date: typed.due || viewDue,
       notes: typed.notes.trim() || null,
       status: listStatus,
-      recurring: typed.recur,
+      repeat: typed.repeat || null,
+      // A repeating task needs a date to repeat from: start today if none given.
+      ...(typed.repeat && !(typed.due || viewDue) ? { due_date: todayStr() } : {}),
     });
     if (!added) return; // couldn't save: leave what was typed so it can be retried
     if (!tasks.some(t => t.id === added.id)) tasks.push(added);
@@ -2771,8 +2813,7 @@ addForm.addEventListener('submit', async e => {
     dueInput.value = '';
     notesInput.value = '';
     notesInput.classList.remove('show');
-    recurActive = false;
-    recurToggleBtn.classList.remove('active');
+    repeatInput.value = '';
     render();
   } finally {
     addBusy = false;
@@ -3087,9 +3128,55 @@ function cycleStatus(id, next) {
   const fields = { status: next };
   fields.completed_at = next === 'done' ? new Date().toISOString() : null;
   fields.completed_by = next === 'done' ? (who || null) : null;
-  const before = snapshot(task, ['status', 'completed_at', 'completed_by']);
+  const rule = next === 'done' ? repeatOf(task) : null;
+  const before = snapshot(task, ['status', 'completed_at', 'completed_by', 'repeat', 'recurring']);
+  if (rule) { fields.repeat = null; fields.recurring = false; } // the next copy carries the repeat
   updateTask(id, fields);
-  if (next === 'done') showToast(`Completed "${shortTitle(task.title)}"`, () => updateTask(id, before));
+  if (next === 'done') afterComplete({ ...task }, rule, () => updateTask(id, before));
+}
+
+// The next date after `base` (and after today) for a repeat rule.
+function nextOccurrence(rule, base) {
+  const d = new Date((base || todayStr()) + 'T00:00:00');
+  const dayOfMonth = d.getDate();
+  const step = () => {
+    if (rule === 'daily') d.setDate(d.getDate() + 1);
+    else if (rule === 'weekdays') { do d.setDate(d.getDate() + 1); while (d.getDay() === 0 || d.getDay() === 6); }
+    else if (rule === 'weekly') d.setDate(d.getDate() + 7);
+    else if (rule === 'monthly') {
+      d.setDate(1); d.setMonth(d.getMonth() + 1);
+      d.setDate(Math.min(dayOfMonth, new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate()));
+    } else d.setDate(d.getDate() + 1);
+  };
+  step();
+  while (localDateStr(d) <= todayStr()) step();
+  return localDateStr(d);
+}
+
+// Creates the next copy of a repeating task that was just checked off.
+async function spawnNextRepeat(t, rule, due) {
+  const added = await addTask({
+    title: t.title, assignee: t.assignee, tag: t.tag, notes: t.notes, status: 'todo',
+    repeat: rule, due_date: due, pinned: !!t.pinned, position: t.position ?? null,
+    steps: stepsOf(t).map(s => ({ ...s, done: false })),
+    source: t.source || null, waiting_on: t.waiting_on || null,
+    sf_url: t.sf_url || null, phone: t.phone || null, email: t.email || null,
+  });
+  if (added && !tasks.some(x => x.id === added.id)) { tasks.push(added); render(); }
+  return added;
+}
+
+// Completion message, undo included; for a repeating task it also makes the
+// next copy (and undo takes that copy back).
+function afterComplete(t, rule, restore) {
+  if (!rule) { showToast(`Completed "${shortTitle(t.title)}"`, restore); return; }
+  const due = nextOccurrence(rule, t.due_date);
+  let spawned = spawnNextRepeat(t, rule, due);
+  showToast(`Completed · next one ${dueLabel(due)}`, async () => {
+    restore();
+    const copy = await spawned;
+    if (copy) { tasks = tasks.filter(x => x.id !== copy.id); deleteTask(copy.id); render(); }
+  });
 }
 
 async function deleteTask(id) {

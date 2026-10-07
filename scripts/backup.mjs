@@ -93,7 +93,7 @@ async function taskParagraphs(task, photosByTask) {
   const meta = [STATUS_LABEL[task.status] || task.status];
   if (task.due_date) meta.push(`Due ${fmtDate(task.due_date)}`);
   if (task.tag) meta.push(`Tag: ${task.tag}`);
-  if (task.recurring) meta.push('Repeats daily');
+  if (task.repeat || task.recurring) meta.push(`Repeats ${task.repeat || 'daily'}`);
   if (task.pinned) meta.push(task.assignee === 'evan' ? 'Important' : 'Pinned');
   if (task.my_day === localDateStr(new Date())) meta.push('My Day');
   if (task.source === 'claude') meta.push('Added via Claude');

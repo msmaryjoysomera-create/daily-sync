@@ -59,6 +59,7 @@ const buildTools = ({ mary: tags, evan: evanLists, sarah: sarahLists }) => [
         phone: { type: 'string', description: "Contact phone number for the task, if one was mentioned (e.g. '336-686-5090')" },
         email: { type: 'string', description: 'Contact email address for the task, if one was mentioned' },
         salesforce_url: { type: 'string', description: 'Link to the related Salesforce record, if one was given' },
+        repeat: { type: 'string', enum: ['daily', 'weekdays', 'weekly', 'monthly'], description: 'If the task repeats (e.g. "every Monday" = weekly starting on the next Monday as due_date)' },
       },
       required: ['title', 'assignee', 'tag'],
     },
@@ -111,6 +112,7 @@ async function callTool(name, args) {
       phone: args.phone ? String(args.phone).trim() : null,
       email: args.email ? String(args.email).trim() : null,
       sf_url: args.salesforce_url ? (/^https?:\/\//i.test(String(args.salesforce_url).trim()) ? String(args.salesforce_url).trim() : 'https://' + String(args.salesforce_url).trim()) : null,
+      repeat: ['daily', 'weekdays', 'weekly', 'monthly'].includes(args.repeat) ? args.repeat : null,
       status: 'todo',
       source: 'claude',
     }).select().single();
@@ -121,6 +123,7 @@ async function callTool(name, args) {
     if (who) bits.push(`for ${who}`);
     if (data.tag) bits.push(`under "${data.tag}"`);
     if (data.due_date) bits.push(`due ${data.due_date}`);
+    if (data.repeat) bits.push(`repeating ${data.repeat}`);
     const contact = [data.phone && 'phone', data.email && 'email', data.sf_url && 'Salesforce link'].filter(Boolean);
     if (contact.length) bits.push(`with ${contact.join(', ')}`);
     return { content: [{ type: 'text', text: bits.join(' ') + '.' }] };

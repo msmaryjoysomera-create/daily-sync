@@ -131,3 +131,7 @@ alter table tasks add column if not exists email text;
 -- Quote, Document, ...). EHL's own extra reasons are sticky_notes rows with
 -- color = 'reason'.
 alter table tasks add column if not exists waiting_on text;
+
+-- Repeating tasks: 'daily' | 'weekdays' | 'weekly' | 'monthly'. Checking one
+-- off creates the next copy with the next due date.
+alter table tasks add column if not exists repeat text;
