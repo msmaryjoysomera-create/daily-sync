@@ -126,3 +126,8 @@ create policy "team only task-photos" on storage.objects for all to authenticate
 alter table tasks add column if not exists sf_url text;
 alter table tasks add column if not exists phone text;
 alter table tasks add column if not exists email text;
+
+-- EHL Hand-offs: what Mary is waiting on for a task EHL handed her (Reply,
+-- Quote, Document, ...). EHL's own extra reasons are sticky_notes rows with
+-- color = 'reason'.
+alter table tasks add column if not exists waiting_on text;

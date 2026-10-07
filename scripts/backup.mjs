@@ -97,6 +97,7 @@ async function taskParagraphs(task, photosByTask) {
   if (task.pinned) meta.push(task.assignee === 'evan' ? 'Important' : 'Pinned');
   if (task.my_day === localDateStr(new Date())) meta.push('My Day');
   if (task.source === 'claude') meta.push('Added via Claude');
+  if (task.waiting_on) meta.push(`Waiting on: ${task.waiting_on}`);
   if (task.phone) meta.push(`Phone: ${task.phone}`);
   if (task.email) meta.push(`Email: ${task.email}`);
   if (task.sf_url) meta.push(`Salesforce: ${task.sf_url}`);
@@ -131,7 +132,8 @@ async function personSection(name, key, { tasks, photosByTask, stickies }) {
   // Mary's board is organized by tag, Evan's by his lists; Sarah's by status.
   const groups = key === 'mary' || key === 'evan'
     ? [...new Set([...savedTags(stickies, key), ...open.map(t => t.tag).filter(Boolean)]), null]
-        .map(tag => ({ label: tag || (key === 'evan' ? 'No list' : 'Untagged'), items: open.filter(t => (t.tag || null) === tag) }))
+        .map(tag => ({ label: tag || (key === 'evan' ? 'No list' : 'Untagged'), items: open.filter(t => (t.tag || null) === tag && !(key === 'mary' && !tag && t.source === 'evan')) }))
+        .concat(key === 'mary' ? [{ label: 'EHL Hand-offs', items: open.filter(t => !t.tag && t.source === 'evan') }] : [])
     : [{ label: 'To Do', items: open.filter(t => t.status === 'todo') }, { label: 'In Progress', items: open.filter(t => t.status === 'doing') }];
   for (const g of groups) {
     if (!g.items.length) continue;
