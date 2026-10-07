@@ -995,8 +995,11 @@ async function renameTag(oldName, newName) {
     try { localStorage.setItem('daily-sync-review-open', JSON.stringify([...reviewOpenGroups])); } catch {}
   }
   if ((currentView.type === 'list' || currentView.type === 'tag') && currentView.key === oldName) currentView.key = newName;
-  const dashLists = who === 'mary' ? maryDashChoices() : null;
-  if (dashLists?.includes(oldName)) saveDashLists(dashLists.map(id => id === oldName ? newName : id));
+  // Keep the renamed list's place on the Dashboard.
+  const prefs = dashPrefs();
+  if ([prefs.lists, prefs.order].some(ids => Array.isArray(ids) && ids.includes(oldName))) {
+    saveDashPrefs(Object.fromEntries(Object.entries(prefs).map(([k, v]) => [k, Array.isArray(v) ? [...new Set(v.map(id => id === oldName ? newName : id))] : v])));
+  }
   render();
 }
 
@@ -1155,7 +1158,7 @@ const newHandoffs = () => { const seen = handoffsSeen(); return tasks.filter(t =
 const REPEAT_LABELS = { daily: 'Daily', weekdays: 'Weekdays', weekly: 'Weekly', monthly: 'Monthly' };
 const repeatOf = t => t.repeat || (t.recurring ? 'daily' : null); // "recurring" = older Daily tasks
 const repeatOptions = sel => `<option value="">Doesn't repeat</option>` + Object.entries(REPEAT_LABELS).map(([k, l]) => `<option value="${k}"${k === sel ? ' selected' : ''}>${l}</option>`).join('');
-const DASH_HANDOFFS = '__handoffs__', DASH_UNTAGGED = '__untagged__'; // Mary's Dashboard extra columns
+const DASH_HANDOFFS = '__handoffs__', DASH_UNTAGGED = '__untagged__', DASH_TODO = '__todo__'; // Dashboard column ids that aren't list names
 const isHandoff = t => t.assignee === 'mary' && t.source === 'evan' && !t.tag && t.status !== 'done';
 const CONTACT_ICONS = {
   sf_url: '<svg width="15" height="15" viewBox="0 0 18 18" fill="none"><path d="M5.2 14.5h7.6a3.4 3.4 0 0 0 .5-6.77A4.5 4.5 0 0 0 4.7 6.6 3.95 3.95 0 0 0 5.2 14.5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>',
@@ -1535,13 +1538,21 @@ function renderTodo() {
 // a side panel; the circle and star work as everywhere else.
 // Sarah's Dashboard (her opening page): every open task, one column per list --
 // To Do (tasks not in one of her lists) first, then her own lists.
-// Mary's Dashboard: only the lists she picks (saved with her account as a
-// sticky_notes row, color 'prefs'), plus optional EHL Hand-offs / Untagged.
-function maryDashPrefsRow() { return stickyNotes.find(n => n.color === 'prefs' && n.assignee === 'mary' && n.title === 'dashboard') || null; }
-function maryDashChoices() {
-  const row = maryDashPrefsRow();
-  try { const lists = JSON.parse(row?.body || 'null')?.lists; if (Array.isArray(lists)) return lists; } catch {}
-  return null; // not chosen yet
+// Dashboard settings, one sticky_notes row per profile (color 'prefs', title
+// 'dashboard'). Mary: {lists} = the lists she picked, in column order, plus
+// optional EHL Hand-offs / Untagged. Sarah / EHL: {order} = column order only
+// (every list still shows; lists not in it go at the end).
+function dashPrefsRow() { return stickyNotes.find(n => n.color === 'prefs' && n.assignee === who && n.title === 'dashboard') || null; }
+function dashPrefs() { try { return JSON.parse(dashPrefsRow()?.body || '{}') || {}; } catch { return {}; } }
+function maryDashChoices() { const { lists } = dashPrefs(); return Array.isArray(lists) ? lists : null; } // null = not chosen yet
+function dashOrdered(cols) {
+  const { order } = dashPrefs();
+  if (!Array.isArray(order)) return cols;
+  const rank = id => { const i = order.indexOf(id); return i < 0 ? order.length : i; };
+  return cols.map((col, i) => [col, i]).sort((a, b) => rank(a[0].id) - rank(b[0].id) || a[1] - b[1]).map(([col]) => col);
+}
+function colGripHtml() {
+  return search ? '' : '<span class="col-grip" data-col-drag title="Drag to move this list" aria-hidden="true"><svg width="12" height="16" viewBox="0 0 12 16" fill="currentColor"><circle cx="3.5" cy="3" r="1.4"/><circle cx="8.5" cy="3" r="1.4"/><circle cx="3.5" cy="8" r="1.4"/><circle cx="8.5" cy="8" r="1.4"/><circle cx="3.5" cy="13" r="1.4"/><circle cx="8.5" cy="13" r="1.4"/></svg></span>';
 }
 function maryDashColumns(open) {
   const all = [
@@ -1569,8 +1580,7 @@ function renderMaryDashboard(visible) {
     sec.className = 'dash-col';
     sec.dataset.colId = col.id;
     if (col.noDrop) sec.dataset.noDrop = '1';
-    const grip = search ? '' : '<span class="col-grip" data-col-drag title="Drag to move this list" aria-hidden="true"><svg width="12" height="16" viewBox="0 0 12 16" fill="currentColor"><circle cx="3.5" cy="3" r="1.4"/><circle cx="8.5" cy="3" r="1.4"/><circle cx="3.5" cy="8" r="1.4"/><circle cx="8.5" cy="8" r="1.4"/><circle cx="3.5" cy="13" r="1.4"/><circle cx="8.5" cy="13" r="1.4"/></svg></span>';
-    sec.innerHTML = `<div class="dash-col-top">${grip}<button type="button" class="dash-col-head" ${col.view === 'handoffs' ? 'data-dash-view="handoffs"' : `data-dash-list="${escapeAttr(col.viewKey)}" data-dash-type="list"`}><span>${escapeHtml(col.name)}</span><span class="dash-count">${items.length}</span></button></div>`;
+    sec.innerHTML = `<div class="dash-col-top">${colGripHtml()}<button type="button" class="dash-col-head" ${col.view === 'handoffs' ? 'data-dash-view="handoffs"' : `data-dash-list="${escapeAttr(col.viewKey)}" data-dash-type="list"`}><span>${escapeHtml(col.name)}</span><span class="dash-count">${items.length}</span></button></div>`;
     const rows = document.createElement('div');
     rows.className = 'dash-rows';
     if (!col.noDrop) rows.dataset.listKey = col.key;
@@ -1606,17 +1616,18 @@ async function saveDashPicker() {
   document.getElementById('dashPickModal').classList.remove('open');
   saveDashLists(lists);
 }
-async function saveDashLists(lists) {
+function saveDashLists(lists) { return saveDashPrefs({ lists: [...new Set(lists)] }); }
+async function saveDashPrefs(prefs) {
   if (blockedOffline()) return;
-  const body = JSON.stringify({ lists: [...new Set(lists)] });
-  const row = maryDashPrefsRow();
+  const body = JSON.stringify(prefs);
+  const row = dashPrefsRow();
   if (row) {
     row.body = body;
     render();
     const { error } = await sb.from('sticky_notes').update({ body }).eq('id', row.id);
     if (error) alert(error.message);
   } else {
-    const { data, error } = await sb.from('sticky_notes').insert({ assignee: 'mary', color: 'prefs', title: 'dashboard', body }).select().single();
+    const { data, error } = await sb.from('sticky_notes').insert({ assignee: who, color: 'prefs', title: 'dashboard', body }).select().single();
     if (error) { alert(error.message); return; }
     if (!stickyNotes.some(n => n.id === data.id)) stickyNotes.push(data);
     render();
@@ -1628,8 +1639,8 @@ function renderSarahDashboard(visible) {
   reorderable = !search;
   const open = visible.filter(t => t.status !== 'done');
   const order = (a, b) => byPosition(false)(a, b) || a.created_at.localeCompare(b.created_at);
-  const lists = [{ name: 'To Do', key: null, view: 'list', viewKey: 'todo' },
-    ...allTagNames().map(n => ({ name: n, key: n, view: 'tag', viewKey: n }))];
+  const lists = dashOrdered([{ id: DASH_TODO, name: 'To Do', key: null, view: 'list', viewKey: 'todo' },
+    ...allTagNames().map(n => ({ id: n, name: n, key: n, view: 'tag', viewKey: n }))]);
   const wrap = document.createElement('div');
   wrap.className = 'dash-board';
   lists.forEach(l => {
@@ -1637,7 +1648,8 @@ function renderSarahDashboard(visible) {
     if (search && !items.length) return;
     const col = document.createElement('section');
     col.className = 'dash-col';
-    col.innerHTML = `<button type="button" class="dash-col-head" data-dash-list="${escapeAttr(l.viewKey)}" data-dash-type="${l.view}"><span>${escapeHtml(l.name)}</span><span class="dash-count">${items.length}</span></button>`;
+    col.dataset.colId = l.id;
+    col.innerHTML = `<div class="dash-col-top">${colGripHtml()}<button type="button" class="dash-col-head" data-dash-list="${escapeAttr(l.viewKey)}" data-dash-type="${l.view}"><span>${escapeHtml(l.name)}</span><span class="dash-count">${items.length}</span></button></div>`;
     const rows = document.createElement('div');
     rows.className = 'dash-rows';
     rows.dataset.listKey = l.key || ''; // '' = To Do (no list)
@@ -1661,7 +1673,7 @@ function renderDashboard() {
   // Every task belongs to a list (the add bar always picks one), so no "No list"
   // column -- unless EHL has no lists yet.
   const names = allTagNames();
-  const lists = names.length ? names.map(name => ({ name, key: name })) : [{ name: 'Tasks', key: null }];
+  const lists = names.length ? dashOrdered(names.map(name => ({ id: name, name, key: name }))) : [{ name: 'Tasks', key: null }];
   const board = document.createElement('div');
   board.className = 'dash-board';
   lists.forEach(({ name, key }) => {
@@ -1669,7 +1681,8 @@ function renderDashboard() {
     if (search && !items.length) return;
     const col = document.createElement('section');
     col.className = 'dash-col';
-    col.innerHTML = `<button type="button" class="dash-col-head" ${key ? `data-dash-list="${escapeAttr(key)}"` : 'disabled'}><span>${escapeHtml(name)}</span><span class="dash-count">${items.length}</span></button>`;
+    if (key) col.dataset.colId = key;
+    col.innerHTML = `<div class="dash-col-top">${key ? colGripHtml() : ''}<button type="button" class="dash-col-head" ${key ? `data-dash-list="${escapeAttr(key)}"` : 'disabled'}><span>${escapeHtml(name)}</span><span class="dash-count">${items.length}</span></button></div>`;
     const rows = document.createElement('div');
     rows.className = 'dash-rows';
     rows.dataset.listKey = key || ''; // '' = No list
@@ -3078,7 +3091,7 @@ const endDrag = () => {
 document.addEventListener('pointerup', endDrag);
 document.addEventListener('pointercancel', endDrag);
 
-// --- Mary's Dashboard: drag a column's grip to change the column order ---
+// --- Dashboards: drag a column's grip to change the column order ---
 let colDrag = null;
 document.addEventListener('pointerdown', e => {
   const grip = e.target.closest('[data-col-drag]');
@@ -3114,8 +3127,8 @@ const endColDrag = () => {
   lastDragEnd = Date.now();
   if (!moved) return;
   const order = [...wrap.querySelectorAll('.dash-col')].map(c => c.dataset.colId);
-  const earlier = maryDashChoices() || [];
-  saveDashLists([...order, ...earlier.filter(id => !order.includes(id))]);
+  if (who === 'mary') { const earlier = maryDashChoices() || []; saveDashLists([...order, ...earlier.filter(id => !order.includes(id))]); }
+  else { const earlier = dashPrefs().order || []; saveDashPrefs({ order: [...order, ...earlier.filter(id => !order.includes(id))] }); }
 };
 document.addEventListener('pointerup', endColDrag);
 document.addEventListener('pointercancel', endColDrag);
