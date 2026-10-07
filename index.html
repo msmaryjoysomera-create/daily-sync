@@ -315,6 +315,15 @@
   .pane-layout.dash-mode .box3{background:transparent;border:none;box-shadow:none;padding:0}
   .pane-layout.dash-mode .detail-back{display:inline-flex}
   .dash-col .row{margin:0;border-radius:9px}
+  .dash-toolbar{display:flex;align-items:center;justify-content:flex-end;gap:10px;margin:0 0 10px;font-size:12.5px;color:var(--muted)}
+  .dash-pick-btn{background:var(--card);border:1px solid var(--line);border-radius:9px;padding:6px 12px;font-family:inherit;font-size:12.5px;font-weight:700;color:var(--text);cursor:pointer}
+  .dash-pick-btn:hover{border-color:var(--accent);color:var(--accent)}
+  .dash-pick-panel{width:min(420px,100%)}
+  .dash-pick-list{display:flex;flex-direction:column;max-height:55vh;overflow-y:auto;border:1px solid var(--line);border-radius:10px}
+  .dash-pick-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--line);font-size:14px;cursor:pointer}
+  .dash-pick-item:last-child{border-bottom:none}
+  .dash-pick-item span:nth-child(2){flex:1}
+  .dash-pick-item input{width:17px;height:17px;accent-color:var(--accent)}
   .dash-board{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;align-items:start}
   .dash-col{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 10px 6px}
   .dash-col-head{display:flex;justify-content:space-between;align-items:center;width:100%;background:none;border:none;font-family:inherit;font-size:13.5px;font-weight:800;color:var(--text);padding:4px 6px 8px;cursor:pointer;text-align:left}
@@ -599,7 +608,7 @@
         <button type="button" class="nav-item" data-for="evan" data-view="planned"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><rect x="2.5" y="3.5" width="13" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M2.5 7H15.5M6 2V4.5M12 2V4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span><span class="nav-item-label">Planned</span><span class="nav-count" id="countPlanned">0</span></button>
         <button type="button" class="nav-item" data-for="evan" data-view="alltasks"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><path d="M3 8L9 3l6 5v6.5a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></span><span class="nav-item-label">Tasks</span><span class="nav-count" id="countAllTasks">0</span></button>
         <button type="button" class="nav-item" data-for="evan" data-view="completed"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="7" stroke="currentColor" stroke-width="1.5"/><path d="M5.8 9.2L7.8 11.2L12.2 6.6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="nav-item-label">Completed</span></button>
-        <button type="button" class="nav-item" data-for="sarah" data-view="dashboard"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><rect x="2.5" y="2.5" width="5.5" height="5.5" rx="1.2" stroke="currentColor" stroke-width="1.5"/><rect x="10" y="2.5" width="5.5" height="5.5" rx="1.2" stroke="currentColor" stroke-width="1.5"/><rect x="2.5" y="10" width="5.5" height="5.5" rx="1.2" stroke="currentColor" stroke-width="1.5"/><rect x="10" y="10" width="5.5" height="5.5" rx="1.2" stroke="currentColor" stroke-width="1.5"/></svg></span><span class="nav-item-label">Dashboard</span><span class="nav-count" id="countSarahDash">0</span></button>
+        <button type="button" class="nav-item" data-for="ms" data-view="dashboard"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><rect x="2.5" y="2.5" width="5.5" height="5.5" rx="1.2" stroke="currentColor" stroke-width="1.5"/><rect x="10" y="2.5" width="5.5" height="5.5" rx="1.2" stroke="currentColor" stroke-width="1.5"/><rect x="2.5" y="10" width="5.5" height="5.5" rx="1.2" stroke="currentColor" stroke-width="1.5"/><rect x="10" y="10" width="5.5" height="5.5" rx="1.2" stroke="currentColor" stroke-width="1.5"/></svg></span><span class="nav-item-label">Dashboard</span><span class="nav-count" id="countSarahDash">0</span></button>
         <button type="button" class="nav-item" data-for="ms" data-view="upcoming"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><rect x="2.5" y="3.5" width="13" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M2.5 7H15.5M6 2V4.5M12 2V4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span><span class="nav-item-label">Upcoming</span><span class="nav-count" id="countUpcoming">0</span></button>
         <button type="button" class="nav-item" data-for="ms" data-view="today"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="3.5" stroke="currentColor" stroke-width="1.5"/><path d="M9 1.5V3.2M9 14.8V16.5M16.5 9H14.8M3.2 9H1.5M14.3 3.7L13.1 4.9M4.9 13.1L3.7 14.3M14.3 14.3L13.1 13.1M4.9 4.9L3.7 3.7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span><span class="nav-item-label">Today</span><span class="nav-count" id="countToday">0</span></button>
         <button type="button" class="nav-item" data-for="mary" data-view="handoffs"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><path d="M3 9.5h8.5M8.5 6l3.5 3.5L8.5 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M14.5 3.5v11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span><span class="nav-item-label">EHL Hand-offs</span><span class="nav-count" id="countHandoffs">0</span></button>
@@ -736,6 +745,15 @@
         <button type="button" class="recap-action" id="recapCopy">Copy</button>
         <a class="recap-action primary" id="recapEmail" href="#">Email recap</a>
       </div>
+    </div>
+  </div>
+
+  <div class="modal" id="dashPickModal">
+    <div class="modal-backdrop" data-action="dash-pick-close"></div>
+    <div class="modal-panel dash-pick-panel" role="dialog" aria-modal="true" aria-labelledby="dashPickTitle">
+      <div class="modal-head"><span id="dashPickTitle">Lists on your Dashboard</span><button type="button" class="icon-btn" data-action="dash-pick-close" aria-label="Close"><svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M2.5 2.5L11.5 11.5M11.5 2.5L2.5 11.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button></div>
+      <div class="dash-pick-list" id="dashPickList"></div>
+      <div class="modal-actions"><button type="button" class="recap-action" data-action="dash-pick-all">Select all</button><button type="button" class="recap-action primary" data-action="dash-pick-save">Save</button></div>
     </div>
   </div>
 
@@ -1128,6 +1146,7 @@ const newHandoffs = () => { const seen = handoffsSeen(); return tasks.filter(t =
 const REPEAT_LABELS = { daily: 'Daily', weekdays: 'Weekdays', weekly: 'Weekly', monthly: 'Monthly' };
 const repeatOf = t => t.repeat || (t.recurring ? 'daily' : null); // "recurring" = older Daily tasks
 const repeatOptions = sel => `<option value="">Doesn't repeat</option>` + Object.entries(REPEAT_LABELS).map(([k, l]) => `<option value="${k}"${k === sel ? ' selected' : ''}>${l}</option>`).join('');
+const DASH_HANDOFFS = '__handoffs__', DASH_UNTAGGED = '__untagged__'; // Mary's Dashboard extra columns
 const isHandoff = t => t.assignee === 'mary' && t.source === 'evan' && !t.tag && t.status !== 'done';
 const CONTACT_ICONS = {
   sf_url: '<svg width="15" height="15" viewBox="0 0 18 18" fill="none"><path d="M5.2 14.5h7.6a3.4 3.4 0 0 0 .5-6.77A4.5 4.5 0 0 0 4.7 6.6 3.95 3.95 0 0 0 5.2 14.5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>',
@@ -1223,7 +1242,7 @@ setSidebar(isMobile() ? false : localStorage.getItem('daily-sync-sidebar') !== '
 const PROFILE_VIEWS = {
   evan: ['dashboard', 'add', 'myday', 'important', 'planned', 'alltasks', 'completed', 'list', 'notes'],
   sarah: ['dashboard', 'add', 'today', 'upcoming', 'done', 'list', 'tag', 'notes'],
-  mary: ['add', 'today', 'upcoming', 'handoffs', 'done', 'review', 'list', 'notes'],
+  mary: ['dashboard', 'add', 'today', 'upcoming', 'handoffs', 'done', 'review', 'list', 'notes'],
 };
 let firstProfileSet = true;
 
@@ -1235,9 +1254,9 @@ function setWho(val) {
   who = val;
   selectedTaskId = null;
   // Each profile has its own pages (and list names), so opening a profile
-  // starts on its home page: EHL's and Sarah's Dashboard, Mary's Today.
+  // starts on its home page: the Dashboard.
   const allowed = PROFILE_VIEWS[val] || PROFILE_VIEWS.mary;
-  if (val && (switching || !allowed.includes(currentView.type))) currentView = { type: val === 'mary' ? 'today' : 'dashboard' };
+  if (val && (switching || !allowed.includes(currentView.type))) currentView = { type: 'dashboard' };
   localStorage.setItem('daily-sync-who', val);
   [...whoToggle.children].forEach(b => b.classList.toggle('active', b.dataset.who === val));
   repeatInput.style.display = val === 'evan' ? 'none' : '';
@@ -1507,6 +1526,85 @@ function renderTodo() {
 // a side panel; the circle and star work as everywhere else.
 // Sarah's Dashboard (her opening page): every open task, one column per list --
 // To Do (tasks not in one of her lists) first, then her own lists.
+// Mary's Dashboard: only the lists she picks (saved with her account as a
+// sticky_notes row, color 'prefs'), plus optional EHL Hand-offs / Untagged.
+function maryDashPrefsRow() { return stickyNotes.find(n => n.color === 'prefs' && n.assignee === 'mary' && n.title === 'dashboard') || null; }
+function maryDashChoices() {
+  const row = maryDashPrefsRow();
+  try { const lists = JSON.parse(row?.body || 'null')?.lists; if (Array.isArray(lists)) return lists; } catch {}
+  return null; // not chosen yet
+}
+function maryDashColumns(open) {
+  const all = [
+    ...allTagNames().map(n => ({ id: n, name: n, items: open.filter(t => t.tag === n), key: n, view: 'list', viewKey: n })),
+    { id: DASH_HANDOFFS, name: 'EHL Hand-offs', items: open.filter(isHandoff), noDrop: true, view: 'handoffs' },
+    { id: DASH_UNTAGGED, name: 'Untagged', items: open.filter(t => !t.tag && !isHandoff(t)), key: '', view: 'list', viewKey: '' },
+  ];
+  const chosen = maryDashChoices();
+  return chosen ? all.filter(col => chosen.includes(col.id)) : all.filter(col => col.items.length);
+}
+function renderMaryDashboard(visible) {
+  viewTitleEl.textContent = 'Dashboard';
+  reorderable = !search;
+  const pinFirst = (a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0);
+  const order = (a, b) => pinFirst(a, b) || byPosition(false)(a, b) || a.created_at.localeCompare(b.created_at);
+  const open = visible.filter(t => t.status !== 'done');
+  const cols = maryDashColumns(open);
+  const wrap = document.createElement('div');
+  wrap.className = 'dash-board';
+  cols.forEach(col => {
+    const items = col.items.sort(order);
+    if (search && !items.length) return;
+    const sec = document.createElement('section');
+    sec.className = 'dash-col';
+    if (col.noDrop) sec.dataset.noDrop = '1';
+    sec.innerHTML = `<button type="button" class="dash-col-head" ${col.view === 'handoffs' ? 'data-dash-view="handoffs"' : `data-dash-list="${escapeAttr(col.viewKey)}" data-dash-type="list"`}><span>${escapeHtml(col.name)}</span><span class="dash-count">${items.length}</span></button>`;
+    const rows = document.createElement('div');
+    rows.className = 'dash-rows';
+    if (!col.noDrop) rows.dataset.listKey = col.key;
+    items.forEach(t => rows.appendChild(rowEl(t)));
+    if (!items.length) rows.innerHTML = '<div class="dash-empty">No tasks</div>';
+    sec.appendChild(rows);
+    wrap.appendChild(sec);
+  });
+  const bar = document.createElement('div');
+  bar.className = 'dash-toolbar';
+  bar.innerHTML = `<span>${cols.length} of ${allTagNames().length + 2} lists</span><button type="button" class="dash-pick-btn" data-action="dash-pick-open">Choose lists</button>`;
+  board.innerHTML = '';
+  board.appendChild(bar);
+  if (!wrap.children.length) board.insertAdjacentHTML('beforeend', `<div class="empty">${search ? 'No matching tasks' : 'No lists chosen. Click "Choose lists" to add some.'}</div>`);
+  else board.appendChild(wrap);
+}
+
+function openDashPicker() {
+  const open = tasks.filter(t => t.assignee === 'mary' && t.status !== 'done');
+  const shown = new Set(maryDashColumns(open).map(c => c.id));
+  const options = [...allTagNames().map(n => [n, n]), [DASH_HANDOFFS, 'EHL Hand-offs'], [DASH_UNTAGGED, 'Untagged']];
+  document.getElementById('dashPickList').innerHTML = options.map(([id, name]) => {
+    const count = id === DASH_HANDOFFS ? open.filter(isHandoff).length : id === DASH_UNTAGGED ? open.filter(t => !t.tag && !isHandoff(t)).length : open.filter(t => t.tag === id).length;
+    return `<label class="dash-pick-item"><input type="checkbox" value="${escapeAttr(id)}"${shown.has(id) ? ' checked' : ''}><span>${escapeHtml(name)}</span><span class="dash-count">${count}</span></label>`;
+  }).join('');
+  document.getElementById('dashPickModal').classList.add('open');
+}
+async function saveDashPicker() {
+  if (blockedOffline()) return;
+  const lists = [...document.querySelectorAll('#dashPickList input:checked')].map(i => i.value);
+  const body = JSON.stringify({ lists });
+  const row = maryDashPrefsRow();
+  document.getElementById('dashPickModal').classList.remove('open');
+  if (row) {
+    row.body = body;
+    render();
+    const { error } = await sb.from('sticky_notes').update({ body }).eq('id', row.id);
+    if (error) alert(error.message);
+  } else {
+    const { data, error } = await sb.from('sticky_notes').insert({ assignee: 'mary', color: 'prefs', title: 'dashboard', body }).select().single();
+    if (error) { alert(error.message); return; }
+    if (!stickyNotes.some(n => n.id === data.id)) stickyNotes.push(data);
+    render();
+  }
+}
+
 function renderSarahDashboard(visible) {
   viewTitleEl.textContent = 'Dashboard';
   reorderable = !search;
@@ -1893,9 +1991,7 @@ document.addEventListener('keydown', e => {
 function mobileTabs() {
   const first = who === 'evan'
     ? [{ view: 'dashboard', label: 'Dashboard', icon: M_ICON.grid }, { view: 'myday', label: 'My Day', icon: M_ICON.sun }]
-    : who === 'sarah'
-      ? [{ view: 'dashboard', label: 'Dashboard', icon: M_ICON.grid }, { view: 'today', label: 'Today', icon: M_ICON.sun }]
-      : [{ view: 'today', label: 'Today', icon: M_ICON.sun }, { view: 'upcoming', label: 'Upcoming', icon: M_ICON.cal }];
+    : [{ view: 'dashboard', label: 'Dashboard', icon: M_ICON.grid }, { view: 'today', label: 'Today', icon: M_ICON.sun }];
   return [...first,
     { sheet: 'lists', label: 'Lists', icon: M_ICON.list },
     { view: 'notes', label: 'Notes', icon: M_ICON.note },
@@ -2081,7 +2177,7 @@ function updateNavCounts() {
   document.getElementById('countPlanned').textContent = open.filter(t => t.due_date).length;
   document.getElementById('countAllTasks').textContent = open.length;
   document.getElementById('countDashboard').textContent = open.length;
-  document.getElementById('countSarahDash').textContent = open.length;
+  document.getElementById('countSarahDash').textContent = open.length; // Mary's or Sarah's open tasks
   const hc = document.getElementById('countHandoffs');
   const fresh = currentView.type === 'handoffs' ? 0 : newHandoffs().length;
   hc.textContent = fresh ? `${fresh} new` : tasks.filter(isHandoff).length;
@@ -2168,7 +2264,7 @@ function render() {
   const groupAcrossLists = who === 'mary' ? groupByTag : groupByStatus;
 
   if (currentView.type === 'dashboard') {
-    renderSarahDashboard(visible);
+    if (who === 'sarah') renderSarahDashboard(visible); else renderMaryDashboard(visible);
   } else if (currentView.type === 'add') {
     // Just the task bar (Box 1) and the new task's details (Box 2), no list.
     viewTitleEl.textContent = 'Add a Task';
@@ -2455,6 +2551,12 @@ document.body.addEventListener('click', e => {
     input?.select();
     return;
   }
+  if (e.target.closest('[data-action="dash-pick-open"]')) { openDashPicker(); return; }
+  if (e.target.closest('[data-action="dash-pick-close"]')) { document.getElementById('dashPickModal').classList.remove('open'); return; }
+  if (e.target.closest('[data-action="dash-pick-save"]')) { saveDashPicker(); return; }
+  if (e.target.closest('[data-action="dash-pick-all"]')) { document.querySelectorAll('#dashPickList input').forEach(i => { i.checked = true; }); return; }
+  const dashView = e.target.closest('[data-dash-view]');
+  if (dashView) { currentView = { type: dashView.dataset.dashView }; selectedTaskId = null; render(); return; }
   const dashList = e.target.closest('[data-dash-list]');
   if (dashList) {
     currentView = { type: dashList.dataset.dashType || 'list', key: dashList.dataset.dashList };
@@ -2923,7 +3025,7 @@ document.addEventListener('pointermove', e => {
   else if (e.clientY > window.innerHeight - 110) window.scrollBy(0, 14);
   // Dashboard: dragging over another column moves the task into that list.
   if (dragState.from.matches('.dash-rows')) {
-    const under = document.elementsFromPoint(e.clientX, e.clientY).find(el => el.closest('.dash-col') && !row.contains(el));
+    const under = document.elementsFromPoint(e.clientX, e.clientY).find(el => el.closest('.dash-col:not([data-no-drop])') && !row.contains(el));
     const target = under?.closest('.dash-col')?.querySelector('.dash-rows');
     if (target && target !== dragState.container) {
       target.querySelector('.dash-empty')?.remove();
