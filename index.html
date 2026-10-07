@@ -621,9 +621,7 @@
       <nav class="nav-section" id="tasksSection">
         <div class="nav-label">Tasks</div>
         <button type="button" class="nav-item" data-for="evan" data-view="dashboard"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><rect x="2.5" y="2.5" width="5.5" height="5.5" rx="1.2" stroke="currentColor" stroke-width="1.5"/><rect x="10" y="2.5" width="5.5" height="5.5" rx="1.2" stroke="currentColor" stroke-width="1.5"/><rect x="2.5" y="10" width="5.5" height="5.5" rx="1.2" stroke="currentColor" stroke-width="1.5"/><rect x="10" y="10" width="5.5" height="5.5" rx="1.2" stroke="currentColor" stroke-width="1.5"/></svg></span><span class="nav-item-label">Dashboard</span><span class="nav-count" id="countDashboard">0</span></button>
-        <button type="button" class="nav-item" data-for="evan" data-view="myday"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="3.5" stroke="currentColor" stroke-width="1.5"/><path d="M9 1.5V3.2M9 14.8V16.5M16.5 9H14.8M3.2 9H1.5M14.3 3.7L13.1 4.9M4.9 13.1L3.7 14.3M14.3 14.3L13.1 13.1M4.9 4.9L3.7 3.7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span><span class="nav-item-label">My Day</span><span class="nav-count" id="countMyDay">0</span></button>
         <button type="button" class="nav-item" data-for="evan" data-view="important"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M12 3.5l2.6 5.3 5.9.9-4.25 4.1 1 5.8L12 16.9l-5.25 2.75 1-5.8L3.5 9.7l5.9-.9z"/></svg></span><span class="nav-item-label">Important</span><span class="nav-count" id="countImportant">0</span></button>
-        <button type="button" class="nav-item" data-for="evan" data-view="planned"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><rect x="2.5" y="3.5" width="13" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M2.5 7H15.5M6 2V4.5M12 2V4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span><span class="nav-item-label">Planned</span><span class="nav-count" id="countPlanned">0</span></button>
         <button type="button" class="nav-item" data-for="evan" data-view="alltasks"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><path d="M3 8L9 3l6 5v6.5a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></span><span class="nav-item-label">Tasks</span><span class="nav-count" id="countAllTasks">0</span></button>
         <button type="button" class="nav-item" data-for="evan" data-view="completed"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="7" stroke="currentColor" stroke-width="1.5"/><path d="M5.8 9.2L7.8 11.2L12.2 6.6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="nav-item-label">Completed</span></button>
         <button type="button" class="nav-item" data-for="ms" data-view="dashboard"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><rect x="2.5" y="2.5" width="5.5" height="5.5" rx="1.2" stroke="currentColor" stroke-width="1.5"/><rect x="10" y="2.5" width="5.5" height="5.5" rx="1.2" stroke="currentColor" stroke-width="1.5"/><rect x="2.5" y="10" width="5.5" height="5.5" rx="1.2" stroke="currentColor" stroke-width="1.5"/><rect x="10" y="10" width="5.5" height="5.5" rx="1.2" stroke="currentColor" stroke-width="1.5"/></svg></span><span class="nav-item-label">Dashboard</span><span class="nav-count" id="countSarahDash">0</span></button>
@@ -1205,6 +1203,7 @@ let mAdding = false;
 let todoPendingPhoto = null;
 const PROFILE_NAMES = { evan: 'EHL', mary: 'Mary', sarah: 'Sarah' };
 const M_ICON = {
+  star: '<svg viewBox="0 0 24 24" fill="none"><path d="M12 3.5l2.6 5.3 5.9.9-4.25 4.1 1 5.8L12 16.9l-5.25 2.75 1-5.8L3.5 9.7l5.9-.9z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>',
   grid: '<svg viewBox="0 0 18 18" fill="none"><rect x="2.5" y="2.5" width="5.5" height="5.5" rx="1.2" stroke="currentColor" stroke-width="1.5"/><rect x="10" y="2.5" width="5.5" height="5.5" rx="1.2" stroke="currentColor" stroke-width="1.5"/><rect x="2.5" y="10" width="5.5" height="5.5" rx="1.2" stroke="currentColor" stroke-width="1.5"/><rect x="10" y="10" width="5.5" height="5.5" rx="1.2" stroke="currentColor" stroke-width="1.5"/></svg>',
   sun: '<svg viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="3.5" stroke="currentColor" stroke-width="1.5"/><path d="M9 1.5V3.2M9 14.8V16.5M16.5 9H14.8M3.2 9H1.5M14.3 3.7L13.1 4.9M4.9 13.1L3.7 14.3M14.3 14.3L13.1 13.1M4.9 4.9L3.7 3.7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',
   cal: '<svg viewBox="0 0 18 18" fill="none"><rect x="2.5" y="3.5" width="13" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M2.5 7H15.5M6 2V4.5M12 2V4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',
@@ -1214,7 +1213,7 @@ const M_ICON = {
 };
 const isMyDay = t => t.my_day === todayStr();
 const stepsOf = t => Array.isArray(t.steps) ? t.steps : [];
-const TODO_VIEWS = { add: 'Add a Task', dashboard: 'Dashboard', myday: 'My Day', important: 'Important', planned: 'Planned', alltasks: 'Tasks', completed: 'Completed' };
+const TODO_VIEWS = { add: 'Add a Task', dashboard: 'Dashboard', important: 'Important', alltasks: 'Tasks', completed: 'Completed' };
 const starSvg = on => `<svg width="18" height="18" viewBox="0 0 24 24" fill="${on ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M12 3.5l2.6 5.3 5.9.9-4.25 4.1 1 5.8L12 16.9l-5.25 2.75 1-5.8L3.5 9.7l5.9-.9z"/></svg>`;
 const SUN_SVG = '<svg width="15" height="15" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="3.5" stroke="currentColor" stroke-width="1.5"/><path d="M9 1.5V3.2M9 14.8V16.5M16.5 9H14.8M3.2 9H1.5M14.3 3.7L13.1 4.9M4.9 13.1L3.7 14.3M14.3 14.3L13.1 13.1M4.9 4.9L3.7 3.7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>';
 const TRASH_SVG = '<svg width="15" height="15" viewBox="0 0 18 18" fill="none"><path d="M3 5h12M7 5V3.5h4V5M5 5l.7 9.5a1 1 0 0 0 1 .9h4.6a1 1 0 0 0 1-.9L13 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
@@ -1277,7 +1276,7 @@ setSidebar(isMobile() ? false : localStorage.getItem('daily-sync-sidebar') !== '
 
 // --- profile ---
 const PROFILE_VIEWS = {
-  evan: ['dashboard', 'add', 'myday', 'important', 'planned', 'alltasks', 'completed', 'list', 'notes'],
+  evan: ['dashboard', 'add', 'important', 'alltasks', 'completed', 'list', 'notes'],
   sarah: ['dashboard', 'add', 'today', 'upcoming', 'done', 'list', 'tag', 'notes'],
   mary: ['dashboard', 'add', 'today', 'upcoming', 'handoffs', 'done', 'review', 'list', 'notes'],
 };
@@ -1459,7 +1458,6 @@ function todoRowEl(t) {
   div.dataset.id = t.id;
   const meta = [];
   if (t.tag && currentView.type !== 'list' && currentView.type !== 'dashboard') meta.push(escapeHtml(t.tag));
-  if (isMyDay(t) && currentView.type !== 'myday') meta.push('My Day');
   if (t.due_date) {
     const overdue = t.status !== 'done' && t.due_date < todayStr();
     meta.push(`<span class="${overdue ? 'overdue' : ''}">${overdue ? 'Overdue · ' : ''}${dueLabel(t.due_date)}</span>`);
@@ -1810,9 +1808,6 @@ function renderTodoDetail() {
       ${contactFieldsFor('evan').map(f => contactRowHtml(task, f)).join('')}
     </div>
     <div class="todo-section">
-      <button type="button" class="todo-opt${isMyDay(task) ? ' on' : ''}" data-action="toggle-myday">${SUN_SVG}${isMyDay(task) ? 'Added to My Day' : 'Add to My Day'}</button>
-    </div>
-    <div class="todo-section">
       <div class="due-row">
         <span class="due-label">Due date</span>
         ${task.due_date || dueEditingId === task.id
@@ -2054,7 +2049,7 @@ document.addEventListener('keydown', e => {
 // --- Phone layout ---
 function mobileTabs() {
   const first = who === 'evan'
-    ? [{ view: 'dashboard', label: 'Dashboard', icon: M_ICON.grid }, { view: 'myday', label: 'My Day', icon: M_ICON.sun }]
+    ? [{ view: 'dashboard', label: 'Dashboard', icon: M_ICON.grid }, { view: 'important', label: 'Important', icon: M_ICON.star }]
     : [{ view: 'dashboard', label: 'Dashboard', icon: M_ICON.grid }, { view: 'today', label: 'Today', icon: M_ICON.sun }];
   return [...first,
     { sheet: 'lists', label: 'Lists', icon: M_ICON.list },
@@ -2236,9 +2231,7 @@ function updateNavCounts() {
   document.getElementById('countUpcoming').textContent = mine.filter(isUpcoming).length;
   document.getElementById('countToday').textContent = mine.filter(isDueTodayOrOverdue).length;
   const open = mine.filter(t => t.status !== 'done');
-  document.getElementById('countMyDay').textContent = open.filter(isMyDay).length;
   document.getElementById('countImportant').textContent = open.filter(t => t.pinned).length;
-  document.getElementById('countPlanned').textContent = open.filter(t => t.due_date).length;
   document.getElementById('countAllTasks').textContent = open.length;
   document.getElementById('countDashboard').textContent = open.length;
   document.getElementById('countSarahDash').textContent = open.length; // Mary's or Sarah's open tasks
@@ -2518,8 +2511,8 @@ function renderDetail(cardFor) {
 document.body.addEventListener('click', e => {
   if (Date.now() - lastDragEnd < 350 || e.target.closest('[data-drag]')) return; // end of a drag, not a tap
   if (e.target.closest('[data-action="due-banner"]')) {
-    // Jump to where those tasks are listed: Today, or Planned for Evan.
-    currentView = { type: who === 'evan' ? 'planned' : 'today' };
+    // Jump to where those tasks are listed: Today, or EHL's Tasks page.
+    currentView = { type: who === 'evan' ? 'alltasks' : 'today' };
     selectedTaskId = null;
     mAdding = false;
     render();
@@ -2645,13 +2638,6 @@ document.body.addEventListener('click', e => {
     const id = stepToggle.closest('.task').dataset.id;
     const del = stepToggle.dataset.action === 'step-delete';
     updateSteps(id, steps => del ? steps.filter(s => String(s.id) !== stepId) : steps.map(s => String(s.id) === stepId ? { ...s, done: !s.done } : s));
-    return;
-  }
-  const myDayBtn = e.target.closest('[data-action="toggle-myday"]');
-  if (myDayBtn) {
-    const id = myDayBtn.closest('.task').dataset.id;
-    const t = tasks.find(x => x.id === id);
-    if (t) patchTask(id, { my_day: isMyDay(t) ? null : todayStr() });
     return;
   }
   const reasonChip = e.target.closest('[data-action="handoff-reason"]');

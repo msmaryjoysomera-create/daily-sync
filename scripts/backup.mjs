@@ -95,7 +95,6 @@ async function taskParagraphs(task, photosByTask) {
   if (task.tag) meta.push(`Tag: ${task.tag}`);
   if (task.repeat || task.recurring) meta.push(`Repeats ${task.repeat || 'daily'}`);
   if (task.pinned) meta.push(task.assignee === 'evan' ? 'Important' : 'Pinned');
-  if (task.my_day === localDateStr(new Date())) meta.push('My Day');
   if (task.source === 'claude') meta.push('Added via Claude');
   if (task.waiting_on) meta.push(`Waiting on: ${task.waiting_on}`);
   if (task.phone) meta.push(`Phone: ${task.phone.split('\n').join(', ')}`);
