@@ -2869,6 +2869,60 @@ function renumberBelow(ta, indent, sep) {
   ta.setSelectionRange(caret, caret); // back to the new item
 }
 
+// After deleting in a numbered (or lettered) list, close the gap below it:
+// deleting item 2 of 1-4 (the whole line, or just its "2.") makes 3, 4 into 2, 3.
+// Deleting the first item makes the rest start again from 1 (or a).
+document.addEventListener('input', e => {
+  const ta = e.target;
+  if (!(ta instanceof HTMLTextAreaElement) || !ta.matches(LIST_FIELDS)) return;
+  if (!e.inputType || !e.inputType.startsWith('delete')) return;
+  renumberAfterDelete(ta, listLinesBefore.get(ta) ?? 0);
+});
+const listLinesBefore = new WeakMap(); // line count just before each edit
+document.addEventListener('beforeinput', e => {
+  if (e.target instanceof HTMLTextAreaElement && e.target.matches(LIST_FIELDS)) listLinesBefore.set(e.target, e.target.value.split('\n').length);
+});
+
+function renumberAfterDelete(ta, linesBefore) {
+  const v = ta.value, caret = ta.selectionStart;
+  const lines = v.split('\n');
+  const ci = v.slice(0, caret).split('\n').length - 1; // the line the caret is on
+  const item = l => { const m = l.match(/^(\s*)(\d+|[a-zA-Z])([.)])(\s.*)?$/); return m && { indent: m[1], mark: m[2], sep: m[3], rest: m[4] || '', numeric: /^\d+$/.test(m[2]) }; };
+  const info = lines.map(item);
+  const sameList = (a, b) => a && b && a.indent === b.indent && a.sep === b.sep && a.numeric === b.numeric;
+  // The list to fix: the item on the caret line, else the one just above it
+  // (the caret line lost its marker), else the one just below (first item deleted).
+  let anchor = info[ci] ? ci : info[ci - 1] ? ci - 1 : info[ci + 1] ? ci + 1 : -1;
+  if (anchor < 0) return;
+  let start = anchor;
+  while (start > 0 && sameList(info[start - 1], info[anchor])) start--;
+  const first = info[start];
+  const advance = x => first.numeric ? String(Number(x) + 1) : nextLetter(x);
+  // An item was removed (a whole line, or the caret line's marker) with nothing of
+  // the list above it: it was the first item, so begin again at 1 / a.
+  const removed = lines.length < linesBefore || !info[ci];
+  let expected = removed && start >= ci && start <= ci + 1
+    ? (first.numeric ? '1' : /[A-Z]/.test(first.mark) ? 'A' : 'a') : first.mark;
+  const out = lines.slice();
+  out[start] = first.indent + expected + first.sep + first.rest;
+  for (let i = start + 1; i < lines.length; i++) {
+    if (i === ci && !info[i]) continue; // a line that just lost its marker isn't part of the count
+    if (!sameList(info[i], first)) break;
+    expected = advance(expected);
+    out[i] = first.indent + expected + first.sep + info[i].rest;
+  }
+  const changed = out.map((l, i) => l !== lines[i] ? i : -1).filter(i => i >= 0);
+  if (!changed.length) return;
+  const a = changed[0], b = changed[changed.length - 1];
+  const from = lines.slice(0, a).join('\n').length + (a ? 1 : 0);
+  const to = from + lines.slice(a, b + 1).join('\n').length;
+  // Keep the caret where it was (markers before it may have changed length).
+  let shift = 0;
+  changed.forEach(i => { if (i < ci || (i === ci && caret - (v.lastIndexOf('\n', caret - 1) + 1) >= out[i].length - info[i].rest.length)) shift += out[i].length - lines[i].length; });
+  insertInto(ta, from, to, out.slice(a, b + 1).join('\n'));
+  ta.setSelectionRange(caret + shift, caret + shift);
+}
+
 document.body.addEventListener('change', e => {
   if (e.target.classList.contains('task-title')) {
     const id = e.target.closest('.task').dataset.id;
