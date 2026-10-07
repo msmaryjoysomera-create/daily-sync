@@ -587,7 +587,7 @@
         <button type="button" class="nav-item" data-for="sarah" data-view="dashboard"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><rect x="2.5" y="2.5" width="5.5" height="5.5" rx="1.2" stroke="currentColor" stroke-width="1.5"/><rect x="10" y="2.5" width="5.5" height="5.5" rx="1.2" stroke="currentColor" stroke-width="1.5"/><rect x="2.5" y="10" width="5.5" height="5.5" rx="1.2" stroke="currentColor" stroke-width="1.5"/><rect x="10" y="10" width="5.5" height="5.5" rx="1.2" stroke="currentColor" stroke-width="1.5"/></svg></span><span class="nav-item-label">Dashboard</span><span class="nav-count" id="countSarahDash">0</span></button>
         <button type="button" class="nav-item" data-for="ms" data-view="upcoming"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><rect x="2.5" y="3.5" width="13" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M2.5 7H15.5M6 2V4.5M12 2V4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span><span class="nav-item-label">Upcoming</span><span class="nav-count" id="countUpcoming">0</span></button>
         <button type="button" class="nav-item" data-for="ms" data-view="today"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="3.5" stroke="currentColor" stroke-width="1.5"/><path d="M9 1.5V3.2M9 14.8V16.5M16.5 9H14.8M3.2 9H1.5M14.3 3.7L13.1 4.9M4.9 13.1L3.7 14.3M14.3 14.3L13.1 13.1M4.9 4.9L3.7 3.7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span><span class="nav-item-label">Today</span><span class="nav-count" id="countToday">0</span></button>
-        <button type="button" class="nav-item" data-for="ms" data-view="done"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="7" stroke="currentColor" stroke-width="1.5"/><path d="M5.8 9.2L7.8 11.2L12.2 6.6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="nav-item-label">Done</span></button>
+        <button type="button" class="nav-item" data-for="ms" data-view="done"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="7" stroke="currentColor" stroke-width="1.5"/><path d="M5.8 9.2L7.8 11.2L12.2 6.6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="nav-item-label">Completed</span></button>
         <button type="button" class="nav-item" data-for="ms" id="reviewNavItem" data-view="review"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><rect x="4" y="2.8" width="10" height="13" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="6.5" y="1.5" width="5" height="2.6" rx="0.8" stroke="currentColor" stroke-width="1.4"/><path d="M6.3 8.2H11.7M6.3 11H11.7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></span><span class="nav-item-label">Daily Review</span></button>
         <button type="button" class="nav-item" data-view="notes"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><rect x="3" y="2.5" width="12" height="13.5" rx="1.8" stroke="currentColor" stroke-width="1.5"/><path d="M6 6.5h6M6 9.5h6M6 12.5h3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span><span class="nav-item-label">Notes</span></button>
       </nav>
@@ -1207,8 +1207,6 @@ function setWho(val) {
     b.style.display = f === val || (f === 'ms' && (val === 'mary' || val === 'sarah')) ? '' : 'none';
   });
   if (val === 'sarah') reviewNavItem.style.display = 'none';
-  // Sarah's finished tasks are called "Completed" (like EHL's); Mary's stay "Done".
-  document.querySelector('#tasksSection .nav-item[data-view="done"] .nav-item-label').textContent = val === 'sarah' ? 'Completed' : 'Done';
   fabBadge.textContent = { mary: 'M', sarah: 'S', evan: 'E' }[val] || '';
   fabBadge.classList.toggle('show', !!val);
   tasksSection.classList.toggle('hide', !val);
@@ -2006,7 +2004,7 @@ function updateActiveNav() {
   });
 }
 
-const VIEW_TITLES = { today: 'Today', upcoming: 'Upcoming', done: 'Done', review: 'Daily Review', notes: 'Notes', add: 'Add a Task' };
+const VIEW_TITLES = { today: 'Today', upcoming: 'Upcoming', done: 'Completed', review: 'Daily Review', notes: 'Notes', add: 'Add a Task' };
 
 function render() {
   if (dragState) { renderAfterDrag = true; return; } // don't rebuild rows mid-drag
@@ -2098,7 +2096,7 @@ function render() {
     viewTitleEl.textContent = 'Upcoming';
     renderTaskList(visible.filter(isUpcoming).sort(byDue), groupAcrossLists, search ? noMatch : 'Nothing upcoming');
   } else if (currentView.type === 'done') {
-    viewTitleEl.textContent = who === 'sarah' ? 'Completed' : 'Done';
+    viewTitleEl.textContent = 'Completed';
     renderDoneList(visible.filter(t => t.status === 'done'));
   } else if (currentView.type === 'tag') {
     // One of Sarah's own lists.
@@ -2111,7 +2109,7 @@ function render() {
   } else if (currentView.type === 'list') {
     const key = currentView.key;
     if (who === 'sarah') {
-      viewTitleEl.textContent = { todo: 'To Do', doing: 'In Progress', done: 'Done' }[key] || key;
+      viewTitleEl.textContent = { todo: 'To Do', doing: 'In Progress', done: 'Completed' }[key] || key;
       reorderable = key !== 'done' && !search;
       // To Do: every open task that isn't in one of her lists (in progress ones too).
       const list = visible.filter(t => key === 'todo' ? t.status !== 'done' && !t.tag : t.status === key)
