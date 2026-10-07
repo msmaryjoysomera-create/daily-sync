@@ -101,6 +101,7 @@ async function taskParagraphs(task, photosByTask) {
   if (task.phone) meta.push(`Phone: ${task.phone}`);
   if (task.email) meta.push(`Email: ${task.email}`);
   if (task.sf_url) meta.push(`Salesforce: ${task.sf_url}`);
+  if (task.website) meta.push(`Website: ${task.website}`);
   if (task.created_at) meta.push(`Added ${fmtDate(task.created_at)}`);
   if (task.status === 'done' && task.completed_at) {
     meta.push(`Completed ${fmtDateTime(task.completed_at)}${task.completed_by ? ` by ${task.completed_by[0].toUpperCase()}${task.completed_by.slice(1)}` : ''}`);

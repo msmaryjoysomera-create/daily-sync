@@ -29,6 +29,9 @@ const sb = createClient(SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY || S
   auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
 });
 
+// Links are saved with https:// added if it was left off.
+const asLink = v => { const s = v ? String(v).trim() : ''; return s ? (/^https?:\/\//i.test(s) ? s : 'https://' + s) : null; };
+
 // Mary's tags are saved as sticky_notes rows marked color 'tag' (body = sort
 // order), and can be added/renamed/deleted in the app.
 // Evan's own lists are rows with assignee 'evan'.
@@ -59,6 +62,7 @@ const buildTools = ({ mary: tags, evan: evanLists, sarah: sarahLists }) => [
         phone: { type: 'string', description: "Contact phone number for the task, if one was mentioned (e.g. '336-686-5090')" },
         email: { type: 'string', description: 'Contact email address for the task, if one was mentioned' },
         salesforce_url: { type: 'string', description: 'Link to the related Salesforce record, if one was given' },
+        website: { type: 'string', description: 'Website link for the task (e.g. a company or product site), if one was given. Shown on Mary\'s tasks.' },
         repeat: { type: 'string', enum: ['daily', 'weekdays', 'weekly', 'monthly'], description: 'If the task repeats (e.g. "every Monday" = weekly starting on the next Monday as due_date)' },
       },
       required: ['title', 'assignee', 'tag'],
@@ -111,7 +115,8 @@ async function callTool(name, args) {
       notes: args.notes ? String(args.notes).trim() : null,
       phone: args.phone ? String(args.phone).trim() : null,
       email: args.email ? String(args.email).trim() : null,
-      sf_url: args.salesforce_url ? (/^https?:\/\//i.test(String(args.salesforce_url).trim()) ? String(args.salesforce_url).trim() : 'https://' + String(args.salesforce_url).trim()) : null,
+      sf_url: asLink(args.salesforce_url),
+      website: asLink(args.website),
       repeat: ['daily', 'weekdays', 'weekly', 'monthly'].includes(args.repeat) ? args.repeat : null,
       status: 'todo',
       source: 'claude',
@@ -124,7 +129,7 @@ async function callTool(name, args) {
     if (data.tag) bits.push(`under "${data.tag}"`);
     if (data.due_date) bits.push(`due ${data.due_date}`);
     if (data.repeat) bits.push(`repeating ${data.repeat}`);
-    const contact = [data.phone && 'phone', data.email && 'email', data.sf_url && 'Salesforce link'].filter(Boolean);
+    const contact = [data.phone && 'phone', data.email && 'email', data.sf_url && 'Salesforce link', data.website && 'website'].filter(Boolean);
     if (contact.length) bits.push(`with ${contact.join(', ')}`);
     return { content: [{ type: 'text', text: bits.join(' ') + '.' }] };
   }

@@ -360,6 +360,12 @@
   @media (hover:none){ .todo-step .icon-btn{opacity:.6} }
   .todo-step-plus{width:16px;text-align:center;color:var(--accent);font-size:16px;line-height:1}
   .todo-step .step-add::placeholder{color:var(--accent)}
+  .task-contact{margin:10px 0 2px}
+  /* Task panel: the pin / delete / ⋯ buttons sit in the top-right corner so the
+     details below the title (dates, contact, notes) can use the full width. */
+  #detailPane .task-top{position:relative}
+  #detailPane .task-actions{position:absolute;top:0;right:0}
+  #detailPane .task-title{padding-right:100px}
   .todo-contact-head{padding:8px 12px 6px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);border-bottom:1px solid var(--line)}
   .contact-row{display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid var(--line);color:var(--muted);min-height:40px}
   .contact-row:last-child{border-bottom:none}
@@ -1164,6 +1170,7 @@ const CONTACT_ICONS = {
   sf_url: '<svg width="15" height="15" viewBox="0 0 18 18" fill="none"><path d="M5.2 14.5h7.6a3.4 3.4 0 0 0 .5-6.77A4.5 4.5 0 0 0 4.7 6.6 3.95 3.95 0 0 0 5.2 14.5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>',
   phone: '<svg width="15" height="15" viewBox="0 0 18 18" fill="none"><path d="M4 2.8h2.6l1.2 3.1-1.6 1a8.6 8.6 0 0 0 4.9 4.9l1-1.6 3.1 1.2V14a1.4 1.4 0 0 1-1.5 1.4A11.9 11.9 0 0 1 2.6 4.3 1.4 1.4 0 0 1 4 2.8z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>',
   email: '<svg width="15" height="15" viewBox="0 0 18 18" fill="none"><rect x="2.3" y="3.8" width="13.4" height="10.4" rx="1.6" stroke="currentColor" stroke-width="1.5"/><path d="M2.8 5l6.2 4.6L15.2 5" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>',
+  website: '<svg width="15" height="15" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="6.6" stroke="currentColor" stroke-width="1.5"/><path d="M2.6 9h12.8M9 2.4c1.9 2 2.8 4.2 2.8 6.6S10.9 13.6 9 15.6C7.1 13.6 6.2 11.4 6.2 9S7.1 4.4 9 2.4z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>',
 };
 const PENCIL_SVG = '<svg width="13" height="13" viewBox="0 0 18 18" fill="none"><path d="M11.8 3.2l3 3L6.5 14.5l-3.6.6.6-3.6z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>';
 const CONTACT_FIELDS = [
@@ -1173,7 +1180,14 @@ const CONTACT_FIELDS = [
     href: v => 'tel:' + v.replace(/[^\d+]/g, ''), label: v => v },
   { key: 'email', placeholder: 'Email address', inputmode: 'email',
     href: v => 'mailto:' + v, label: v => v },
+  { key: 'website', placeholder: 'Paste website link', inputmode: 'url',
+    href: v => /^https?:\/\//i.test(v) ? v : 'https://' + v, label: v => v.replace(/^https?:\/\/(www\.)?/i, '').replace(/\/$/, ''), newTab: true },
 ];
+const LINK_FIELDS = ['sf_url', 'website']; // saved with https:// added if left off
+// Which contact boxes each profile's task panel shows, in order.
+const contactFieldsFor = profile => profile === 'mary'
+  ? ['phone', 'email', 'sf_url', 'website'].map(k => CONTACT_FIELDS.find(f => f.key === k))
+  : CONTACT_FIELDS.filter(f => f.key !== 'website');
 // Phone layout: whether the task bar is showing (opened with the + button).
 let mAdding = false;
 // EHL's add bar: a photo picked before adding, attached once the task exists.
@@ -1375,6 +1389,10 @@ function taskEl(task) {
           ${task.due_date ? `<button type="button" class="icon-btn" data-action="clear-due" title="Remove due date">${ICON_X}</button>` : ''}
         </div>
         ${task.status !== 'done' ? `<div class="due-row"><span class="due-label">Repeat</span><select class="task-repeat-select">${repeatOptions(repeatOf(task))}</select></div>` : ''}
+        <div class="todo-section todo-contact task-contact">
+          <div class="todo-contact-head">Contact</div>
+          ${contactFieldsFor('mary').map(f => contactRowHtml(task, f)).join('')}
+        </div>
         <textarea class="task-notes-edit${task.notes ? '' : ' hidden'}" placeholder="+ Add a note…" rows="1">${escapeHtml(task.notes || '')}</textarea>
         ${photoRowHtml(task.id)}
         <div class="task-history">${historyLine}</div>
@@ -1439,7 +1457,7 @@ function todoRowEl(t) {
   if (steps.length) meta.push(`${steps.filter(s => s.done).length} of ${steps.length}`);
   if (repeatOf(t)) meta.push(`Repeats ${REPEAT_LABELS[repeatOf(t)].toLowerCase()}`);
   if (t.notes) meta.push('Note');
-  const contactIcons = CONTACT_FIELDS.filter(f => t[f.key]).map(f => CONTACT_ICONS[f.key]).join('');
+  const contactIcons = contactFieldsFor('evan').filter(f => t[f.key]).map(f => CONTACT_ICONS[f.key]).join('');
   if (contactIcons) meta.push(`<span class="row-contact-icons" title="Has contact info">${contactIcons}</span>`);
   div.innerHTML = `
     <button type="button" class="todo-check" data-action="todo-toggle" aria-label="${t.status === 'done' ? 'Mark not complete' : 'Mark complete'}"></button>
@@ -1774,7 +1792,7 @@ function renderTodoDetail() {
     </div>
     <div class="todo-section todo-contact">
       <div class="todo-contact-head">Contact</div>
-      ${CONTACT_FIELDS.map(f => contactRowHtml(task, f)).join('')}
+      ${contactFieldsFor('evan').map(f => contactRowHtml(task, f)).join('')}
     </div>
     <div class="todo-section">
       <button type="button" class="todo-opt${isMyDay(task) ? ' on' : ''}" data-action="toggle-myday">${SUN_SVG}${isMyDay(task) ? 'Added to My Day' : 'Add to My Day'}</button>
@@ -2577,7 +2595,7 @@ document.body.addEventListener('click', e => {
     contactEditing = { id: contactEditBtn.closest('.task').dataset.id, field: contactEditBtn.dataset.field };
     todoForceDetail = true;
     render();
-    const input = todoDetail.querySelector(`.contact-input[data-field="${contactEditBtn.dataset.field}"]`);
+    const input = (who === 'evan' ? todoDetail : detailPane).querySelector(`.contact-input[data-field="${contactEditBtn.dataset.field}"]`);
     input?.focus();
     input?.select();
     return;
@@ -2855,10 +2873,12 @@ document.body.addEventListener('change', e => {
     const id = e.target.closest('.task').dataset.id;
     const field = e.target.dataset.field;
     let v = e.target.value.trim();
-    if (field === 'sf_url' && v && !/^https?:\/\//i.test(v)) v = 'https://' + v;
+    if (LINK_FIELDS.includes(field) && v && !/^https?:\/\//i.test(v)) v = 'https://' + v;
     contactEditing = null;
     todoForceDetail = true;
     patchTask(id, { [field]: v || null });
+    // Mary's panel waits while a box has focus; redraw once it's left so the link shows.
+    if (who !== 'evan') setTimeout(render, 0);
   } else if (e.target.classList.contains('step-text')) {
     const stepId = e.target.closest('.todo-step').dataset.step;
     const text = e.target.value.trim();
