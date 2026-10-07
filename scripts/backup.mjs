@@ -98,8 +98,8 @@ async function taskParagraphs(task, photosByTask) {
   if (task.my_day === localDateStr(new Date())) meta.push('My Day');
   if (task.source === 'claude') meta.push('Added via Claude');
   if (task.waiting_on) meta.push(`Waiting on: ${task.waiting_on}`);
-  if (task.phone) meta.push(`Phone: ${task.phone}`);
-  if (task.email) meta.push(`Email: ${task.email}`);
+  if (task.phone) meta.push(`Phone: ${task.phone.split('\n').join(', ')}`);
+  if (task.email) meta.push(`Email: ${task.email.split('\n').join(', ')}`);
   if (task.sf_url) meta.push(`Salesforce: ${task.sf_url}`);
   if (task.website) meta.push(`Website: ${task.website}`);
   if (task.created_at) meta.push(`Added ${fmtDate(task.created_at)}`);

@@ -30,6 +30,8 @@ const sb = createClient(SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY || S
 });
 
 // Links are saved with https:// added if it was left off.
+// Several phones / emails are saved one per line (the app shows each as its own link).
+const contactList = (v, sep) => { const vals = [...new Set(String(v || '').split(sep).map(s => s.trim()).filter(Boolean))]; return vals.length ? vals.join('\n') : null; };
 const asLink = v => { const s = v ? String(v).trim() : ''; return s ? (/^https?:\/\//i.test(s) ? s : 'https://' + s) : null; };
 
 // Mary's tags are saved as sticky_notes rows marked color 'tag' (body = sort
@@ -59,8 +61,8 @@ const buildTools = ({ mary: tags, evan: evanLists, sarah: sarahLists }) => [
         tag: { type: 'string', description: "Which of that person's lists the task goes in -- exactly one of the names listed above. Required: if the user didn't say, ask which list before adding." },
         due_date: { type: 'string', description: 'Due date in YYYY-MM-DD format, only if a date was mentioned' },
         notes: { type: 'string', description: 'Extra context or notes for the task' },
-        phone: { type: 'string', description: "Contact phone number for the task, if one was mentioned (e.g. '336-686-5090')" },
-        email: { type: 'string', description: 'Contact email address for the task, if one was mentioned' },
+        phone: { type: 'string', description: "Contact phone number(s) for the task, if mentioned (e.g. '336-686-5090'). Separate several with commas." },
+        email: { type: 'string', description: 'Contact email address(es) for the task, if mentioned. Separate several with commas.' },
         salesforce_url: { type: 'string', description: 'Link to the related Salesforce record, if one was given' },
         website: { type: 'string', description: 'Website link for the task (e.g. a company or product site), if one was given. Shown on Mary\'s tasks.' },
         repeat: { type: 'string', enum: ['daily', 'weekdays', 'weekly', 'monthly'], description: 'If the task repeats (e.g. "every Monday" = weekly starting on the next Monday as due_date)' },
@@ -113,8 +115,8 @@ async function callTool(name, args) {
       tag,
       due_date: args.due_date || null,
       notes: args.notes ? String(args.notes).trim() : null,
-      phone: args.phone ? String(args.phone).trim() : null,
-      email: args.email ? String(args.email).trim() : null,
+      phone: contactList(args.phone, /\s*[;\n]\s*|\s*,\s*(?=[+(\d])/),
+      email: contactList(args.email, /[\s,;]+/),
       sf_url: asLink(args.salesforce_url),
       website: asLink(args.website),
       repeat: ['daily', 'weekdays', 'weekly', 'monthly'].includes(args.repeat) ? args.repeat : null,

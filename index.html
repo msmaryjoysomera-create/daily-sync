@@ -374,6 +374,10 @@
   .contact-link:hover{text-decoration:underline}
   .contact-input{flex:1;min-width:0;border:none;background:transparent;font-family:inherit;font-size:13.5px;color:var(--text);outline:none;padding:2px 0}
   .contact-input::placeholder{color:var(--muted)}
+  .contact-add{display:flex;align-items:center;gap:10px;width:100%;padding:7px 12px;border:none;border-bottom:1px solid var(--line);background:none;font-family:inherit;font-size:12.5px;font-weight:600;color:var(--muted);cursor:pointer;text-align:left}
+  .contact-add span{width:15px;text-align:center;font-size:15px;line-height:1}
+  .contact-add:hover{color:var(--accent)}
+  .contact-add:last-child{border-bottom:none}
   .row-contact-icons{display:inline-flex;gap:4px;align-items:center;vertical-align:-2px}
   .row-contact-icons svg{width:12px;height:12px}
   .todo-section{border:1px solid var(--line);border-radius:10px;margin-top:12px;overflow:hidden}
@@ -1142,7 +1146,7 @@ let todoShowCompleted = false;
 try { todoShowCompleted = localStorage.getItem('daily-sync-todo-completed') === '1'; } catch {}
 let todoForceDetail = false;
 // EHL's task contact fields (Salesforce link, phone, email): which one is being edited.
-let contactEditing = null; // { id, field }
+let contactEditing = null; // { id, field, index } -- index = which phone/email (= count when adding one)
 // EHL -> Mary hand-offs. A hand-off is one of Mary's open tasks that came from
 // EHL and isn't in one of her lists; it shows on her "EHL Hand-offs" page,
 // grouped by what she's waiting on (waiting_on), due on its check-back date.
@@ -1176,14 +1180,18 @@ const PENCIL_SVG = '<svg width="13" height="13" viewBox="0 0 18 18" fill="none">
 const CONTACT_FIELDS = [
   { key: 'sf_url', placeholder: 'Paste Salesforce link', inputmode: 'url',
     href: v => /^https?:\/\//i.test(v) ? v : 'https://' + v, label: () => 'Open in Salesforce', newTab: true },
-  { key: 'phone', placeholder: 'Phone number', inputmode: 'tel',
+  { key: 'phone', placeholder: 'Phone number', inputmode: 'tel', multi: true, addLabel: 'Add another phone',
     href: v => 'tel:' + v.replace(/[^\d+]/g, ''), label: v => v },
-  { key: 'email', placeholder: 'Email address', inputmode: 'email',
+  { key: 'email', placeholder: 'Email address', inputmode: 'email', multi: true, addLabel: 'Add another email',
     href: v => 'mailto:' + v, label: v => v },
   { key: 'website', placeholder: 'Paste website link', inputmode: 'url',
     href: v => /^https?:\/\//i.test(v) ? v : 'https://' + v, label: v => v.replace(/^https?:\/\/(www\.)?/i, '').replace(/\/$/, ''), newTab: true },
 ];
 const LINK_FIELDS = ['sf_url', 'website']; // saved with https:// added if left off
+// Phone and email can hold several values, saved one per line in the same column.
+const contactValues = v => String(v || '').split('\n').map(s => s.trim()).filter(Boolean);
+// What was typed in one box; pasting "a, b" (or "a; b") adds both.
+const splitTyped = (field, text) => text.split(field === 'email' ? /[\s,;]+/ : /\s*[;\n]\s*|\s*,\s*(?=[+(\d])/).map(s => s.trim()).filter(Boolean);
 // Which contact boxes each profile's task panel shows, in order.
 const contactFieldsFor = profile => profile === 'mary'
   ? ['phone', 'email', 'sf_url', 'website'].map(k => CONTACT_FIELDS.find(f => f.key === k))
@@ -1717,13 +1725,16 @@ function renderDashboard() {
 
 // --- EHL task contact fields ---
 function contactRowHtml(task, f) {
-  const val = task[f.key];
-  const editing = contactEditing && contactEditing.id === task.id && contactEditing.field === f.key;
-  if (val && !editing) {
-    return `<div class="contact-row">${CONTACT_ICONS[f.key]}<a class="contact-link" href="${escapeAttr(f.href(val))}"${f.newTab ? ' target="_blank" rel="noopener"' : ''}>${escapeHtml(f.label(val))}</a>
-      <button type="button" class="icon-btn contact-edit" data-action="contact-edit" data-field="${f.key}" title="Edit">${PENCIL_SVG}</button></div>`;
-  }
-  return `<div class="contact-row">${CONTACT_ICONS[f.key]}<input type="text" class="contact-input" data-field="${f.key}" inputmode="${f.inputmode}" autocomplete="off" placeholder="${f.placeholder}" value="${escapeAttr(val || '')}" aria-label="${f.placeholder}"></div>`;
+  const vals = f.multi ? contactValues(task[f.key]) : (task[f.key] ? [task[f.key]] : []);
+  const editingAt = contactEditing && contactEditing.id === task.id && contactEditing.field === f.key ? contactEditing.index : -1;
+  const input = (i, val) => `<div class="contact-row">${CONTACT_ICONS[f.key]}<input type="text" class="contact-input" data-field="${f.key}" data-index="${i}" inputmode="${f.inputmode}" autocomplete="off" placeholder="${f.placeholder}" value="${escapeAttr(val || '')}" aria-label="${f.placeholder}"></div>`;
+  if (!vals.length) return input(0, '');
+  const rows = vals.map((val, i) => i === editingAt ? input(i, val)
+    : `<div class="contact-row">${CONTACT_ICONS[f.key]}<a class="contact-link" href="${escapeAttr(f.href(val))}"${f.newTab ? ' target="_blank" rel="noopener"' : ''}>${escapeHtml(f.label(val))}</a>
+      <button type="button" class="icon-btn contact-edit" data-action="contact-edit" data-field="${f.key}" data-index="${i}" title="Edit">${PENCIL_SVG}</button></div>`);
+  if (f.multi) rows.push(editingAt === vals.length ? input(vals.length, '')
+    : `<button type="button" class="contact-add" data-action="contact-add" data-field="${f.key}"><span>+</span>${f.addLabel}</button>`);
+  return rows.join('');
 }
 
 function ehlReasons() {
@@ -2590,12 +2601,15 @@ document.body.addEventListener('click', e => {
     render();
     return;
   }
-  const contactEditBtn = e.target.closest('[data-action="contact-edit"]');
+  const contactEditBtn = e.target.closest('[data-action="contact-edit"], [data-action="contact-add"]');
   if (contactEditBtn) {
-    contactEditing = { id: contactEditBtn.closest('.task').dataset.id, field: contactEditBtn.dataset.field };
+    const id = contactEditBtn.closest('.task').dataset.id, field = contactEditBtn.dataset.field;
+    const index = contactEditBtn.dataset.action === 'contact-add'
+      ? contactValues(tasks.find(t => t.id === id)?.[field]).length : Number(contactEditBtn.dataset.index || 0);
+    contactEditing = { id, field, index };
     todoForceDetail = true;
     render();
-    const input = (who === 'evan' ? todoDetail : detailPane).querySelector(`.contact-input[data-field="${contactEditBtn.dataset.field}"]`);
+    const input = (who === 'evan' ? todoDetail : detailPane).querySelector(`.contact-input[data-field="${field}"][data-index="${index}"]`);
     input?.focus();
     input?.select();
     return;
@@ -2874,6 +2888,12 @@ document.body.addEventListener('change', e => {
     const field = e.target.dataset.field;
     let v = e.target.value.trim();
     if (LINK_FIELDS.includes(field) && v && !/^https?:\/\//i.test(v)) v = 'https://' + v;
+    if (CONTACT_FIELDS.find(f => f.key === field)?.multi) {
+      // Replace (or remove, if cleared) the one being edited, or add the new one(s).
+      const list = contactValues(tasks.find(t => t.id === id)?.[field]);
+      list.splice(Number(e.target.dataset.index || 0), 1, ...splitTyped(field, v));
+      v = [...new Set(list)].join('\n');
+    }
     contactEditing = null;
     todoForceDetail = true;
     patchTask(id, { [field]: v || null });
