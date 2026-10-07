@@ -374,6 +374,7 @@
   .contact-link:hover{text-decoration:underline}
   .contact-input{flex:1;min-width:0;border:none;background:transparent;font-family:inherit;font-size:13.5px;color:var(--text);outline:none;padding:2px 0}
   .contact-input::placeholder{color:var(--muted)}
+  .contact-copy.copied{color:#2E7D4F}
   .contact-add{display:flex;align-items:center;gap:10px;width:100%;padding:7px 12px;border:none;border-bottom:1px solid var(--line);background:none;font-family:inherit;font-size:12.5px;font-weight:600;color:var(--muted);cursor:pointer;text-align:left}
   .contact-add span{width:15px;text-align:center;font-size:15px;line-height:1}
   .contact-add:hover{color:var(--accent)}
@@ -1176,6 +1177,8 @@ const CONTACT_ICONS = {
   email: '<svg width="15" height="15" viewBox="0 0 18 18" fill="none"><rect x="2.3" y="3.8" width="13.4" height="10.4" rx="1.6" stroke="currentColor" stroke-width="1.5"/><path d="M2.8 5l6.2 4.6L15.2 5" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>',
   website: '<svg width="15" height="15" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="6.6" stroke="currentColor" stroke-width="1.5"/><path d="M2.6 9h12.8M9 2.4c1.9 2 2.8 4.2 2.8 6.6S10.9 13.6 9 15.6C7.1 13.6 6.2 11.4 6.2 9S7.1 4.4 9 2.4z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>',
 };
+const COPY_SVG = '<svg width="13" height="13" viewBox="0 0 18 18" fill="none"><rect x="6.2" y="6.2" width="9" height="9" rx="1.8" stroke="currentColor" stroke-width="1.5"/><path d="M11.8 3.8V3.6A1.6 1.6 0 0 0 10.2 2H3.6A1.6 1.6 0 0 0 2 3.6v6.6a1.6 1.6 0 0 0 1.6 1.6h.2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>';
+const CHECK_SVG = '<svg width="13" height="13" viewBox="0 0 18 18" fill="none"><path d="M3.5 9.5l3.6 3.6 7.4-8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 const PENCIL_SVG = '<svg width="13" height="13" viewBox="0 0 18 18" fill="none"><path d="M11.8 3.2l3 3L6.5 14.5l-3.6.6.6-3.6z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>';
 const CONTACT_FIELDS = [
   { key: 'sf_url', placeholder: 'Paste Salesforce link', inputmode: 'url',
@@ -1731,6 +1734,7 @@ function contactRowHtml(task, f) {
   if (!vals.length) return input(0, '');
   const rows = vals.map((val, i) => i === editingAt ? input(i, val)
     : `<div class="contact-row">${CONTACT_ICONS[f.key]}<a class="contact-link" href="${escapeAttr(f.href(val))}"${f.newTab ? ' target="_blank" rel="noopener"' : ''}>${escapeHtml(f.label(val))}</a>
+      <button type="button" class="icon-btn contact-copy" data-action="contact-copy" data-value="${escapeAttr(val)}" title="Copy" aria-label="Copy">${COPY_SVG}</button>
       <button type="button" class="icon-btn contact-edit" data-action="contact-edit" data-field="${f.key}" data-index="${i}" title="Edit">${PENCIL_SVG}</button></div>`);
   if (f.multi) rows.push(editingAt === vals.length ? input(vals.length, '')
     : `<button type="button" class="contact-add" data-action="contact-add" data-field="${f.key}"><span>+</span>${f.addLabel}</button>`);
@@ -2601,6 +2605,8 @@ document.body.addEventListener('click', e => {
     render();
     return;
   }
+  const copyBtn = e.target.closest('[data-action="contact-copy"]');
+  if (copyBtn) { copyText(copyBtn.dataset.value, copyBtn); return; }
   const contactEditBtn = e.target.closest('[data-action="contact-edit"], [data-action="contact-add"]');
   if (contactEditBtn) {
     const id = contactEditBtn.closest('.task').dataset.id, field = contactEditBtn.dataset.field;
@@ -3353,6 +3359,27 @@ document.addEventListener('touchend', async () => {
 // One message at a time: showing a new one finishes the previous action.
 let toastTimer = null, toastUndoFn = null, toastCommitFn = null;
 const shortTitle = s => s.length > 40 ? s.slice(0, 38) + '…' : s;
+// Copy a phone / email / link without calling, emailing, or opening it.
+async function copyText(text, btn) {
+  let ok = false;
+  try { await navigator.clipboard.writeText(text); ok = true; } catch {
+    const tmp = Object.assign(document.createElement('textarea'), { value: text });
+    tmp.setAttribute('readonly', '');
+    tmp.style.cssText = 'position:fixed;opacity:0;top:0;left:0';
+    document.body.appendChild(tmp);
+    tmp.select();
+    try { ok = document.execCommand('copy'); } catch {}
+    tmp.remove();
+  }
+  if (!ok) { alert(`Couldn't copy. Here it is to copy by hand:\n\n${text}`); return; }
+  btn.innerHTML = CHECK_SVG;
+  btn.classList.add('copied');
+  setTimeout(() => { btn.innerHTML = COPY_SVG; btn.classList.remove('copied'); }, 1500);
+  showToast(`Copied ${text}`);
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(finishToast, 2000);
+}
+
 function showToast(text, undo, commit = null) {
   finishToast();
   toastText.textContent = text;
