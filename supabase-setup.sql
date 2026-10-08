@@ -125,6 +125,7 @@ create policy "team only task-photos" on storage.objects for all to authenticate
 -- can fill them too).
 alter table tasks add column if not exists sf_url text;
 alter table tasks add column if not exists website text;  -- Mary's task contact box
+alter table tasks add column if not exists snooze_until date;  -- "Push out": hidden from its list until this day
 alter table tasks add column if not exists phone text;
 alter table tasks add column if not exists email text;
 

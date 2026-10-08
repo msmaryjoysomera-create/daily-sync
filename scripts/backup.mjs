@@ -97,6 +97,7 @@ async function taskParagraphs(task, photosByTask) {
   if (task.pinned) meta.push(task.assignee === 'evan' ? 'Important' : 'Pinned');
   if (task.source === 'claude') meta.push('Added via Claude');
   if (task.waiting_on) meta.push(`Waiting on: ${task.waiting_on}`);
+  if (task.snooze_until && task.status !== 'done' && task.snooze_until > localDateStr(new Date())) meta.push(`Pushed out until ${task.snooze_until}`);
   if (task.phone) meta.push(`Phone: ${task.phone.split('\n').join(', ')}`);
   if (task.email) meta.push(`Email: ${task.email.split('\n').join(', ')}`);
   if (task.sf_url) meta.push(`Salesforce: ${task.sf_url}`);

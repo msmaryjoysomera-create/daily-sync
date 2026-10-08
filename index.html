@@ -375,6 +375,12 @@
   .contact-input{flex:1;min-width:0;border:none;background:transparent;font-family:inherit;font-size:13.5px;color:var(--text);outline:none;padding:2px 0}
   .contact-input::placeholder{color:var(--muted)}
   .contact-copy.copied{color:#2E7D4F}
+  .push-row{flex-wrap:wrap;row-gap:6px}
+  .push-chip{background:var(--card);border:1px solid var(--line);border-radius:99px;padding:4px 10px;font-family:inherit;font-size:12px;font-weight:600;color:var(--text);cursor:pointer}
+  .push-chip:hover{border-color:var(--accent);color:var(--accent)}
+  .push-date{font-family:inherit;font-size:12px;color:var(--muted);background:var(--card-2);border:1px solid var(--line);border-radius:8px;padding:3px 6px;max-width:140px}
+  .push-until{font-weight:700;color:var(--accent)}
+  .back-pill{flex:none;font-size:11px;font-weight:700;color:#1F6B45;background:#E3F3EA;border-radius:99px;padding:2px 8px;white-space:nowrap}
   .contact-add{display:flex;align-items:center;gap:10px;width:100%;padding:7px 12px;border:none;border-bottom:1px solid var(--line);background:none;font-family:inherit;font-size:12.5px;font-weight:600;color:var(--muted);cursor:pointer;text-align:left}
   .contact-add span{width:15px;text-align:center;font-size:15px;line-height:1}
   .contact-add:hover{color:var(--accent)}
@@ -623,11 +629,13 @@
         <button type="button" class="nav-item" data-for="evan" data-view="dashboard"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><rect x="2.5" y="2.5" width="5.5" height="5.5" rx="1.2" stroke="currentColor" stroke-width="1.5"/><rect x="10" y="2.5" width="5.5" height="5.5" rx="1.2" stroke="currentColor" stroke-width="1.5"/><rect x="2.5" y="10" width="5.5" height="5.5" rx="1.2" stroke="currentColor" stroke-width="1.5"/><rect x="10" y="10" width="5.5" height="5.5" rx="1.2" stroke="currentColor" stroke-width="1.5"/></svg></span><span class="nav-item-label">Dashboard</span><span class="nav-count" id="countDashboard">0</span></button>
         <button type="button" class="nav-item" data-for="evan" data-view="important"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M12 3.5l2.6 5.3 5.9.9-4.25 4.1 1 5.8L12 16.9l-5.25 2.75 1-5.8L3.5 9.7l5.9-.9z"/></svg></span><span class="nav-item-label">Important</span><span class="nav-count" id="countImportant">0</span></button>
         <button type="button" class="nav-item" data-for="evan" data-view="alltasks"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><path d="M3 8L9 3l6 5v6.5a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></span><span class="nav-item-label">Tasks</span><span class="nav-count" id="countAllTasks">0</span></button>
+        <button type="button" class="nav-item" data-for="evan" data-view="pushed"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><rect x="2.5" y="3.5" width="13" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M2.5 7H15.5M6 2V4.5M12 2V4.5M7 11.2h4.5M9.6 9.3l1.9 1.9-1.9 1.9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="nav-item-label">Pushed Out</span><span class="nav-count" id="countPushedEhl">0</span></button>
         <button type="button" class="nav-item" data-for="evan" data-view="completed"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="7" stroke="currentColor" stroke-width="1.5"/><path d="M5.8 9.2L7.8 11.2L12.2 6.6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="nav-item-label">Completed</span></button>
         <button type="button" class="nav-item" data-for="ms" data-view="dashboard"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><rect x="2.5" y="2.5" width="5.5" height="5.5" rx="1.2" stroke="currentColor" stroke-width="1.5"/><rect x="10" y="2.5" width="5.5" height="5.5" rx="1.2" stroke="currentColor" stroke-width="1.5"/><rect x="2.5" y="10" width="5.5" height="5.5" rx="1.2" stroke="currentColor" stroke-width="1.5"/><rect x="10" y="10" width="5.5" height="5.5" rx="1.2" stroke="currentColor" stroke-width="1.5"/></svg></span><span class="nav-item-label">Dashboard</span><span class="nav-count" id="countSarahDash">0</span></button>
         <button type="button" class="nav-item" data-for="ms" data-view="upcoming"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><rect x="2.5" y="3.5" width="13" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M2.5 7H15.5M6 2V4.5M12 2V4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span><span class="nav-item-label">Upcoming</span><span class="nav-count" id="countUpcoming">0</span></button>
         <button type="button" class="nav-item" data-for="ms" data-view="today"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="3.5" stroke="currentColor" stroke-width="1.5"/><path d="M9 1.5V3.2M9 14.8V16.5M16.5 9H14.8M3.2 9H1.5M14.3 3.7L13.1 4.9M4.9 13.1L3.7 14.3M14.3 14.3L13.1 13.1M4.9 4.9L3.7 3.7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span><span class="nav-item-label">Today</span><span class="nav-count" id="countToday">0</span></button>
         <button type="button" class="nav-item" data-for="mary" data-view="handoffs"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><path d="M3 9.5h8.5M8.5 6l3.5 3.5L8.5 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M14.5 3.5v11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span><span class="nav-item-label">EHL Hand-offs</span><span class="nav-count" id="countHandoffs">0</span></button>
+        <button type="button" class="nav-item" data-for="mary" data-view="pushed"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><rect x="2.5" y="3.5" width="13" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M2.5 7H15.5M6 2V4.5M12 2V4.5M7 11.2h4.5M9.6 9.3l1.9 1.9-1.9 1.9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="nav-item-label">Pushed Out</span><span class="nav-count" id="countPushedMary">0</span></button>
         <button type="button" class="nav-item" data-for="ms" data-view="done"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="7" stroke="currentColor" stroke-width="1.5"/><path d="M5.8 9.2L7.8 11.2L12.2 6.6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="nav-item-label">Completed</span></button>
         <button type="button" class="nav-item" data-for="ms" id="reviewNavItem" data-view="review"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><rect x="4" y="2.8" width="10" height="13" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="6.5" y="1.5" width="5" height="2.6" rx="0.8" stroke="currentColor" stroke-width="1.4"/><path d="M6.3 8.2H11.7M6.3 11H11.7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></span><span class="nav-item-label">Daily Review</span></button>
         <button type="button" class="nav-item" data-view="notes"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><rect x="3" y="2.5" width="12" height="13.5" rx="1.8" stroke="currentColor" stroke-width="1.5"/><path d="M6 6.5h6M6 9.5h6M6 12.5h3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span><span class="nav-item-label">Notes</span></button>
@@ -1168,7 +1176,21 @@ const REPEAT_LABELS = { daily: 'Daily', weekdays: 'Weekdays', weekly: 'Weekly', 
 const repeatOf = t => t.repeat || (t.recurring ? 'daily' : null); // "recurring" = older Daily tasks
 const repeatOptions = sel => `<option value="">Doesn't repeat</option>` + Object.entries(REPEAT_LABELS).map(([k, l]) => `<option value="${k}"${k === sel ? ' selected' : ''}>${l}</option>`).join('');
 const DASH_HANDOFFS = '__handoffs__', DASH_UNTAGGED = '__untagged__', DASH_TODO = '__todo__'; // Dashboard column ids that aren't list names
-const isHandoff = t => t.assignee === 'mary' && t.source === 'evan' && !t.tag && t.status !== 'done';
+// Push out (EHL and Mary): a task set aside until a date (snooze_until). It keeps
+// its list the whole time -- it's just hidden until that day, then it's back
+// with a "Back" label, even if nobody opened the app in between.
+const isPushed = t => !!t.snooze_until && t.status !== 'done' && t.snooze_until > todayStr();
+// Where a task goes back to (and lives meanwhile).
+const homeListName = t => t.tag || (t.assignee === 'evan' ? 'Tasks' : t.assignee === 'mary' && t.source === 'evan' ? 'EHL Hand-offs' : t.assignee === 'sarah' ? 'To Do' : 'Untagged');
+const pushDayLabel = d => new Date(d + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+function backLabel(t) { // "Back today" on the day it returns (and "Back yesterday" / "Back Mon" for two more days)
+  if (!t.snooze_until || t.status === 'done' || isPushed(t)) return '';
+  const days = Math.round((new Date(todayStr() + 'T00:00:00') - new Date(t.snooze_until + 'T00:00:00')) / 864e5);
+  if (days === 0) return 'Back today';
+  if (days === 1) return 'Back yesterday';
+  return days === 2 ? 'Back ' + new Date(t.snooze_until + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'short' }) : '';
+}
+const isHandoff = t => t.assignee === 'mary' && t.source === 'evan' && !t.tag && t.status !== 'done' && !isPushed(t);
 const CONTACT_ICONS = {
   sf_url: '<svg width="15" height="15" viewBox="0 0 18 18" fill="none"><path d="M5.2 14.5h7.6a3.4 3.4 0 0 0 .5-6.77A4.5 4.5 0 0 0 4.7 6.6 3.95 3.95 0 0 0 5.2 14.5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>',
   phone: '<svg width="15" height="15" viewBox="0 0 18 18" fill="none"><path d="M4 2.8h2.6l1.2 3.1-1.6 1a8.6 8.6 0 0 0 4.9 4.9l1-1.6 3.1 1.2V14a1.4 1.4 0 0 1-1.5 1.4A11.9 11.9 0 0 1 2.6 4.3 1.4 1.4 0 0 1 4 2.8z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>',
@@ -1213,7 +1235,7 @@ const M_ICON = {
 };
 const isMyDay = t => t.my_day === todayStr();
 const stepsOf = t => Array.isArray(t.steps) ? t.steps : [];
-const TODO_VIEWS = { add: 'Add a Task', dashboard: 'Dashboard', important: 'Important', alltasks: 'Tasks', completed: 'Completed' };
+const TODO_VIEWS = { add: 'Add a Task', dashboard: 'Dashboard', important: 'Important', alltasks: 'Tasks', pushed: 'Pushed Out', completed: 'Completed' };
 const starSvg = on => `<svg width="18" height="18" viewBox="0 0 24 24" fill="${on ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M12 3.5l2.6 5.3 5.9.9-4.25 4.1 1 5.8L12 16.9l-5.25 2.75 1-5.8L3.5 9.7l5.9-.9z"/></svg>`;
 const SUN_SVG = '<svg width="15" height="15" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="3.5" stroke="currentColor" stroke-width="1.5"/><path d="M9 1.5V3.2M9 14.8V16.5M16.5 9H14.8M3.2 9H1.5M14.3 3.7L13.1 4.9M4.9 13.1L3.7 14.3M14.3 14.3L13.1 13.1M4.9 4.9L3.7 3.7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>';
 const TRASH_SVG = '<svg width="15" height="15" viewBox="0 0 18 18" fill="none"><path d="M3 5h12M7 5V3.5h4V5M5 5l.7 9.5a1 1 0 0 0 1 .9h4.6a1 1 0 0 0 1-.9L13 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
@@ -1276,9 +1298,9 @@ setSidebar(isMobile() ? false : localStorage.getItem('daily-sync-sidebar') !== '
 
 // --- profile ---
 const PROFILE_VIEWS = {
-  evan: ['dashboard', 'add', 'important', 'alltasks', 'completed', 'list', 'notes'],
+  evan: ['dashboard', 'add', 'important', 'alltasks', 'pushed', 'completed', 'list', 'notes'],
   sarah: ['dashboard', 'add', 'today', 'upcoming', 'done', 'list', 'tag', 'notes'],
-  mary: ['dashboard', 'add', 'today', 'upcoming', 'handoffs', 'done', 'review', 'list', 'notes'],
+  mary: ['dashboard', 'add', 'today', 'upcoming', 'handoffs', 'pushed', 'done', 'review', 'list', 'notes'],
 };
 let firstProfileSet = true;
 
@@ -1399,6 +1421,7 @@ function taskEl(task) {
           ${task.due_date ? `<button type="button" class="icon-btn" data-action="clear-due" title="Remove due date">${ICON_X}</button>` : ''}
         </div>
         ${task.status !== 'done' ? `<div class="due-row"><span class="due-label">Repeat</span><select class="task-repeat-select">${repeatOptions(repeatOf(task))}</select></div>` : ''}
+        ${task.assignee === 'mary' ? pushRowHtml(task) : ''}
         <div class="todo-section todo-contact task-contact">
           <div class="todo-contact-head">Contact</div>
           ${contactFieldsFor('mary').map(f => contactRowHtml(task, f)).join('')}
@@ -1466,6 +1489,8 @@ function todoRowEl(t) {
   if (steps.length) meta.push(`${steps.filter(s => s.done).length} of ${steps.length}`);
   if (repeatOf(t)) meta.push(`Repeats ${REPEAT_LABELS[repeatOf(t)].toLowerCase()}`);
   if (t.notes) meta.push('Note');
+  const back = backLabel(t);
+  if (back) meta.unshift(`<span class="back-pill">${back}</span>`);
   const contactIcons = contactFieldsFor('evan').filter(f => t[f.key]).map(f => CONTACT_ICONS[f.key]).join('');
   if (contactIcons) meta.push(`<span class="row-contact-icons" title="Has contact info">${contactIcons}</span>`);
   div.innerHTML = `
@@ -1503,13 +1528,12 @@ function renderTodo() {
     renderTodoDetail();
     return;
   }
-  let mine = tasks.filter(t => t.assignee === 'evan');
+  let mine = tasks.filter(t => t.assignee === 'evan' && isPushed(t) === (v.type === 'pushed'));
   if (search) mine = mine.filter(t => t.title.toLowerCase().includes(search) || (t.notes || '').toLowerCase().includes(search));
   const inView = {
-    myday: isMyDay,
     important: t => t.pinned,
-    planned: t => !!t.due_date,
     alltasks: () => true,
+    pushed: () => true,
     completed: t => t.status === 'done',
     list: t => t.tag === v.key,
   }[v.type] || (() => true);
@@ -1517,14 +1541,14 @@ function renderTodo() {
   const newestFirst = (a, b) => b.created_at.localeCompare(a.created_at);
   // Starred (Important) tasks always sit at the top of every list.
   const importantFirst = (a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0);
-  reorderable = ['myday', 'important', 'alltasks', 'list'].includes(v.type) && !search;
-  const open = list.filter(t => t.status !== 'done').sort(v.type === 'planned'
-    ? (a, b) => importantFirst(a, b) || a.due_date.localeCompare(b.due_date)
+  reorderable = ['important', 'alltasks', 'list'].includes(v.type) && !search;
+  const open = list.filter(t => t.status !== 'done').sort(v.type === 'pushed'
+    ? (a, b) => a.snooze_until.localeCompare(b.snooze_until) || importantFirst(a, b) || newestFirst(a, b)
     : (a, b) => importantFirst(a, b) || byPosition(true)(a, b) || newestFirst(a, b));
   const done = list.filter(t => t.status === 'done').sort((a, b) => (b.completed_at || '').localeCompare(a.completed_at || ''));
 
-  todoAddBox.style.display = v.type === 'completed' ? 'none' : '';
-  todoAddInput.placeholder = v.type === 'myday' ? 'Add a task to My Day' : v.type === 'list' ? `Add a task to ${v.key}` : 'Add a task';
+  todoAddBox.style.display = v.type === 'completed' || v.type === 'pushed' ? 'none' : '';
+  todoAddInput.placeholder = v.type === 'list' ? `Add a task to ${v.key}` : 'Add a task';
   todoList.innerHTML = '';
   const head = text => { const h = document.createElement('div'); h.className = 'todo-group-head'; h.textContent = text; todoList.appendChild(h); };
 
@@ -1532,22 +1556,16 @@ function renderTodo() {
     done.forEach(t => todoList.appendChild(todoRowEl(t)));
     if (!done.length) todoList.innerHTML = `<div class="todo-empty">${search ? 'No matching tasks' : 'Nothing completed yet'}</div>`;
   } else {
-    if (v.type === 'planned') {
-      const today = todayStr();
-      const groups = [
-        ['Overdue', open.filter(t => t.due_date < today)],
-        ['Today', open.filter(t => t.due_date === today)],
-        ['Later', open.filter(t => t.due_date > today)],
-      ];
-      groups.forEach(([label, items]) => { if (items.length) { head(label); items.forEach(t => todoList.appendChild(todoRowEl(t))); } });
+    if (v.type === 'pushed') {
+      groupByReturn(open).forEach(g => { head(g.label); g.items.forEach(t => todoList.appendChild(todoRowEl(t))); });
     } else {
       open.forEach(t => todoList.appendChild(todoRowEl(t)));
     }
     if (!open.length) {
-      const empty = { myday: 'Add tasks you want to get done today', important: 'Star a task to see it here', planned: 'Tasks with a due date show up here' }[v.type] || 'No tasks yet';
+      const empty = { important: 'Star a task to see it here', pushed: 'Nothing pushed out. Open a task and use "Push out" to set it aside until a date.' }[v.type] || 'No tasks yet';
       todoList.insertAdjacentHTML('beforeend', `<div class="todo-empty">${search ? 'No matching tasks' : empty}</div>`);
     }
-    if (done.length) {
+    if (done.length && v.type !== 'pushed') {
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'todo-completed-toggle' + (todoShowCompleted ? ' open' : '');
@@ -1626,7 +1644,7 @@ function renderMaryDashboard(visible) {
 }
 
 function openDashPicker() {
-  const open = tasks.filter(t => t.assignee === 'mary' && t.status !== 'done');
+  const open = tasks.filter(t => t.assignee === 'mary' && t.status !== 'done' && !isPushed(t));
   const shown = new Set(maryDashColumns(open).map(c => c.id));
   const names = { [DASH_HANDOFFS]: 'EHL Hand-offs', [DASH_UNTAGGED]: 'Untagged' };
   const ids = [...shown, ...[...allTagNames(), DASH_HANDOFFS, DASH_UNTAGGED].filter(id => !shown.has(id))];
@@ -1693,7 +1711,7 @@ function renderSarahDashboard(visible) {
 function renderDashboard() {
   todoAddBox.style.display = '';
   todoAddInput.placeholder = 'Add a task';
-  let open = tasks.filter(t => t.assignee === 'evan' && t.status !== 'done');
+  let open = tasks.filter(t => t.assignee === 'evan' && t.status !== 'done' && !isPushed(t));
   if (search) open = open.filter(t => t.title.toLowerCase().includes(search) || (t.notes || '').toLowerCase().includes(search));
   reorderable = !search;
   const order = (a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || byPosition(true)(a, b) || b.created_at.localeCompare(a.created_at);
@@ -1725,6 +1743,48 @@ function renderDashboard() {
 }
 
 // --- EHL task contact fields ---
+// "Push out" row in the task panel (EHL and Mary).
+function pushChoices() {
+  const now = new Date();
+  const tomorrow = new Date(now); tomorrow.setDate(now.getDate() + 1);
+  const monday = new Date(now); monday.setDate(now.getDate() + ((8 - now.getDay()) % 7 || 7));
+  const firstWorkday = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  while (firstWorkday.getDay() === 0 || firstWorkday.getDay() === 6) firstWorkday.setDate(firstWorkday.getDate() + 1);
+  return [['Tomorrow', tomorrow], ['Next week', monday], ['Next month', firstWorkday]].map(([label, d]) => [label, localDateStr(d)]);
+}
+function pushRowHtml(task) {
+  if (task.status === 'done') return '';
+  const tomorrow = pushChoices()[0][1];
+  if (isPushed(task)) {
+    return `<div class="due-row push-row is-pushed"><span class="due-label">Pushed out</span>
+      <span class="push-until">Back ${escapeHtml(pushDayLabel(task.snooze_until))} → ${escapeHtml(homeListName(task))}</span>
+      <input type="date" class="push-date" min="${tomorrow}" value="${task.snooze_until}" title="Change the date it comes back" aria-label="Change the date it comes back">
+      <button type="button" class="push-chip" data-action="push-clear">Bring back now</button></div>`;
+  }
+  return `<div class="due-row push-row"><span class="due-label">Push out</span>
+    ${pushChoices().map(([label, d]) => `<button type="button" class="push-chip" data-action="push-out" data-date="${d}" title="Back ${escapeAttr(pushDayLabel(d))}">${label}</button>`).join('')}
+    <input type="date" class="push-date" min="${tomorrow}" title="Or pick a date" aria-label="Pick a date to bring it back"></div>`;
+}
+
+function pushOut(id, date) {
+  const t = tasks.find(x => x.id === id);
+  if (!t || !date || blockedOffline()) return;
+  if (date <= todayStr()) { bringBack(id); return; }
+  const before = t.snooze_until || null;
+  // It leaves the list it's in, so close its panel -- unless we're on Pushed Out itself.
+  if (currentView.type !== 'pushed') selectedTaskId = null;
+  patchTask(id, { snooze_until: date });
+  showToast(`Pushed out · back ${pushDayLabel(date)} in ${homeListName(t)}`, () => { selectedTaskId = id; patchTask(id, { snooze_until: before }); });
+}
+function bringBack(id) {
+  const t = tasks.find(x => x.id === id);
+  if (!t || blockedOffline()) return;
+  const before = t.snooze_until || null;
+  if (currentView.type === 'pushed') selectedTaskId = null;
+  patchTask(id, { snooze_until: null });
+  showToast(`Back in ${homeListName(t)}`, () => { selectedTaskId = id; patchTask(id, { snooze_until: before }); });
+}
+
 function contactRowHtml(task, f) {
   const vals = f.multi ? contactValues(task[f.key]) : (task[f.key] ? [task[f.key]] : []);
   const editingAt = contactEditing && contactEditing.id === task.id && contactEditing.field === f.key ? contactEditing.index : -1;
@@ -1815,6 +1875,7 @@ function renderTodoDetail() {
           : `<button type="button" class="due-none" data-action="set-due" title="Add a due date">None</button>`}
         ${task.due_date ? `<button type="button" class="icon-btn" data-action="clear-due" title="Remove due date">${ICON_X}</button>` : ''}
       </div>
+      ${pushRowHtml(task)}
       <button type="button" class="todo-opt" data-action="add-photo"><svg width="15" height="15" viewBox="0 0 18 18" fill="none"><rect x="2" y="3.5" width="14" height="11" rx="2" stroke="currentColor" stroke-width="1.5"/><circle cx="6.5" cy="7.5" r="1.3" stroke="currentColor" stroke-width="1.3"/><path d="M2.5 13l4-3.5 3 2.5 2.5-2 3.5 3" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>Add a photo</button>
       ${task.status !== 'done' ? `<label class="todo-opt">${ICON_REFRESH}Repeat<select class="task-repeat-select">${repeatOptions(repeatOf(task))}</select></label>` : ''}
       <label class="todo-opt">List
@@ -1872,12 +1933,12 @@ async function assignTask(id, to) {
   const t = tasks.find(x => x.id === id);
   if (!t) return;
   const name = to === 'mary' ? 'Mary' : 'Sarah';
-  const before = snapshot(t, ['assignee', 'tag', 'steps', 'my_day', 'pinned', 'notes', 'source', 'status']);
+  const before = snapshot(t, ['assignee', 'tag', 'steps', 'my_day', 'pinned', 'notes', 'source', 'status', 'snooze_until']);
   const steps = stepsOf(t);
   const stepLines = steps.map(s => `${s.done ? '✓' : '•'} ${s.text}`).join('\n');
   const notes = [t.notes, stepLines].filter(Boolean).join('\n') || null;
   selectedTaskId = null;
-  await patchTask(id, { assignee: to, tag: null, steps: [], my_day: null, pinned: false, notes, source: 'evan', status: t.status === 'done' ? 'done' : 'todo' });
+  await patchTask(id, { assignee: to, tag: null, steps: [], my_day: null, pinned: false, notes, source: 'evan', status: t.status === 'done' ? 'done' : 'todo', snooze_until: null });
   showToast(`Moved to ${name}'s list`, () => { selectedTaskId = id; patchTask(id, before); });
 }
 
@@ -2203,19 +2264,19 @@ function renderListsNav() {
   listsNav.innerHTML = '';
   if (!who) return;
   if (who === 'evan') {
-    const open = tasks.filter(t => t.assignee === 'evan' && t.status !== 'done');
+    const open = tasks.filter(t => t.assignee === 'evan' && t.status !== 'done' && !isPushed(t));
     allTagNames().forEach((name, i) => listsNav.appendChild(listNavItemEl(name, name, open.filter(t => t.tag === name).length, i)));
     listsNav.appendChild(newListButton());
     return;
   }
   if (who === 'sarah') {
     // Sarah: To Do (open tasks not in one of her lists), then her own lists.
-    const open = tasks.filter(t => t.assignee === 'sarah' && t.status !== 'done');
+    const open = tasks.filter(t => t.assignee === 'sarah' && t.status !== 'done' && !isPushed(t));
     listsNav.appendChild(listNavItemEl('todo', 'To Do', open.filter(t => !t.tag).length, 0));
     allTagNames().forEach((name, i) => listsNav.appendChild(listNavItemEl(name, name, open.filter(t => t.tag === name).length, i + 1, 'tag')));
     listsNav.appendChild(newListButton());
   } else {
-    const mine = tasks.filter(t => t.assignee === 'mary' && t.status !== 'done');
+    const mine = tasks.filter(t => t.assignee === 'mary' && t.status !== 'done' && !isPushed(t));
     const names = allTagNames();
     names.forEach((name, i) => {
       const count = mine.filter(t => (t.tag || '') === name).length;
@@ -2227,7 +2288,10 @@ function renderListsNav() {
 }
 
 function updateNavCounts() {
-  const mine = who ? tasks.filter(t => t.assignee === who) : [];
+  const mine = who ? tasks.filter(t => t.assignee === who && !isPushed(t)) : [];
+  const pushedCount = who ? tasks.filter(t => t.assignee === who && isPushed(t)).length : 0;
+  document.getElementById('countPushedEhl').textContent = pushedCount;
+  document.getElementById('countPushedMary').textContent = pushedCount;
   document.getElementById('countUpcoming').textContent = mine.filter(isUpcoming).length;
   document.getElementById('countToday').textContent = mine.filter(isDueTodayOrOverdue).length;
   const open = mine.filter(t => t.status !== 'done');
@@ -2279,7 +2343,7 @@ function render() {
   // "2 tasks due today" (and any overdue) for whoever's profile is open.
   if (currentView.type !== 'notes') {
     const today = todayStr();
-    const open = tasks.filter(t => t.assignee === who && t.status !== 'done' && t.due_date);
+    const open = tasks.filter(t => t.assignee === who && t.status !== 'done' && t.due_date && !isPushed(t));
     const dueToday = open.filter(t => t.due_date === today).length;
     const overdue = open.filter(t => t.due_date < today).length;
     const plural = n => `${n} task${n === 1 ? '' : 's'}`;
@@ -2301,7 +2365,9 @@ function render() {
     return;
   }
 
-  let visible = tasks.filter(t => t.assignee === who);
+  // Pushed-out tasks only show on the Pushed Out page until their date.
+  const pushedView = currentView.type === 'pushed';
+  let visible = tasks.filter(t => t.assignee === who && isPushed(t) === pushedView);
   if (search) {
     visible = visible.filter(t =>
       t.title.toLowerCase().includes(search) || (t.notes || '').toLowerCase().includes(search));
@@ -2337,9 +2403,13 @@ function render() {
     viewTitleEl.textContent = 'Daily Review';
     reviewCard.style.display = '';
     const list = visible.filter(t => t.status !== 'done').sort(byDue);
-    const allOpen = tasks.filter(t => t.assignee === who && t.status !== 'done');
+    const allOpen = tasks.filter(t => t.assignee === who && t.status !== 'done' && !isPushed(t));
     meetingCount.textContent = `${allOpen.filter(t => discussedToday.has(t.id)).length} of ${allOpen.length} discussed`;
     renderTaskList(list, groupAcrossLists, search ? noMatch : 'No open tasks', true);
+  } else if (pushedView) {
+    viewTitleEl.textContent = 'Pushed Out';
+    const list = [...visible].sort((a, b) => a.snooze_until.localeCompare(b.snooze_until) || a.title.localeCompare(b.title));
+    renderTaskList(list, groupByReturn, search ? noMatch : 'Nothing pushed out. Open a task and use "Push out" to set it aside until a date.');
   } else if (currentView.type === 'today') {
     viewTitleEl.textContent = 'Today';
     renderTaskList(visible.filter(isDueTodayOrOverdue).sort(byDue), groupAcrossLists, search ? noMatch : 'Nothing due today');
@@ -2412,12 +2482,14 @@ function rowEl(task) {
   const isNew = currentView.type === 'handoffs' && handoffsSeenAtOpen && (task.created_at || '') > handoffsSeenAtOpen;
   const checkBack = currentView.type === 'handoffs' && task.due_date
     ? `<span class="row-date${task.due_date <= todayStr() ? ' overdue' : ''}">Check back ${dueLabel(task.due_date)}</span>` : '';
+  const back = backLabel(task);
+  const home = currentView.type === 'pushed' ? `<span class="row-date">→ ${escapeHtml(homeListName(task))}</span>` : '';
   const discussed = discussedToday.has(task.id);
   const chip = currentView.type === 'review'
     ? `<button type="button" class="discuss-chip${discussed ? ' on' : ''}" data-action="discuss" aria-pressed="${discussed}">${discussed ? '✓ Discussed' : 'Discussed?'}</button>` : '';
   if (chip && discussed) div.classList.add('discussed');
   const grip = reorderable && task.status !== 'done' ? `<span class="drag-grip" data-drag title="Drag to reorder" aria-hidden="true"><svg width="12" height="16" viewBox="0 0 12 16" fill="currentColor"><circle cx="3.5" cy="3" r="1.4"/><circle cx="8.5" cy="3" r="1.4"/><circle cx="3.5" cy="8" r="1.4"/><circle cx="8.5" cy="8" r="1.4"/><circle cx="3.5" cy="13" r="1.4"/><circle cx="8.5" cy="13" r="1.4"/></svg></span>` : '';
-  div.innerHTML = `<button class="status-btn ${task.status === 'todo' ? '' : task.status}" title="Change status"></button><span class="row-title">${escapeHtml(task.title)}</span>${isNew ? '<span class="new-pill">New</span>' : ''}${doneDate}${checkBack}${chip}${grip}`;
+  div.innerHTML = `<button class="status-btn ${task.status === 'todo' ? '' : task.status}" title="Change status"></button><span class="row-title">${escapeHtml(task.title)}</span>${isNew ? '<span class="new-pill">New</span>' : ''}${back ? `<span class="back-pill">${back}</span>` : ''}${home}${doneDate}${checkBack}${chip}${grip}`;
   return div;
 }
 
@@ -2439,6 +2511,12 @@ function toggleReviewGroup(label) {
   reviewOpenGroups.has(label) ? reviewOpenGroups.delete(label) : reviewOpenGroups.add(label);
   try { localStorage.setItem('daily-sync-review-open', JSON.stringify([...reviewOpenGroups])); } catch {}
   render();
+}
+
+// Pushed Out page: grouped by the day each task comes back.
+function groupByReturn(list) {
+  const days = [...new Set(list.map(t => t.snooze_until))];
+  return days.map(d => ({ label: `Back ${pushDayLabel(d)}`, items: list.filter(t => t.snooze_until === d) }));
 }
 
 function renderTaskList(list, groupBy, emptyText, collapsible = false) {
@@ -2598,6 +2676,10 @@ document.body.addEventListener('click', e => {
     render();
     return;
   }
+  const pushBtn = e.target.closest('[data-action="push-out"]');
+  if (pushBtn) { pushOut(pushBtn.closest('.task').dataset.id, pushBtn.dataset.date); return; }
+  const pushClear = e.target.closest('[data-action="push-clear"]');
+  if (pushClear) { bringBack(pushClear.closest('.task').dataset.id); return; }
   const copyBtn = e.target.closest('[data-action="contact-copy"]');
   if (copyBtn) { copyText(copyBtn.dataset.value, copyBtn); return; }
   const contactEditBtn = e.target.closest('[data-action="contact-edit"], [data-action="contact-add"]');
@@ -2929,6 +3011,8 @@ document.body.addEventListener('change', e => {
     const rule = e.target.value || null;
     // Repeating needs a date to repeat from: start today if the task has none.
     patchTask(id, { repeat: rule, recurring: false, ...(rule && t && !t.due_date ? { due_date: todayStr() } : {}) });
+  } else if (e.target.classList.contains('push-date')) {
+    if (e.target.value) pushOut(e.target.closest('.task').dataset.id, e.target.value);
   } else if (e.target.classList.contains('contact-input')) {
     const id = e.target.closest('.task').dataset.id;
     const field = e.target.dataset.field;
@@ -3120,6 +3204,10 @@ async function updateTask(id, fields) {
   const { error } = await sb.from('tasks').update({ ...fields, updated_at: new Date().toISOString() }).eq('id', id);
   if (error) alert(error.message);
 }
+
+// Pushed-out tasks come back at midnight even if the app stays open all night.
+let renderedDay = todayStr();
+setInterval(() => { if (todayStr() !== renderedDay) { renderedDay = todayStr(); render(); } }, 60000);
 
 // --- Dashboards: clicking anywhere outside the open task panel closes it ---
 // (Clicking another task still switches to it.) Runs before the other click
@@ -3453,7 +3541,7 @@ async function spawnNextRepeat(t, rule, due) {
     repeat: rule, due_date: due, pinned: !!t.pinned, position: t.position ?? null,
     steps: stepsOf(t).map(s => ({ ...s, done: false })),
     source: t.source || null, waiting_on: t.waiting_on || null,
-    sf_url: t.sf_url || null, phone: t.phone || null, email: t.email || null,
+    sf_url: t.sf_url || null, phone: t.phone || null, email: t.email || null, website: t.website || null,
   });
   if (added && !tasks.some(x => x.id === added.id)) { tasks.push(added); render(); }
   return added;

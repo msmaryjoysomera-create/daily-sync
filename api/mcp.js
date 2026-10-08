@@ -71,6 +71,19 @@ const buildTools = ({ mary: tags, evan: evanLists, sarah: sarahLists }) => [
     },
   },
   {
+    name: 'sync_up_push_out',
+    description: 'Push out (snooze) one of Mary\'s or EHL\'s open Sync Up tasks until a date: it leaves its list and comes back to the same list on that date, with a "Back today" label. Also brings a pushed-out task back early (until: "now"). Not available for Sarah\'s tasks.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        task: { type: 'string', description: 'The task\'s title, or a distinctive part of it (e.g. "Yale"). If several open tasks match, you\'ll get the list back -- ask the user which one.' },
+        assignee: { type: 'string', enum: ['mary', 'evan'], description: 'Whose task it is ("evan" = EHL). Optional, narrows the match.' },
+        until: { type: 'string', description: '"tomorrow", "next_week" (the coming Monday), "next_month" (first weekday of next month), a date in YYYY-MM-DD format, or "now" to bring it back right away.' },
+      },
+      required: ['task', 'until'],
+    },
+  },
+  {
     name: 'sync_up_list_tasks',
     description: 'List current open (not-done) tasks on "Sync Up" -- Columbia Cabinets\' own daily task tracker for Mary, Sarah, and EHL (Evan) (not Salesforce, not a CRM). Optionally filtered to one person.',
     inputSchema: {
@@ -86,7 +99,55 @@ function personName(v) {
   return { mary: 'Mary', sarah: 'Sarah', evan: 'EHL' }[v] || null;
 }
 
+// Dates for "push out" in the team's own time zone (the server runs on UTC).
+const TEAM_TZ = 'America/New_York';
+function teamToday() {
+  const p = Object.fromEntries(new Intl.DateTimeFormat('en-US', { timeZone: TEAM_TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date()).map(x => [x.type, x.value]));
+  return new Date(Date.UTC(+p.year, +p.month - 1, +p.day));
+}
+const ymd = d => d.toISOString().slice(0, 10);
+function pushDate(until) {
+  const u = String(until || '').trim().toLowerCase().replace(/\s+/g, '_');
+  const today = teamToday();
+  const d = new Date(today);
+  if (u === 'now') return null;
+  if (u === 'tomorrow') { d.setUTCDate(d.getUTCDate() + 1); return ymd(d); }
+  if (u === 'next_week') { d.setUTCDate(d.getUTCDate() + ((8 - d.getUTCDay()) % 7 || 7)); return ymd(d); }
+  if (u === 'next_month') {
+    const f = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth() + 1, 1));
+    while (f.getUTCDay() === 0 || f.getUTCDay() === 6) f.setUTCDate(f.getUTCDate() + 1);
+    return ymd(f);
+  }
+  if (/^\d{4}-\d{2}-\d{2}$/.test(u) && u > ymd(today)) return u;
+  return undefined; // not understood (or not in the future)
+}
+
 async function callTool(name, args) {
+  if (name === 'sync_up_push_out') {
+    const date = pushDate(args?.until);
+    if (date === undefined) return { content: [{ type: 'text', text: 'Give "until" as tomorrow, next_week, next_month, a future date (YYYY-MM-DD), or "now".' }], isError: true };
+    const words = String(args?.task || '').trim();
+    if (!words) return { content: [{ type: 'text', text: 'Which task? Give its title.' }], isError: true };
+    let q = sb.from('tasks').select('id,title,tag,assignee,snooze_until').neq('status', 'done').in('assignee', ['mary', 'evan']).ilike('title', `%${words.replace(/[%_]/g, '')}%`);
+    if (args?.assignee) q = q.eq('assignee', args.assignee);
+    const { data, error } = await q;
+    if (error) return { content: [{ type: 'text', text: `Couldn't look up the task: ${error.message}` }], isError: true };
+    const exact = data.filter(t => t.title.toLowerCase() === words.toLowerCase());
+    const matches = exact.length === 1 ? exact : data;
+    if (!matches.length) return { content: [{ type: 'text', text: `No open task of Mary's or EHL's matches "${words}".` }], isError: true };
+    if (matches.length > 1) {
+      return { content: [{ type: 'text', text: `Several open tasks match "${words}" -- ask the user which one, then try again with its full title:\n` + matches.map(t => `- ${t.title} [${t.tag || 'no list'}] (${personName(t.assignee)})`).join('\n') }], isError: true };
+    }
+    const t = matches[0];
+    const { error: upErr } = await sb.from('tasks').update({ snooze_until: date }).eq('id', t.id);
+    if (upErr) return { content: [{ type: 'text', text: `Couldn't push it out: ${upErr.message}` }], isError: true };
+    const where = t.tag || (t.assignee === 'evan' ? 'Tasks' : 'Untagged');
+    return { content: [{ type: 'text', text: date
+      ? `Pushed out "${t.title}" (${personName(t.assignee)}) until ${date}. It comes back to "${where}" that day.`
+      : `Brought "${t.title}" (${personName(t.assignee)}) back to "${where}".` }] };
+  }
+
+
   if (name === 'sync_up_add_task') {
     const title = (args?.title || '').trim();
     if (!title) return { content: [{ type: 'text', text: 'A task title is required.' }], isError: true };
@@ -137,7 +198,7 @@ async function callTool(name, args) {
   }
 
   if (name === 'sync_up_list_tasks') {
-    let q = sb.from('tasks').select('title,tag,assignee,due_date,status').neq('status', 'done').order('created_at', { ascending: true });
+    let q = sb.from('tasks').select('title,tag,assignee,due_date,status,snooze_until').neq('status', 'done').order('created_at', { ascending: true });
     if (args?.assignee) q = q.eq('assignee', args.assignee);
     const { data, error } = await q;
     if (error) return { content: [{ type: 'text', text: `Couldn't list tasks: ${error.message}` }], isError: true };
@@ -149,6 +210,7 @@ async function callTool(name, args) {
       if (t.tag) parts.push(`[${t.tag}]`);
       parts.push(`(${who}${t.status === 'doing' ? ', in progress' : ''})`);
       if (t.due_date) parts.push(`due ${t.due_date}`);
+      if (t.snooze_until && t.snooze_until > ymd(teamToday())) parts.push(`-- pushed out until ${t.snooze_until} (hidden from its list until then)`);
       return parts.join(' ');
     });
     return { content: [{ type: 'text', text: lines.join('\n') }] };
