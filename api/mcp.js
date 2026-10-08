@@ -128,7 +128,7 @@ async function callTool(name, args) {
     if (date === undefined) return { content: [{ type: 'text', text: 'Give "until" as tomorrow, next_week, next_month, a future date (YYYY-MM-DD), or "now".' }], isError: true };
     const words = String(args?.task || '').trim();
     if (!words) return { content: [{ type: 'text', text: 'Which task? Give its title.' }], isError: true };
-    let q = sb.from('tasks').select('id,title,tag,assignee,snooze_until').neq('status', 'done').in('assignee', ['mary', 'evan']).ilike('title', `%${words.replace(/[%_]/g, '')}%`);
+    let q = sb.from('tasks').select('id,title,tag,assignee,snooze_until').neq('status', 'done').in('assignee', ['mary', 'evan']).ilike('title', `%${words.replace(/[\\%_]/g, '\\$&')}%`); // % and _ typed in a title are literal
     if (args?.assignee) q = q.eq('assignee', args.assignee);
     const { data, error } = await q;
     if (error) return { content: [{ type: 'text', text: `Couldn't look up the task: ${error.message}` }], isError: true };
