@@ -89,11 +89,26 @@ async function photoParagraphs(photos) {
   return out;
 }
 
+// Repeat rules are JSON from the app's Outlook-style Repeat window (older ones are plain words).
+function repeatText(v) {
+  if (!String(v).startsWith('{')) return v;
+  let r; try { r = JSON.parse(v); } catch { return 'yes'; }
+  const D = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'], N = { 1: 'first', 2: 'second', 3: 'third', 4: 'fourth', '-1': 'last' };
+  const n = r.n || 1;
+  let s = r.f === 'daily' ? (r.wd ? 'every weekday' : n === 1 ? 'daily' : `every ${n} days`)
+    : r.f === 'weekly' ? `${n === 1 ? 'weekly' : `every ${n} weeks`} on ${(r.days || []).map(d => D[d]).join(', ')}`
+    : r.f === 'monthly' ? `${n === 1 ? 'monthly' : `every ${n} months`} on ${r.m === 'nth' ? `the ${N[r.nth]} ${D[r.wk]}` : `day ${r.day}`}`
+    : r.f === 'yearly' ? `${n === 1 ? 'yearly' : `every ${n} years`} on ${r.mo + 1}/${r.day}` : 'yes';
+  if (r.until) s += ` until ${r.until}`;
+  if (r.left) s += ` (${r.left} left)`;
+  return s;
+}
+
 async function taskParagraphs(task, photosByTask) {
   const meta = [STATUS_LABEL[task.status] || task.status];
   if (task.due_date) meta.push(`Due ${fmtDate(task.due_date)}`);
   if (task.tag) meta.push(`Tag: ${task.tag}`);
-  if (task.repeat || task.recurring) meta.push(`Repeats ${task.repeat || 'daily'}`);
+  if (task.repeat || task.recurring) meta.push(`Repeats: ${repeatText(task.repeat || 'daily')}`);
   if (task.pinned) meta.push(task.assignee === 'evan' ? 'Important' : 'Pinned');
   if (task.source === 'claude') meta.push('Added via Claude');
   if (task.waiting_on) meta.push(`Waiting on: ${task.waiting_on}`);

@@ -65,7 +65,11 @@ const buildTools = ({ mary: tags, evan: evanLists, sarah: sarahLists }) => [
         email: { type: 'string', description: 'Contact email address(es) for the task, if mentioned. Separate several with commas.' },
         salesforce_url: { type: 'string', description: 'Link to the related Salesforce record, if one was given' },
         website: { type: 'string', description: 'Website link for the task (e.g. a company or product site), if one was given. Shown on Mary\'s tasks.' },
-        repeat: { type: 'string', enum: ['daily', 'weekdays', 'weekly', 'monthly'], description: 'If the task repeats (e.g. "every Monday" = weekly starting on the next Monday as due_date)' },
+        repeat: { type: 'string', enum: ['daily', 'weekdays', 'weekly', 'monthly', 'yearly'], description: 'If the task repeats. Works like Outlook: e.g. "every Monday and Thursday" = weekly with repeat_days; "every 2 weeks" = weekly with repeat_every 2; monthly/yearly repeat on the due date\'s day.' },
+        repeat_every: { type: 'integer', minimum: 1, maximum: 99, description: 'Repeat every N days/weeks/months/years (default 1)' },
+        repeat_days: { type: 'array', items: { type: 'string', enum: ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] }, description: 'For weekly: which days of the week' },
+        repeat_until: { type: 'string', description: 'Last date it can repeat (YYYY-MM-DD), if an end date was given' },
+        repeat_times: { type: 'integer', minimum: 1, description: 'End after this many times, if given' },
       },
       required: ['title', 'assignee', 'tag'],
     },
@@ -122,6 +126,31 @@ function pushDate(until) {
   return undefined; // not understood (or not in the future)
 }
 
+// Repeat rules, saved the way the app's Repeat window (Outlook-style) saves them.
+const DAY_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+function buildRepeat(args, due) {
+  const kind = args.repeat;
+  if (!['daily', 'weekdays', 'weekly', 'monthly', 'yearly'].includes(kind)) return { rule: null, due: due || null, label: '' };
+  const base = /^\d{4}-\d{2}-\d{2}$/.test(due || '') ? new Date(due + 'T00:00:00Z') : teamToday();
+  const n = Math.min(99, Math.max(1, parseInt(args.repeat_every, 10) || 1));
+  let r, label;
+  if (kind === 'daily') { r = { f: 'daily', n }; label = n === 1 ? 'daily' : `every ${n} days`; }
+  else if (kind === 'weekdays') { r = { f: 'daily', n: 1, wd: true }; label = 'every weekday'; }
+  else if (kind === 'weekly') {
+    const days = [...new Set((args.repeat_days || []).map(d => DAY_NAMES.indexOf(String(d).toLowerCase())).filter(i => i >= 0))].sort();
+    r = { f: 'weekly', n, days: days.length ? days : [base.getUTCDay()] };
+    label = `${n === 1 ? 'weekly' : `every ${n} weeks`} on ${r.days.map(i => DAY_NAMES[i][0].toUpperCase() + DAY_NAMES[i].slice(1, 3)).join(', ')}`;
+  } else if (kind === 'monthly') { r = { f: 'monthly', n, m: 'day', day: base.getUTCDate() }; label = `${n === 1 ? 'monthly' : `every ${n} months`} on day ${r.day}`; }
+  else { r = { f: 'yearly', n, mo: base.getUTCMonth(), day: base.getUTCDate() }; label = n === 1 ? 'yearly' : `every ${n} years`; }
+  if (/^\d{4}-\d{2}-\d{2}$/.test(args.repeat_until || '')) { r.until = args.repeat_until; label += ` until ${r.until}`; }
+  if (parseInt(args.repeat_times, 10) > 0) { r.left = parseInt(args.repeat_times, 10); label += `, ${r.left} times`; }
+  // First due date: the first day on/after the start that fits (e.g. the next Monday).
+  const d = new Date(base);
+  const fits = () => r.f === 'weekly' ? r.days.includes(d.getUTCDay()) : r.wd ? d.getUTCDay() % 6 !== 0 : true;
+  for (let i = 0; i < 14 && !fits(); i++) d.setUTCDate(d.getUTCDate() + 1);
+  return { rule: r, due: ymd(d), label };
+}
+
 async function callTool(name, args) {
   if (name === 'sync_up_push_out') {
     const date = pushDate(args?.until);
@@ -170,17 +199,18 @@ async function callTool(name, args) {
     }
     const tag = args.assignee === 'sarah' && list === 'To Do' ? null : list;
 
+    const rep = buildRepeat(args, args.due_date || null);
     const { data, error } = await sb.from('tasks').insert({
       title,
       assignee: args.assignee,
       tag,
-      due_date: args.due_date || null,
+      due_date: rep.due,
       notes: args.notes ? String(args.notes).trim() : null,
       phone: contactList(args.phone, /\s*[;\n]\s*|\s*,\s*(?=[+(\d])/),
       email: contactList(args.email, /[\s,;]+/),
       sf_url: asLink(args.salesforce_url),
       website: asLink(args.website),
-      repeat: ['daily', 'weekdays', 'weekly', 'monthly'].includes(args.repeat) ? args.repeat : null,
+      repeat: rep.rule ? JSON.stringify(rep.rule) : null,
       status: 'todo',
       source: 'claude',
     }).select().single();
@@ -191,7 +221,7 @@ async function callTool(name, args) {
     if (who) bits.push(`for ${who}`);
     if (data.tag) bits.push(`under "${data.tag}"`);
     if (data.due_date) bits.push(`due ${data.due_date}`);
-    if (data.repeat) bits.push(`repeating ${data.repeat}`);
+    if (rep.rule) bits.push(`repeating ${rep.label}`);
     const contact = [data.phone && 'phone', data.email && 'email', data.sf_url && 'Salesforce link', data.website && 'website'].filter(Boolean);
     if (contact.length) bits.push(`with ${contact.join(', ')}`);
     return { content: [{ type: 'text', text: bits.join(' ') + '.' }] };

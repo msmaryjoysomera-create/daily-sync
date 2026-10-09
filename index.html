@@ -376,6 +376,25 @@
   .contact-input::placeholder{color:var(--muted)}
   .contact-copy.copied{color:#2E7D4F}
   .push-row{flex-wrap:wrap;row-gap:6px}
+  .repeat-btn{display:inline-flex;align-items:center;gap:6px;background:var(--card-2);border:1px solid var(--line);border-radius:8px;padding:5px 9px;font-family:inherit;font-size:12.5px;color:var(--text);cursor:pointer;text-align:left;max-width:100%}
+  .repeat-btn:hover{border-color:var(--accent)}
+  .repeat-btn svg{flex:none;width:13px;height:13px}
+  .todo-opt .repeat-val{margin-left:auto;color:var(--muted);font-size:12.5px;text-align:right}
+  .repeat-panel{width:min(440px,100%)}
+  .rp-grid{display:grid;grid-template-columns:auto 1fr;gap:10px 14px;align-items:center;font-size:13.5px}
+  .rp-grid > label, .rp-grid > span{font-weight:700;color:var(--muted);font-size:12.5px}
+  .rp-grid select, .rp-grid input[type=date], .rp-grid input[type=number]{font-family:inherit;font-size:13.5px;color:var(--text);background:var(--card-2);border:1px solid var(--line);border-radius:8px;padding:6px 8px}
+  .rp-grid input[type=number]{width:64px}
+  .rp-inline{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .rp-check{display:flex;align-items:center;gap:8px;font-weight:600 !important;color:var(--text) !important;font-size:13px !important}
+  .rp-days{display:grid;grid-template-columns:repeat(7,minmax(0,34px));gap:4px}
+  .rp-grid [hidden]{display:none !important}
+  .rp-days button{min-width:0;height:32px;padding:0;border-radius:8px;border:1px solid var(--line);background:var(--card-2);font-family:inherit;font-weight:700;font-size:13px;color:var(--text);cursor:pointer}
+  .rp-days button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+  .rp-text{font-weight:600}
+  .rp-summary{font-size:13px;font-weight:700;color:var(--accent);padding:2px 0}
+  .repeat-panel.f-none .rp-when, .repeat-panel:not(.f-daily) .rp-daily, .repeat-panel:not(.f-weekly) .rp-weekly,
+  .repeat-panel:not(.f-monthly) .rp-monthly, .repeat-panel:not(.f-yearly) .rp-yearly{display:none}
   .push-chip{background:var(--card);border:1px solid var(--line);border-radius:99px;padding:4px 10px;font-family:inherit;font-size:12px;font-weight:600;color:var(--text);cursor:pointer}
   .push-chip:hover{border-color:var(--accent);color:var(--accent)}
   .push-date{font-family:inherit;font-size:12px;color:var(--muted);background:var(--card-2);border:1px solid var(--line);border-radius:8px;padding:3px 6px;max-width:140px}
@@ -395,8 +414,7 @@
   .todo-opt select{margin-left:auto;background:var(--card-2);border:1px solid var(--line);border-radius:8px;padding:4px 6px;font-family:inherit;font-size:12.5px;color:var(--text)}
   .todo-section .due-row{margin:0;padding:8px 12px;border-bottom:1px solid var(--line)}
   .todo-card .task-notes-edit{margin-top:12px;width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-family:inherit;font-size:13.5px;line-height:1.5;min-height:calc(1.5em * 4 + 20px);background:var(--card-2);color:var(--text);resize:vertical}
-  .repeat-select, .task-repeat-select{background:var(--card-2);border:1px solid var(--line);border-radius:8px;padding:5px 8px;font-family:inherit;font-size:12.5px;color:var(--text)}
-  .todo-opt .task-repeat-select{margin-left:auto}
+  .repeat-select{background:var(--card-2);border:1px solid var(--line);border-radius:8px;padding:5px 8px;font-family:inherit;font-size:12.5px;color:var(--text)}
   .nav-count.new{background:var(--accent);color:#fff;font-weight:800}
   .new-pill{flex:none;background:var(--accent);color:#fff;border-radius:999px;padding:1px 7px;font-size:10.5px;font-weight:800;letter-spacing:.02em}
   .m-tab{position:relative}
@@ -708,9 +726,7 @@
           </span>
           <input type="date" id="dueInput">
           <button type="button" class="notes-toggle" id="notesToggleBtn">+ note</button>
-          <select id="repeatInput" class="repeat-select" aria-label="Repeat" title="Repeat">
-            <option value="">Doesn't repeat</option><option value="daily">Daily</option><option value="weekdays">Weekdays</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option>
-          </select>
+          <button type="button" id="repeatInput" class="repeat-select repeat-btn" data-action="repeat-edit-add" title="Repeat">Doesn't repeat</button>
           <button type="submit" class="add-submit">Add</button>
         </div>
         <textarea id="notesInput" placeholder="Notes / blockers…"></textarea>
@@ -772,6 +788,32 @@
     </div>
   </div>
 
+  <div class="modal" id="repeatModal">
+    <div class="modal-backdrop" data-action="repeat-close"></div>
+    <div class="modal-panel repeat-panel" role="dialog" aria-modal="true" aria-labelledby="repeatTitle">
+      <div class="modal-head"><span id="repeatTitle">Repeat</span><button type="button" class="icon-btn" data-action="repeat-close" aria-label="Close"><svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M2.5 2.5L11.5 11.5M11.5 2.5L2.5 11.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button></div>
+      <div class="rp-grid">
+        <label for="rpFreq">Repeats</label>
+        <div><select id="rpFreq"><option value="">Doesn't repeat</option><option value="daily">Daily</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option><option value="yearly">Yearly</option></select></div>
+        <label for="rpEvery" class="rp-when">Every</label>
+        <div class="rp-when rp-inline"><input type="number" id="rpEvery" min="1" max="99" value="1" inputmode="numeric"><span id="rpUnit">week(s)</span></div>
+        <span class="rp-daily"></span>
+        <label class="rp-daily rp-check"><input type="checkbox" id="rpWeekdays"> Every weekday (Mon–Fri)</label>
+        <span class="rp-weekly">On</span>
+        <div class="rp-weekly rp-days" id="rpDays"><button type="button" data-day="0" aria-label="Sunday">S</button><button type="button" data-day="1" aria-label="Monday">M</button><button type="button" data-day="2" aria-label="Tuesday">T</button><button type="button" data-day="3" aria-label="Wednesday">W</button><button type="button" data-day="4" aria-label="Thursday">T</button><button type="button" data-day="5" aria-label="Friday">F</button><button type="button" data-day="6" aria-label="Saturday">S</button></div>
+        <label for="rpMonthly" class="rp-monthly">On</label>
+        <div class="rp-monthly"><select id="rpMonthly"></select></div>
+        <span class="rp-yearly">On</span>
+        <div class="rp-yearly rp-text" id="rpYearly"></div>
+        <label for="rpStart" class="rp-when">Start date</label>
+        <div class="rp-when"><input type="date" id="rpStart"></div>
+        <label for="rpEnd" class="rp-when">End date</label>
+        <div class="rp-when rp-inline"><select id="rpEnd"><option value="">No end date</option><option value="by">By</option><option value="after">After</option></select><input type="date" id="rpUntil"><span id="rpAfter" class="rp-inline"><input type="number" id="rpCount" min="1" max="999" value="10" inputmode="numeric"> times</span></div>
+      </div>
+      <div class="rp-summary" id="rpSummary"></div>
+      <div class="modal-actions"><button type="button" class="recap-action" data-action="repeat-close">Cancel</button><button type="button" class="recap-action primary" data-action="repeat-save">Save</button></div>
+    </div>
+  </div>
   <div class="modal" id="dashPickModal">
     <div class="modal-backdrop" data-action="dash-pick-close"></div>
     <div class="modal-panel dash-pick-panel" role="dialog" aria-modal="true" aria-labelledby="dashPickTitle">
@@ -1172,9 +1214,49 @@ function handoffsSeen() {
 const newHandoffs = () => { const seen = handoffsSeen(); return tasks.filter(t => isHandoff(t) && (t.created_at || '') > seen); };
 // Repeating tasks: when one is checked off, a fresh copy with the next due
 // date is created (the done one stays in Completed as a record).
-const REPEAT_LABELS = { daily: 'Daily', weekdays: 'Weekdays', weekly: 'Weekly', monthly: 'Monthly' };
-const repeatOf = t => t.repeat || (t.recurring ? 'daily' : null); // "recurring" = older Daily tasks
-const repeatOptions = sel => `<option value="">Doesn't repeat</option>` + Object.entries(REPEAT_LABELS).map(([k, l]) => `<option value="${k}"${k === sel ? ' selected' : ''}>${l}</option>`).join('');
+// Repeat rules work like Outlook's: Daily / Weekly / Monthly / Yearly, every N,
+// on chosen weekdays, monthly on a date or "the second Friday", ending never,
+// by a date, or after N times. Saved as JSON in `repeat`, e.g.
+// {"f":"weekly","n":1,"days":[1,4],"until":"2027-04-09"}; older plain values
+// ('daily', 'weekdays', 'weekly', 'monthly') and "recurring" still read.
+const WEEKDAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const NTH_WORDS = { 1: 'first', 2: 'second', 3: 'third', 4: 'fourth', '-1': 'last' };
+const dateOf = s => new Date(s + 'T00:00:00');
+const daysInMonth = (y, m) => new Date(y, m + 1, 0).getDate();
+function parseRepeat(value, due) {
+  if (!value) return null;
+  const base = dateOf(due || todayStr());
+  if (value[0] === '{') { try { const r = JSON.parse(value); return r && r.f ? r : null; } catch { return null; } }
+  return {
+    daily: { f: 'daily', n: 1 },
+    weekdays: { f: 'daily', n: 1, wd: true },
+    weekly: { f: 'weekly', n: 1, days: [base.getDay()] },
+    monthly: { f: 'monthly', n: 1, m: 'day', day: base.getDate() },
+    yearly: { f: 'yearly', n: 1, mo: base.getMonth(), day: base.getDate() },
+  }[value] || null;
+}
+const repeatOf = t => parseRepeat(t.repeat || (t.recurring ? 'daily' : null), t.due_date);
+function repeatLabel(r, withEnd = false) {
+  if (!r) return "Doesn't repeat";
+  const n = r.n || 1;
+  let s;
+  if (r.f === 'daily') s = r.wd ? 'Every weekday' : n === 1 ? 'Daily' : `Every ${n} days`;
+  else if (r.f === 'weekly') {
+    const days = [...(r.days || [])].sort();
+    const on = days.join() === '1,2,3,4,5' ? 'weekdays' : days.map(d => WEEKDAY_NAMES[d].slice(0, 3)).join(', ');
+    s = `${n === 1 ? 'Weekly' : `Every ${n} weeks`}${on ? ' on ' + on : ''}`;
+  } else if (r.f === 'monthly') {
+    const on = r.m === 'nth' ? `the ${NTH_WORDS[r.nth]} ${WEEKDAY_NAMES[r.wk]}` : `day ${r.day}`;
+    s = `${n === 1 ? 'Monthly' : `Every ${n} months`} on ${on}`;
+  } else if (r.f === 'yearly') s = `${n === 1 ? 'Yearly' : `Every ${n} years`} on ${MONTH_NAMES[r.mo].slice(0, 3)} ${r.day}`;
+  else return "Doesn't repeat";
+  if (withEnd && r.until) s += ` · until ${dateOf(r.until).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}`;
+  if (withEnd && r.left) s += ` · ${r.left} time${r.left === 1 ? '' : 's'} left`;
+  return s;
+}
+let addRepeatDraft = null; // the add form's repeat rule, set in the Repeat window
+let repeatEditing = null;  // { target: task id or 'add', rule } while the Repeat window is open
 const DASH_HANDOFFS = '__handoffs__', DASH_UNTAGGED = '__untagged__', DASH_TODO = '__todo__'; // Dashboard column ids that aren't list names
 // Push out (EHL and Mary): a task set aside until a date (snooze_until). It keeps
 // its list the whole time -- it's just hidden until that day, then it's back
@@ -1408,7 +1490,7 @@ function taskEl(task) {
         <div class="task-meta">
           ${dueBadge(task)}
           ${task.tag ? `<span class="badge">${escapeHtml(task.tag)}</span>` : ''}
-          ${repeatOf(task) ? `<span class="badge recur" title="Repeats">${ICON_REFRESH} ${REPEAT_LABELS[repeatOf(task)]}</span>` : ''}
+          ${repeatOf(task) ? `<span class="badge recur" title="${escapeAttr(repeatLabel(repeatOf(task), true))}">${ICON_REFRESH} ${escapeHtml(repeatLabel(repeatOf(task)))}</span>` : ''}
           ${task.source === 'claude' ? '<span class="badge claude" title="Added via Claude">✳ via Claude</span>' : ''}
           ${task.source === 'evan' ? '<span class="badge evan" title="Assigned by EHL">From EHL</span>' : ''}
           ${task.waiting_on ? `<span class="badge waiting">Waiting on: ${escapeHtml(task.waiting_on)}</span>` : ''}
@@ -1420,7 +1502,7 @@ function taskEl(task) {
             : `<button type="button" class="due-none" data-action="set-due" title="Add a due date">None</button>`}
           ${task.due_date ? `<button type="button" class="icon-btn" data-action="clear-due" title="Remove due date">${ICON_X}</button>` : ''}
         </div>
-        ${task.status !== 'done' ? `<div class="due-row"><span class="due-label">Repeat</span><select class="task-repeat-select">${repeatOptions(repeatOf(task))}</select></div>` : ''}
+        ${task.status !== 'done' ? `<div class="due-row"><span class="due-label">Repeat</span><button type="button" class="repeat-btn" data-action="repeat-edit">${ICON_REFRESH}<span>${escapeHtml(repeatLabel(repeatOf(task), true))}</span></button></div>` : ''}
         ${task.assignee === 'mary' ? pushRowHtml(task) : ''}
         <div class="todo-section todo-contact task-contact">
           <div class="todo-contact-head">Contact</div>
@@ -1453,9 +1535,9 @@ function basicTaskEl(task) {
           ${task.source === 'claude' ? '<span class="badge claude" title="Added via Claude">✳ via Claude</span>' : ''}
           ${task.source === 'evan' ? '<span class="badge evan" title="Assigned by EHL">From EHL</span>' : ''}
           ${task.waiting_on ? `<span class="badge waiting">Waiting on: ${escapeHtml(task.waiting_on)}</span>` : ''}
-          ${repeatOf(task) ? `<span class="badge recur" title="Repeats">${ICON_REFRESH} ${REPEAT_LABELS[repeatOf(task)]}</span>` : ''}
+          ${repeatOf(task) ? `<span class="badge recur" title="${escapeAttr(repeatLabel(repeatOf(task), true))}">${ICON_REFRESH} ${escapeHtml(repeatLabel(repeatOf(task)))}</span>` : ''}
         </div>
-        ${task.status !== 'done' ? `<div class="due-row"><span class="due-label">Repeat</span><select class="task-repeat-select">${repeatOptions(repeatOf(task))}</select></div>` : ''}
+        ${task.status !== 'done' ? `<div class="due-row"><span class="due-label">Repeat</span><button type="button" class="repeat-btn" data-action="repeat-edit">${ICON_REFRESH}<span>${escapeHtml(repeatLabel(repeatOf(task), true))}</span></button></div>` : ''}
         <textarea class="task-notes-edit${task.notes ? '' : ' hidden'}" placeholder="+ Add a note…" rows="1">${escapeHtml(task.notes || '')}</textarea>
         ${photoRowHtml(task.id)}
       </div>
@@ -1487,7 +1569,7 @@ function todoRowEl(t) {
   }
   const steps = stepsOf(t);
   if (steps.length) meta.push(`${steps.filter(s => s.done).length} of ${steps.length}`);
-  if (repeatOf(t)) meta.push(`Repeats ${REPEAT_LABELS[repeatOf(t)].toLowerCase()}`);
+  if (repeatOf(t)) meta.push(escapeHtml(repeatLabel(repeatOf(t))));
   if (t.notes) meta.push('Note');
   const back = backLabel(t);
   if (back) meta.unshift(`<span class="back-pill">${back}</span>`);
@@ -1877,7 +1959,7 @@ function renderTodoDetail() {
       </div>
       ${pushRowHtml(task)}
       <button type="button" class="todo-opt" data-action="add-photo"><svg width="15" height="15" viewBox="0 0 18 18" fill="none"><rect x="2" y="3.5" width="14" height="11" rx="2" stroke="currentColor" stroke-width="1.5"/><circle cx="6.5" cy="7.5" r="1.3" stroke="currentColor" stroke-width="1.3"/><path d="M2.5 13l4-3.5 3 2.5 2.5-2 3.5 3" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>Add a photo</button>
-      ${task.status !== 'done' ? `<label class="todo-opt">${ICON_REFRESH}Repeat<select class="task-repeat-select">${repeatOptions(repeatOf(task))}</select></label>` : ''}
+      ${task.status !== 'done' ? `<button type="button" class="todo-opt" data-action="repeat-edit">${ICON_REFRESH}Repeat<span class="repeat-val">${escapeHtml(repeatLabel(repeatOf(task), true))}</span></button>` : ''}
       <label class="todo-opt">List
         <select class="todo-list-select">
           ${task.tag ? '' : '<option value="" selected disabled>Choose a list…</option>'}
@@ -2676,6 +2758,11 @@ document.body.addEventListener('click', e => {
     render();
     return;
   }
+  const repeatBtn = e.target.closest('[data-action="repeat-edit"]');
+  if (repeatBtn) { openRepeatEditor(repeatBtn.closest('.task').dataset.id); return; }
+  if (e.target.closest('[data-action="repeat-edit-add"]')) { openRepeatEditor('add'); return; }
+  if (e.target.closest('[data-action="repeat-close"]')) { repeatModal.classList.remove('open'); repeatEditing = null; return; }
+  if (e.target.closest('[data-action="repeat-save"]')) { saveRepeatEditor(); return; }
   const pushBtn = e.target.closest('[data-action="push-out"]');
   if (pushBtn) { pushOut(pushBtn.closest('.task').dataset.id, pushBtn.dataset.date); return; }
   const pushClear = e.target.closest('[data-action="push-clear"]');
@@ -3005,12 +3092,6 @@ document.body.addEventListener('change', e => {
     const id = e.target.closest('.task').dataset.id;
     dueEditingId = null;
     updateTask(id, { due_date: e.target.value || null });
-  } else if (e.target.classList.contains('task-repeat-select')) {
-    const id = e.target.closest('.task').dataset.id;
-    const t = tasks.find(x => x.id === id);
-    const rule = e.target.value || null;
-    // Repeating needs a date to repeat from: start today if the task has none.
-    patchTask(id, { repeat: rule, recurring: false, ...(rule && t && !t.due_date ? { due_date: todayStr() } : {}) });
   } else if (e.target.classList.contains('push-date')) {
     if (e.target.value) pushOut(e.target.closest('.task').dataset.id, e.target.value);
   } else if (e.target.classList.contains('contact-input')) {
@@ -3084,7 +3165,7 @@ addForm.addEventListener('submit', async e => {
   const listStatus = inList && who === 'sarah' && currentView.key === 'doing' ? 'doing' : 'todo';
   const viewDue = currentView.type === 'today' ? todayStr() : null;
   const doneMode = addForm.classList.contains('done-mode');
-  const typed = { tag: tagInput.value, due: dueInput.value, notes: notesInput.value, repeat: repeatInput.value };
+  const typed = { tag: tagInput.value, due: dueInput.value, notes: notesInput.value, repeat: addRepeatDraft ? JSON.stringify(addRepeatDraft) : '' };
   try {
     // A typed tag that doesn't exist yet becomes a new saved tag (and a new list).
     const typedTag = !doneMode && typed.tag.trim() ? await createTag(typed.tag) : null;
@@ -3116,7 +3197,8 @@ addForm.addEventListener('submit', async e => {
     dueInput.value = '';
     notesInput.value = '';
     notesInput.classList.remove('show');
-    repeatInput.value = '';
+    addRepeatDraft = null;
+    repeatInput.textContent = "Doesn't repeat";
     render();
   } finally {
     addBusy = false;
@@ -3433,6 +3515,97 @@ document.addEventListener('touchend', async () => {
 // One message at a time: showing a new one finishes the previous action.
 let toastTimer = null, toastUndoFn = null, toastCommitFn = null;
 const shortTitle = s => s.length > 40 ? s.slice(0, 38) + '…' : s;
+// --- Repeat window (works like Outlook's) ---
+const repeatModal = document.getElementById('repeatModal');
+const rp = id => document.getElementById(id);
+function openRepeatEditor(target) {
+  const t = target === 'add' ? null : tasks.find(x => x.id === target);
+  if (target !== 'add' && !t) return;
+  const rule = t ? repeatOf(t) : addRepeatDraft;
+  const start = (t ? t.due_date : dueInput.value) || todayStr();
+  repeatEditing = { target };
+  rp('rpFreq').value = rule?.f || '';
+  rp('rpEvery').value = rule?.n || 1;
+  rp('rpWeekdays').checked = !!rule?.wd;
+  const days = rule?.f === 'weekly' && rule.days?.length ? rule.days : [dateOf(start).getDay()];
+  rp('rpDays').querySelectorAll('button').forEach(b => b.classList.toggle('on', days.includes(+b.dataset.day)));
+  rp('rpStart').value = start;
+  rp('rpEnd').value = rule?.until ? 'by' : rule?.left ? 'after' : '';
+  rp('rpUntil').value = rule?.until || '';
+  rp('rpCount').value = rule?.left || 10;
+  repeatEditing.monthly = rule?.f === 'monthly' && rule.m === 'nth' ? (rule.nth === -1 ? 'last' : 'nth') : 'day';
+  syncRepeatForm();
+  repeatModal.classList.add('open');
+}
+// Options that depend on the start date (monthly "day 9" / "second Friday", yearly "October 9").
+function syncRepeatForm() {
+  const f = rp('rpFreq').value;
+  const panel = repeatModal.querySelector('.repeat-panel');
+  panel.className = 'modal-panel repeat-panel ' + (f ? 'f-' + f : 'f-none');
+  rp('rpUnit').textContent = { daily: 'day(s)', weekly: 'week(s)', monthly: 'month(s)', yearly: 'year(s)' }[f] || '';
+  rp('rpEvery').disabled = f === 'daily' && rp('rpWeekdays').checked;
+  const start = dateOf(rp('rpStart').value || todayStr());
+  const day = start.getDate(), wk = WEEKDAY_NAMES[start.getDay()], nth = Math.ceil(day / 7);
+  const isLast = day + 7 > daysInMonth(start.getFullYear(), start.getMonth());
+  const sel = rp('rpMonthly'), keep = sel.value || repeatEditing?.monthly || 'day';
+  sel.innerHTML = `<option value="day">Day ${day}</option>` + (nth <= 4 ? `<option value="nth">The ${NTH_WORDS[nth]} ${wk}</option>` : '') + (isLast ? `<option value="last">The last ${wk}</option>` : '');
+  sel.value = [...sel.options].some(o => o.value === keep) ? keep : 'day';
+  rp('rpYearly').textContent = `${MONTH_NAMES[start.getMonth()]} ${day}`;
+  const end = rp('rpEnd').value;
+  rp('rpUntil').hidden = end !== 'by';
+  rp('rpAfter').hidden = end !== 'after';
+  if (end === 'by' && !rp('rpUntil').value) { const d = new Date(start); d.setMonth(d.getMonth() + 6); rp('rpUntil').value = localDateStr(d); }
+  const rule = readRepeatForm();
+  rp('rpSummary').textContent = rule ? `${repeatLabel(rule, true)} · starting ${pushDayLabel(firstOccurrence(rule, rp('rpStart').value || todayStr()))}` : "This task doesn't repeat.";
+}
+function readRepeatForm() {
+  const f = rp('rpFreq').value;
+  if (!f) return null;
+  const start = dateOf(rp('rpStart').value || todayStr());
+  const r = { f, n: Math.min(99, Math.max(1, parseInt(rp('rpEvery').value, 10) || 1)) };
+  if (f === 'daily' && rp('rpWeekdays').checked) { r.n = 1; r.wd = true; }
+  if (f === 'weekly') {
+    r.days = [...rp('rpDays').querySelectorAll('button.on')].map(b => +b.dataset.day);
+    if (!r.days.length) r.days = [start.getDay()];
+  }
+  if (f === 'monthly') {
+    const how = rp('rpMonthly').value;
+    if (how === 'day') { r.m = 'day'; r.day = start.getDate(); }
+    else { r.m = 'nth'; r.wk = start.getDay(); r.nth = how === 'last' ? -1 : Math.ceil(start.getDate() / 7); }
+  }
+  if (f === 'yearly') { r.mo = start.getMonth(); r.day = start.getDate(); }
+  const end = rp('rpEnd').value;
+  if (end === 'by' && rp('rpUntil').value) r.until = rp('rpUntil').value;
+  if (end === 'after') r.left = Math.min(999, Math.max(1, parseInt(rp('rpCount').value, 10) || 1));
+  return r;
+}
+function saveRepeatEditor() {
+  if (!repeatEditing) return;
+  const rule = readRepeatForm();
+  const start = rp('rpStart').value || todayStr();
+  const first = rule ? firstOccurrence(rule, start) : null;
+  if (rule?.until && rule.until < first) { alert('The end date is before the first time it repeats.'); return; }
+  const { target } = repeatEditing;
+  repeatModal.classList.remove('open');
+  repeatEditing = null;
+  if (target === 'add') {
+    addRepeatDraft = rule;
+    repeatInput.textContent = repeatLabel(rule);
+    if (rule) dueInput.value = first; // the first time it's due
+    return;
+  }
+  // The task's due date is when it's next due: the first matching day from the start date.
+  patchTask(target, { repeat: rule ? JSON.stringify(rule) : null, recurring: false, ...(rule ? { due_date: first } : {}) });
+}
+repeatModal.addEventListener('input', syncRepeatForm);
+repeatModal.addEventListener('change', syncRepeatForm);
+rp('rpDays').addEventListener('click', e => {
+  const b = e.target.closest('button[data-day]');
+  if (!b) return;
+  b.classList.toggle('on');
+  syncRepeatForm();
+});
+
 // Copy a phone / email / link without calling, emailing, or opening it.
 async function copyText(text, btn) {
   let ok = false;
@@ -3516,29 +3689,50 @@ function cycleStatus(id, next) {
   if (next === 'done') afterComplete({ ...task }, rule, () => updateTask(id, before));
 }
 
+// One step of a repeat rule: the next date strictly after `from` (YYYY-MM-DD).
+function repeatStep(r, from) {
+  const d = dateOf(from), n = Math.max(1, r.n || 1);
+  if (r.f === 'daily') {
+    if (r.wd) { do d.setDate(d.getDate() + 1); while (d.getDay() === 0 || d.getDay() === 6); }
+    else d.setDate(d.getDate() + n);
+  } else if (r.f === 'weekly') {
+    const days = (r.days?.length ? [...r.days] : [d.getDay()]).sort();
+    const later = days.find(x => x > d.getDay());
+    // Later this week, else the first chosen day of the week N weeks on.
+    d.setDate(later !== undefined ? d.getDate() + later - d.getDay() : d.getDate() - d.getDay() + 7 * n + days[0]);
+  } else if (r.f === 'monthly') {
+    const y = d.getFullYear(), m = d.getMonth() + n;
+    return localDateStr(r.m === 'nth' ? nthWeekdayOf(y, m, r.nth, r.wk) : new Date(y, m, Math.min(r.day || d.getDate(), daysInMonth(y, m))));
+  } else if (r.f === 'yearly') {
+    const y = d.getFullYear() + n, mo = r.mo ?? d.getMonth();
+    return localDateStr(new Date(y, mo, Math.min(r.day || d.getDate(), daysInMonth(y, mo))));
+  } else d.setDate(d.getDate() + 1);
+  return localDateStr(d);
+}
+function nthWeekdayOf(y, m, nth, wk) {
+  if (nth === -1) { const last = new Date(y, m + 1, 0); last.setDate(last.getDate() - ((last.getDay() - wk + 7) % 7)); return last; }
+  const first = new Date(y, m, 1);
+  return new Date(y, m, 1 + ((wk - first.getDay() + 7) % 7) + 7 * (nth - 1));
+}
+// The first date on/after `start` that fits the rule (e.g. Mon/Thu weekly from a Friday -> the Monday).
+function firstOccurrence(r, start) {
+  const fits = s => { const d = dateOf(s); return r.f === 'daily' ? !r.wd || (d.getDay() % 6 !== 0) : r.f === 'weekly' ? !r.days?.length || r.days.includes(d.getDay()) : true; };
+  let s = start;
+  for (let i = 0; i < 14 && !fits(s); i++) { const d = dateOf(s); d.setDate(d.getDate() + 1); s = localDateStr(d); }
+  return s;
+}
 // The next date after `base` (and after today) for a repeat rule.
 function nextOccurrence(rule, base) {
-  const d = new Date((base || todayStr()) + 'T00:00:00');
-  const dayOfMonth = d.getDate();
-  const step = () => {
-    if (rule === 'daily') d.setDate(d.getDate() + 1);
-    else if (rule === 'weekdays') { do d.setDate(d.getDate() + 1); while (d.getDay() === 0 || d.getDay() === 6); }
-    else if (rule === 'weekly') d.setDate(d.getDate() + 7);
-    else if (rule === 'monthly') {
-      d.setDate(1); d.setMonth(d.getMonth() + 1);
-      d.setDate(Math.min(dayOfMonth, new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate()));
-    } else d.setDate(d.getDate() + 1);
-  };
-  step();
-  while (localDateStr(d) <= todayStr()) step();
-  return localDateStr(d);
+  let s = repeatStep(rule, base || todayStr());
+  for (let i = 0; i < 1000 && s <= todayStr(); i++) s = repeatStep(rule, s);
+  return s;
 }
 
 // Creates the next copy of a repeating task that was just checked off.
 async function spawnNextRepeat(t, rule, due) {
   const added = await addTask({
     title: t.title, assignee: t.assignee, tag: t.tag, notes: t.notes, status: 'todo',
-    repeat: rule, due_date: due, pinned: !!t.pinned, position: t.position ?? null,
+    repeat: JSON.stringify(rule), due_date: due, pinned: !!t.pinned, position: t.position ?? null,
     steps: stepsOf(t).map(s => ({ ...s, done: false })),
     source: t.source || null, waiting_on: t.waiting_on || null,
     sf_url: t.sf_url || null, phone: t.phone || null, email: t.email || null, website: t.website || null,
@@ -3552,7 +3746,9 @@ async function spawnNextRepeat(t, rule, due) {
 function afterComplete(t, rule, restore) {
   if (!rule) { showToast(`Completed "${shortTitle(t.title)}"`, restore); return; }
   const due = nextOccurrence(rule, t.due_date);
-  let spawned = spawnNextRepeat(t, rule, due);
+  // The series ends by a date, or after so many times.
+  if ((rule.until && due > rule.until) || (rule.left && rule.left <= 1)) { showToast(`Completed · that was the last one`, restore); return; }
+  let spawned = spawnNextRepeat(t, rule.left ? { ...rule, left: rule.left - 1 } : rule, due);
   showToast(`Completed · next one ${dueLabel(due)}`, async () => {
     restore();
     const copy = await spawned;
