@@ -137,3 +137,27 @@ alter table tasks add column if not exists waiting_on text;
 -- Repeating tasks: 'daily' | 'weekdays' | 'weekly' | 'monthly'. Checking one
 -- off creates the next copy with the next due date.
 alter table tasks add column if not exists repeat text;
+
+-- EHL's Outlook calendar, copied in on weekdays by a scheduled Claude task
+-- (scripts/import-calendar.mjs) so Mary's Daily Review can go over what
+-- happened since the last Daily Sync. "Discussed" lives in daily_review as
+-- item 'event:<id>'; task_id = a Sync Up task made from the event.
+create table if not exists calendar_events (
+  id text primary key,
+  owner text not null default 'evan',
+  subject text,
+  start_at timestamptz not null,
+  end_at timestamptz,
+  is_all_day boolean not null default false,
+  location text,
+  notes text,
+  organizer text,
+  attendees text[],
+  categories text[],
+  task_id text,
+  imported_at timestamptz not null default now()
+);
+alter table calendar_events enable row level security;
+drop policy if exists "team only" on calendar_events;
+create policy "team only" on calendar_events for all to authenticated using ((auth.jwt() ->> 'email') = 'mary@ccabinet.com') with check ((auth.jwt() ->> 'email') = 'mary@ccabinet.com');
+alter publication supabase_realtime add table calendar_events;

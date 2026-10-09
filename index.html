@@ -376,6 +376,24 @@
   .contact-input::placeholder{color:var(--muted)}
   .contact-copy.copied{color:#2E7D4F}
   .push-row{flex-wrap:wrap;row-gap:6px}
+  .cal-review{margin-bottom:14px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+  .cal-head{display:flex;align-items:center;gap:8px}
+  .cal-head svg{width:15px;height:15px;flex:none}
+  .cal-since{font-size:12px;color:var(--muted);padding:0 8px 6px}
+  .cal-row{display:flex;align-items:flex-start;gap:12px;padding:9px 8px;border-radius:9px}
+  .cal-row:hover{background:var(--card-2)}
+  .cal-row.discussed .cal-title{color:var(--muted)}
+  .cal-when{flex:none;width:92px;display:flex;flex-direction:column;font-size:12px;color:var(--muted);line-height:1.35}
+  .cal-when b{color:var(--text);font-weight:700}
+  .cal-body{flex:1;min-width:0}
+  .cal-title{font-size:14px;font-weight:600;line-height:1.35}
+  .cal-meta{font-size:12px;color:var(--muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .cal-actions{flex:none;display:flex;align-items:center;gap:6px}
+  .cal-task{background:var(--card);border:1px solid var(--line);border-radius:99px;padding:4px 10px;font-family:inherit;font-size:12px;font-weight:700;color:var(--text);cursor:pointer;white-space:nowrap}
+  .cal-task:hover{border-color:var(--accent);color:var(--accent)}
+  .cal-task.done{color:#1F6B45;border-color:#BFE3CC;background:#E3F3EA}
+  .cal-empty{font-size:12.5px;color:var(--muted);padding:6px 8px 10px}
+  @media (max-width:767px){ .cal-row{flex-wrap:wrap} .cal-when{width:auto;flex-direction:row;gap:6px} .cal-actions{width:100%;justify-content:flex-end} }
   .repeat-btn{display:inline-flex;align-items:center;gap:6px;background:var(--card-2);border:1px solid var(--line);border-radius:8px;padding:5px 9px;font-family:inherit;font-size:12.5px;color:var(--text);cursor:pointer;text-align:left;max-width:100%}
   .repeat-btn:hover{border-color:var(--accent)}
   .repeat-btn svg{flex:none;width:13px;height:13px}
@@ -1163,6 +1181,12 @@ const pendingNoteDeletes = new Set();
 // Daily Review meeting mode: tasks marked "discussed" today (stored in the
 // daily_review table as items named "task:<id>", so they reset each day).
 let discussedToday = new Set();
+// EHL's Outlook calendar (copied in by a scheduled Claude task) for Daily Review.
+let calendarEvents = [];
+let discussedEvents = new Set();
+const isSyncEvent = e => /daily sync/i.test(e.subject || '');
+const calTime = iso => new Date(iso).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }).replace(':00', '').replace(/\s/g, '').toLowerCase();
+const calDay = iso => new Date(iso).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
 // Drag to reorder: on in single-list views; the order is saved as tasks.position.
 // Offline view: a saved copy of everything, shown read-only when there's no
 // internet. Kept on this device; dropped after 7 days without connecting, and
@@ -2486,8 +2510,11 @@ function render() {
     reviewCard.style.display = '';
     const list = visible.filter(t => t.status !== 'done').sort(byDue);
     const allOpen = tasks.filter(t => t.assignee === who && t.status !== 'done' && !isPushed(t));
-    meetingCount.textContent = `${allOpen.filter(t => discussedToday.has(t.id)).length} of ${allOpen.length} discussed`;
+    const cal = who === 'mary' ? calendarSinceSync() : null;
+    meetingCount.textContent = `${allOpen.filter(t => discussedToday.has(t.id)).length} of ${allOpen.length} tasks` +
+      (cal ? ` · ${cal.events.filter(e => discussedEvents.has(e.id)).length} of ${cal.events.length} events` : '') + ' discussed';
     renderTaskList(list, groupAcrossLists, search ? noMatch : 'No open tasks', true);
+    if (cal && !search) board.prepend(calendarReviewEl(cal));
   } else if (pushedView) {
     viewTitleEl.textContent = 'Pushed Out';
     const list = [...visible].sort((a, b) => a.snooze_until.localeCompare(b.snooze_until) || a.title.localeCompare(b.title));
@@ -2755,6 +2782,14 @@ document.body.addEventListener('click', e => {
   if (e.target.closest('[data-action="todo-completed"]')) {
     todoShowCompleted = !todoShowCompleted;
     try { localStorage.setItem('daily-sync-todo-completed', todoShowCompleted ? '1' : '0'); } catch {}
+    render();
+    return;
+  }
+  const evRow = e.target.closest('.cal-row');
+  if (evRow && e.target.closest('[data-action="event-discuss"]')) { toggleEventDiscussed(evRow.dataset.eventId); return; }
+  if (evRow && e.target.closest('[data-action="event-task"]')) { eventToTask(evRow.dataset.eventId); return; }
+  if (evRow && e.target.closest('[data-action="event-open-task"]')) {
+    selectedTaskId = calendarEvents.find(x => x.id === evRow.dataset.eventId)?.task_id || null;
     render();
     return;
   }
@@ -3230,6 +3265,18 @@ async function fetchReviewState() {
   saveOfflineCopySoon();
   renderReviewItems(checkedSet);
   discussedToday = new Set([...checkedSet].filter(i => i.startsWith('task:')).map(i => i.slice(5)));
+  discussedEvents = new Set([...checkedSet].filter(i => i.startsWith('event:')).map(i => i.slice(6)));
+  if (currentView.type === 'review') render();
+}
+
+async function fetchCalendar() {
+  let data, error;
+  const since = new Date(Date.now() - 14 * 864e5).toISOString();
+  try {
+    ({ data, error } = await withTimeout(sb.from('calendar_events').select('*').gte('start_at', since).order('start_at', { ascending: true }), 10000));
+  } catch (err) { console.error(err); return; }
+  if (error) { console.error(error); return; }
+  calendarEvents = data;
   if (currentView.type === 'review') render();
 }
 
@@ -3424,6 +3471,75 @@ async function toggleDiscussed(id) {
   if (error) alert(error.message);
 }
 
+// --- Daily Review: EHL's calendar since the last Daily Sync ---
+// "Since last sync" = since the most recent Daily Sync before today, up to now
+// (so during today's sync it shows everything since yesterday's).
+function calendarSinceSync() {
+  const startOfToday = dateOf(todayStr());
+  const last = calendarEvents.filter(e => isSyncEvent(e) && new Date(e.start_at) < startOfToday).pop() || null;
+  let from = last ? new Date(last.start_at) : null;
+  if (!from) { from = new Date(startOfToday); do from.setDate(from.getDate() - 1); while (from.getDay() === 0 || from.getDay() === 6); }
+  const now = new Date();
+  const events = calendarEvents.filter(e => !isSyncEvent(e) && new Date(e.start_at) >= from && new Date(e.start_at) <= now);
+  const updated = calendarEvents.reduce((m, e) => (e.imported_at > m ? e.imported_at : m), '');
+  return { last, from, events, updated };
+}
+function calendarReviewEl(cal) {
+  const wrap = document.createElement('div');
+  wrap.className = 'row-group cal-review';
+  const since = cal.last ? `Since the last Daily Sync · ${calDay(cal.last.start_at)}, ${calTime(cal.last.start_at)}` : `Since ${calDay(cal.from.toISOString())}`;
+  const updated = cal.updated ? ` · copied from Outlook ${calDay(cal.updated) === calDay(new Date().toISOString()) ? 'at ' + calTime(cal.updated) : calDay(cal.updated)}` : '';
+  const rows = cal.events.map(e => {
+    const on = discussedEvents.has(e.id);
+    const task = e.task_id && tasks.find(t => t.id === e.task_id);
+    const when = e.is_all_day ? 'All day' : `${calTime(e.start_at)}${e.end_at ? '–' + calTime(e.end_at) : ''}`;
+    const sameDay = calDay(e.start_at) === calDay(new Date().toISOString());
+    const meta = [e.location, (e.notes || '').split('\n').map(s => s.trim()).find(Boolean)].filter(Boolean).map(escapeHtml).join(' · ');
+    return `<div class="cal-row${on ? ' discussed' : ''}" data-event-id="${escapeAttr(e.id)}">
+      <div class="cal-when"><b>${sameDay ? 'Today' : escapeHtml(calDay(e.start_at).split(',')[0])}</b><span>${escapeHtml(when)}</span></div>
+      <div class="cal-body"><div class="cal-title">${escapeHtml(e.subject || '(no title)')}</div>${meta ? `<div class="cal-meta">${meta}</div>` : ''}</div>
+      <div class="cal-actions">
+        <button type="button" class="discuss-chip${on ? ' on' : ''}" data-action="event-discuss" aria-pressed="${on}">${on ? '✓ Discussed' : 'Discussed?'}</button>
+        ${task ? `<button type="button" class="cal-task done" data-action="event-open-task" title="Open the task">✓ Task</button>`
+          : `<button type="button" class="cal-task" data-action="event-task" title="Make a Sync Up task from this">+ Task</button>`}
+      </div>
+    </div>`;
+  }).join('');
+  wrap.innerHTML = `<div class="row-group-head cal-head">${M_ICON.cal}EHL's calendar<span class="count">${cal.events.length}</span></div>
+    <div class="cal-since">${escapeHtml(since + updated)}</div>
+    ${rows || '<div class="cal-empty">No calendar events since the last sync yet.</div>'}`;
+  return wrap;
+}
+async function toggleEventDiscussed(id) {
+  if (blockedOffline()) return;
+  const on = !discussedEvents.has(id);
+  on ? discussedEvents.add(id) : discussedEvents.delete(id);
+  render();
+  const { error } = await sb.from('daily_review').upsert({ day: todayStr(), item: `event:${id}`, checked: on });
+  if (error) alert(error.message);
+}
+// One click turns an event into a task of Mary's (Untagged), opened so she can pick its list.
+async function eventToTask(id) {
+  if (blockedOffline()) return;
+  const e = calendarEvents.find(x => x.id === id);
+  if (!e) return;
+  const when = `${calDay(e.start_at)}${e.is_all_day ? '' : ', ' + calTime(e.start_at)}`;
+  const added = await addTask({
+    title: (e.subject || 'Calendar follow-up').replace(/\s*\((CC|EHL)\)\s*$/i, '').trim() || e.subject,
+    assignee: 'mary',
+    status: 'todo',
+    notes: [`From EHL's calendar: ${when}${e.location ? ' · ' + e.location : ''}`, e.notes].filter(Boolean).join('\n'),
+  });
+  if (!added) return;
+  if (!tasks.some(t => t.id === added.id)) tasks.push(added);
+  e.task_id = added.id;
+  selectedTaskId = added.id;
+  render();
+  showToast('Added as a task · choose its list in the panel');
+  const { error } = await sb.from('calendar_events').update({ task_id: added.id }).eq('id', id);
+  if (error) console.error(error);
+}
+
 function buildRecap() {
   const today = todayStr();
   const mine = tasks.filter(t => t.assignee === who);
@@ -3438,7 +3554,9 @@ function buildRecap() {
   const completed = mine.filter(t => t.status === 'done' && t.completed_at && localDateStr(new Date(t.completed_at)) === today);
   const added = mine.filter(t => t.created_at && localDateStr(new Date(t.created_at)) === today && t.status !== 'done');
   const date = new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
-  const body = [section('Discussed', discussed), section('Completed today', completed), section('Added today', added)].filter(Boolean).join('\n\n');
+  const calDiscussed = who === 'mary' ? calendarSinceSync().events.filter(e => discussedEvents.has(e.id)) : [];
+  const calSection = calDiscussed.length ? `EHL's calendar (${calDiscussed.length})\n${calDiscussed.map(e => `• ${calDay(e.start_at)}, ${e.is_all_day ? 'all day' : calTime(e.start_at)}: ${e.subject}${e.location ? ` (${e.location})` : ''}`).join('\n')}` : '';
+  const body = [calSection, section('Discussed', discussed), section('Completed today', completed), section('Added today', added)].filter(Boolean).join('\n\n');
   return { subject: `Sync Up recap: ${date}`, text: `Sync Up recap: ${date}\n\n${body || 'Nothing marked as discussed yet.'}` };
 }
 
@@ -3466,7 +3584,7 @@ async function refreshAll() {
   refreshBtn.classList.add('spinning');
   try {
     if (session && session.expires_at * 1000 - Date.now() < 5 * 60 * 1000) await refreshAuth();
-    await Promise.all([fetchTasks(), fetchReviewState(), fetchPhotos(), fetchStickyNotes()]);
+    await Promise.all([fetchTasks(), fetchReviewState(), fetchPhotos(), fetchStickyNotes(), fetchCalendar()]);
   } finally {
     refreshing = false;
     refreshBtn.classList.remove('spinning');
@@ -4154,11 +4272,13 @@ function startApp() {
   fetchReviewState();
   fetchPhotos();
   fetchStickyNotes();
+  fetchCalendar();
   sb.channel('app-changes')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, fetchTasks)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'daily_review' }, fetchReviewState)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'task_photos' }, fetchPhotos)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'sticky_notes' }, fetchStickyNotes)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'calendar_events' }, fetchCalendar)
     .subscribe();
 
   // A tab left open overnight flips to the new day on its own: fresh Daily
