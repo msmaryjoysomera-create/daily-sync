@@ -40,10 +40,20 @@ function toInstant(dt) {
   const asNY = Date.UTC(+parts.year, +parts.month - 1, +parts.day, +parts.hour, +parts.minute, +parts.second);
   return new Date(guess.getTime() + (guess.getTime() - asNY)).toISOString();
 }
-// Teams join blocks (links, meeting IDs, passcodes) aren't notes.
+// Meeting join details (Teams/Zoom links, meeting IDs, passcodes, dial-ins)
+// aren't notes -- and shouldn't be copied around.
+const JOIN_LINE = /zoom\.us|teams\.microsoft|passcode|pwd=|meeting id|one-tap|dial|join (from|the meeting|:|zoom|microsoft)|need help\?|meeting options|^\+?\d[\d ,#*]{8,}/i;
 const cleanNotes = s => {
-  const text = String(s || '').replace(/\r/g, '').split(/_{8,}/)[0].trim();
+  const text = String(s || '').replace(/\r/g, '').split(/_{8,}/)[0]
+    .split('\n').filter(l => !JOIN_LINE.test(l)).join('\n').replace(/\n{3,}/g, '\n\n').trim();
   return text ? text.slice(0, 600) : null;
+};
+const cleanLocation = s => {
+  const v = String(s || '').trim();
+  if (!v) return null;
+  if (/zoom\.us/i.test(v)) return 'Zoom';
+  if (/^https?:\/\//i.test(v)) return 'Online';
+  return v;
 };
 const windowStart = toInstant({ dateTime: from + 'T00:00:00', timeZone: 'Eastern Standard Time' });
 const windowEnd = toInstant({ dateTime: to + 'T23:59:59', timeZone: 'Eastern Standard Time' });
@@ -58,7 +68,7 @@ const events = (Array.isArray(raw) ? raw : raw.events || [])
     start_at: toInstant(e.start),
     end_at: toInstant(e.end),
     is_all_day: !!e.isAllDay,
-    location: e.location || null,
+    location: cleanLocation(e.location),
     notes: cleanNotes(e.summary || e.bodyPreview),
     organizer: e.organizer || null,
     attendees: Array.isArray(e.attendees) ? e.attendees : null,
