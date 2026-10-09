@@ -314,6 +314,26 @@
   .pane-layout.dash-mode.has-selection .box2{display:block;position:fixed;top:0;right:0;bottom:0;width:min(100vw,clamp(440px,42vw,760px));z-index:60;border-radius:0;border:none;border-left:1px solid var(--line);box-shadow:-8px 0 30px rgba(0,0,0,.12);overflow-y:auto;min-height:0;padding:calc(18px + env(safe-area-inset-top)) 16px 40px}
   .pane-layout.dash-mode .box3{background:transparent;border:none;box-shadow:none;padding:0}
   .pane-layout.dash-mode .detail-back{display:inline-flex}
+  /* Daily Review: agenda + add bar across the top, then EHL's calendar | tasks;
+     a task's details slide in from the right like on the Dashboard. */
+  .pane-layout.review-mode{grid-template-columns:minmax(0,1fr)}
+  .pane-layout.review-mode .pane-left{position:static;max-height:none;overflow:visible}
+  .pane-layout.review-mode .box2{display:none}
+  .pane-layout.review-mode.has-selection .box2{display:block;position:fixed;top:0;right:0;bottom:0;width:min(100vw,clamp(440px,42vw,760px));z-index:60;border-radius:0;border:none;border-left:1px solid var(--line);box-shadow:-8px 0 30px rgba(0,0,0,.12);overflow-y:auto;min-height:0;padding:calc(18px + env(safe-area-inset-top)) 16px 40px}
+  .pane-layout.review-mode .detail-back{display:inline-flex}
+  .pane-layout.review-mode .box3{background:transparent;border:none;box-shadow:none;padding:0}
+  .review-col{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:12px 12px 8px;box-shadow:0 1px 3px rgba(30,20,10,.04);min-width:0}
+  .review-col + .review-col{margin-top:14px}
+  .review-col-head{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:2px 8px 8px}
+  @media (min-width:768px){
+    .pane-layout.review-mode .box1{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:24px;align-items:center}
+    .pane-layout.review-mode .box1 .review-card{padding:0 24px 0 0;margin:0;border-bottom:none;border-right:1px solid var(--line)}
+    .pane-layout.review-mode .review-list{grid-template-columns:repeat(3,auto);grid-template-rows:repeat(2,auto);grid-auto-flow:row;justify-content:start;gap:8px 22px}
+  }
+  @media (min-width:1100px){
+    .pane-layout.review-mode #board{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start}
+    .pane-layout.review-mode .review-col + .review-col{margin-top:0}
+  }
   .dash-col .row{margin:0;border-radius:9px}
   .dash-toolbar{display:flex;align-items:center;justify-content:flex-end;gap:10px;margin:0 0 10px;font-size:12.5px;color:var(--muted)}
   .dash-pick-btn{background:var(--card);border:1px solid var(--line);border-radius:9px;padding:6px 12px;font-family:inherit;font-size:12.5px;font-weight:700;color:var(--text);cursor:pointer}
@@ -376,7 +396,6 @@
   .contact-input::placeholder{color:var(--muted)}
   .contact-copy.copied{color:#2E7D4F}
   .push-row{flex-wrap:wrap;row-gap:6px}
-  .cal-review{margin-bottom:14px;padding-bottom:6px;border-bottom:1px solid var(--line)}
   .cal-head{display:flex;align-items:center;gap:8px}
   .cal-head svg{width:15px;height:15px;flex:none}
   .cal-since{font-size:12px;color:var(--muted);padding:0 8px 6px}
@@ -393,7 +412,7 @@
   .cal-task:hover{border-color:var(--accent);color:var(--accent)}
   .cal-task.done{color:#1F6B45;border-color:#BFE3CC;background:#E3F3EA}
   .cal-empty{font-size:12.5px;color:var(--muted);padding:6px 8px 10px}
-  @media (max-width:767px){ .cal-row{flex-wrap:wrap} .cal-when{width:auto;flex-direction:row;gap:6px} .cal-actions{width:100%;justify-content:flex-end} }
+  @media (max-width:767px){ .cal-row{flex-wrap:wrap;gap:4px 12px} .cal-when{width:100%;flex-direction:row;gap:6px} .cal-actions{width:100%;justify-content:flex-end} }
   .repeat-btn{display:inline-flex;align-items:center;gap:6px;background:var(--card-2);border:1px solid var(--line);border-radius:8px;padding:5px 9px;font-family:inherit;font-size:12.5px;color:var(--text);cursor:pointer;text-align:left;max-width:100%}
   .repeat-btn:hover{border-color:var(--accent)}
   .repeat-btn svg{flex:none;width:13px;height:13px}
@@ -598,6 +617,7 @@
     /* The task bar shows when + is tapped (always on Add a Task) */
     .pane-layout:not(.m-adding):not(.add-mode):not(.m-review) .box1{display:none}
     .pane-layout.m-review:not(.m-adding) #addForm{display:none}
+    .pane-layout.m-review:not(.m-adding) .box1 .review-card{border-bottom:none;margin-bottom:0;padding-bottom:0}
     .todo-layout:not(.m-adding):not(.add-mode) .todo-addbox{display:none}
     /* Tasks as cards */
     .box3{background:transparent;border:none;box-shadow:none;padding:0}
@@ -2482,6 +2502,7 @@ function render() {
   paneLayout.style.display = '';
   paneLayout.classList.toggle('add-mode', currentView.type === 'add');
   paneLayout.classList.toggle('dash-mode', currentView.type === 'dashboard');
+  paneLayout.classList.toggle('review-mode', currentView.type === 'review');
   // On Done, the task bar logs something already finished: no tag, date, or Daily.
   const doneView = currentView.type === 'done' || (currentView.type === 'list' && who === 'sarah' && currentView.key === 'done');
   addForm.classList.toggle('done-mode', doneView);
@@ -2514,6 +2535,12 @@ function render() {
     meetingCount.textContent = `${allOpen.filter(t => discussedToday.has(t.id)).length} of ${allOpen.length} tasks` +
       (cal ? ` · ${cal.events.filter(e => discussedEvents.has(e.id)).length} of ${cal.events.length} events` : '') + ' discussed';
     renderTaskList(list, groupAcrossLists, search ? noMatch : 'No open tasks', true);
+    // Two columns on computers: EHL's calendar | your tasks.
+    const taskCol = document.createElement('div');
+    taskCol.className = 'review-col review-tasks';
+    taskCol.innerHTML = '<div class="review-col-head">Your tasks</div>';
+    taskCol.append(...board.childNodes);
+    board.appendChild(taskCol);
     if (cal && !search) board.prepend(calendarReviewEl(cal));
   } else if (pushedView) {
     viewTitleEl.textContent = 'Pushed Out';
@@ -3342,9 +3369,9 @@ setInterval(() => { if (todayStr() !== renderedDay) { renderedDay = todayStr(); 
 // (Clicking another task still switches to it.) Runs before the other click
 // handlers so what was clicked still works; the redraw waits until they finish.
 document.addEventListener('click', e => {
-  if (currentView.type !== 'dashboard' || !selectedTaskId || !e.target.isConnected) return;
+  if (!['dashboard', 'review'].includes(currentView.type) || !selectedTaskId || !e.target.isConnected) return;
   if (Date.now() - lastDragEnd < 350) return;
-  if (e.target.closest('.box2, .todo-detail, .row, .todo-row, .modal, .m-sheet, .toast')) return;
+  if (e.target.closest('.box2, .todo-detail, .row, .todo-row, .modal, .m-sheet, .toast, .cal-row')) return;
   selectedTaskId = null;
   setTimeout(() => { if (!selectedTaskId) render(); }, 0);
 }, true);
@@ -3486,7 +3513,7 @@ function calendarSinceSync() {
 }
 function calendarReviewEl(cal) {
   const wrap = document.createElement('div');
-  wrap.className = 'row-group cal-review';
+  wrap.className = 'review-col cal-review';
   const since = cal.last ? `Since the last Daily Sync · ${calDay(cal.last.start_at)}, ${calTime(cal.last.start_at)}` : `Since ${calDay(cal.from.toISOString())}`;
   const updated = cal.updated ? ` · copied from Outlook ${calDay(cal.updated) === calDay(new Date().toISOString()) ? 'at ' + calTime(cal.updated) : calDay(cal.updated)}` : '';
   const rows = cal.events.map(e => {
