@@ -19,7 +19,7 @@ const SUPABASE_URL = 'https://aighvqegtxgpvltwosmn.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFpZ2h2cWVndHhncHZsdHdvc21uIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk0Nzc5OTMsImV4cCI6MjEwNTA1Mzk5M30.HakqVLbQpRZQ8VNbkqja74lDiw_jWB4D4fuYB8JfEso';
 
 // Keep in sync with index.html.
-const REVIEW_ITEMS = ['Calendar', 'Tasks', 'Tasks – Completed', 'Inbox', 'Text Messages', 'Photos'];
+const REVIEW_ITEMS = ['Calendar', 'Tasks', 'Inbox', 'Text Messages', 'Photos'];
 const NOTE_MARK = 'note';
 const STATUS_LABEL = { todo: 'To do', doing: 'In progress', done: 'Done' };
 const STATUS_ICON = { todo: '☐', doing: '◐', done: '☑' };
