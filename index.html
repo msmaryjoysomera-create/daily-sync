@@ -1519,13 +1519,20 @@ function meatballHtml(task, isMary) {
   `;
 }
 
+// Bottom line of Mary's and Sarah's task panel: when it was added, then the latest change.
+function taskHistoryLine(task) {
+  const added = task.created_at ? new Date(task.created_at) : null;
+  const addedText = added ? `Added ${added.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', ...(added.getFullYear() !== new Date().getFullYear() ? { year: 'numeric' } : {}) })} at ${added.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }).replace(/\s/g, '').toLowerCase()}` : '';
+  const latest = task.status === 'done'
+    ? `Completed${task.completed_by ? ' by ' + escapeHtml(nameFor(task.completed_by)) : ''} · ${timeAgo(task.completed_at)}`
+    : task.updated_at && task.updated_at !== task.created_at ? `Updated ${timeAgo(task.updated_at)}` : '';
+  return [addedText, latest].filter(Boolean).join(' · ');
+}
+
 function taskEl(task) {
   const div = document.createElement('div');
   div.className = 'task' + (task.status === 'done' ? ' done' : '') + (task.pinned ? ' pinned' : '');
   div.dataset.id = task.id;
-  const historyLine = task.status === 'done'
-    ? `Completed${task.completed_by ? ' by ' + escapeHtml(nameFor(task.completed_by)) : ''} · ${timeAgo(task.completed_at)}`
-    : `Updated ${timeAgo(task.updated_at || task.created_at)}`;
   div.innerHTML = `
     <div class="task-top">
       <button class="status-btn ${task.status === 'todo' ? '' : task.status}" title="Change status"></button>
@@ -1554,7 +1561,7 @@ function taskEl(task) {
         </div>
         <textarea class="task-notes-edit${task.notes ? '' : ' hidden'}" placeholder="+ Add a note…" rows="1">${escapeHtml(task.notes || '')}</textarea>
         ${photoRowHtml(task.id)}
-        <div class="task-history">${historyLine}</div>
+        <div class="task-history">${taskHistoryLine(task)}</div>
       </div>
       <div class="task-actions">
         <button class="icon-btn pin-btn${task.pinned ? ' active' : ''}" data-action="pin" title="${task.pinned ? 'Unpin' : 'Pin to top'}">${iconPin(task.pinned)}</button>
@@ -1584,6 +1591,7 @@ function basicTaskEl(task) {
         ${task.status !== 'done' ? `<div class="due-row"><span class="due-label">Repeat</span><button type="button" class="repeat-btn" data-action="repeat-edit">${ICON_REFRESH}<span>${escapeHtml(repeatLabel(repeatOf(task), true))}</span></button></div>` : ''}
         <textarea class="task-notes-edit${task.notes ? '' : ' hidden'}" placeholder="+ Add a note…" rows="1">${escapeHtml(task.notes || '')}</textarea>
         ${photoRowHtml(task.id)}
+        <div class="task-history">${taskHistoryLine(task)}</div>
       </div>
       <div class="task-actions">
         <button class="icon-btn" data-action="delete" title="Delete">${ICON_X}</button>
