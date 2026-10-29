@@ -5,6 +5,9 @@
 # test-mock.html is git-ignored; it never touches the real database.
 import json, sys, datetime
 who = sys.argv[1] if len(sys.argv) > 1 else 'mary'
+# Optional second argument: sign in as a personal login (e.g. sarah@example.com);
+# the fake database then only returns Sarah's rows, like the real one does.
+login = sys.argv[2] if len(sys.argv) > 2 else 'mary@ccabinet.com'
 now = datetime.datetime.now(datetime.timezone.utc).isoformat()
 def task(i, title, assignee, tag=None, status='todo'):
     return {"id": f"t{i}", "title": title, "assignee": assignee, "tag": tag, "status": status, "notes": None,
@@ -28,6 +31,7 @@ inject = """<script>
 localStorage.setItem('daily-sync-who', %s);
 localStorage.setItem('daily-sync-auth', 'mock-refresh');
 window.__db = %s;
+window.__login = %s;
 const __real = window.fetch;
 let __n = 100;
 window.fetch = async (input, init = {}) => {
@@ -39,7 +43,7 @@ window.fetch = async (input, init = {}) => {
   if (url.pathname.startsWith('/auth/v1/')) {
     const exp = Math.floor(Date.now() / 1000) + 3600;
     return json({ access_token: 'mock', refresh_token: 'mock-refresh', token_type: 'bearer', expires_in: 3600, expires_at: exp,
-      user: { id: 'u1', email: 'mary@ccabinet.com', aud: 'authenticated', role: 'authenticated' } });
+      user: { id: 'u1', email: window.__login, aud: 'authenticated', role: 'authenticated', user_metadata: window.__userMeta || {} } });
   }
   if (url.pathname.startsWith('/storage/v1/')) return json({ Key: url.pathname.split('/object/')[1] || 'mock' }); // photo uploads
   const table = url.pathname.split('/').pop();
@@ -48,7 +52,8 @@ window.fetch = async (input, init = {}) => {
   const filters = [...url.searchParams].filter(([k]) => !['select', 'order', 'limit', 'on_conflict'].includes(k));
   const match = r => filters.every(([k, v]) => { const [op, ...rest] = v.split('.'); const val = rest.join('.');
     if (op === 'eq') return String(r[k]) === val; if (op === 'is') return r[k] === null; if (op === 'in') return val.replace(/[()]/g,'').split(',').includes(String(r[k])); return true; });
-  if (method === 'GET' || method === 'HEAD') return json(rows.filter(match));
+  const team = window.__login === 'mary@ccabinet.com';
+  if (method === 'GET' || method === 'HEAD') return json(rows.filter(match).filter(r => team || (['tasks', 'sticky_notes'].includes(table) ? r.assignee === 'sarah' : table === 'task_photos')));
   const body = init.body ? JSON.parse(init.body) : null;
   if (method === 'POST') {
     const list = (Array.isArray(body) ? body : [body]).map(b => ({ id: 'n' + (++__n), created_at: new Date().toISOString(), updated_at: new Date().toISOString(), ...b }));
@@ -60,6 +65,6 @@ window.fetch = async (input, init = {}) => {
   return json([]);
 };
 </script>
-""" % (json.dumps(who), json.dumps(db))
+""" % (json.dumps(who), json.dumps(db), json.dumps(login))
 open('/Users/marysomera/daily-sync/test-mock.html', 'w').write(c.replace('<meta charset="UTF-8">', '<meta charset="UTF-8">\n' + inject, 1))
 print('test-mock.html written for', who)

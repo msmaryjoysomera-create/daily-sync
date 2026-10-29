@@ -562,6 +562,7 @@
   .lock-title{font-size:22px;font-weight:800;letter-spacing:-.02em}
   .lock-sub{margin:0 0 6px;color:var(--muted);font-size:14px}
   .lock-input{width:100%;background:var(--card-2);border:1px solid var(--line);border-radius:10px;padding:12px 14px;font-family:inherit;font-size:16px;color:var(--text)}
+  .lock-switch{background:none;border:none;padding:4px;font-family:inherit;font-size:13px;color:var(--muted);text-decoration:underline;cursor:pointer}
   .lock-btn{width:100%;background:var(--accent);color:#fff;border:none;border-radius:10px;padding:12px;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer}
   .lock-btn:disabled{opacity:.6}
   .lock-error{min-height:18px;color:#B3261E;font-size:13px;text-align:center}
@@ -647,11 +648,13 @@
   <form class="lock-card" id="lockForm" autocomplete="on">
     <img src="icon-192.png" width="72" height="72" alt="">
     <div class="lock-title">Sync Up</div>
-    <p class="lock-sub">Enter the team passcode</p>
-    <input type="text" name="username" value="mary@ccabinet.com" autocomplete="username" hidden>
+    <p class="lock-sub" id="lockSub">Enter the team passcode</p>
+    <input type="text" name="username" id="lockTeamUser" value="mary@ccabinet.com" autocomplete="username" hidden>
+    <input type="email" name="username" id="lockEmail" class="lock-input" autocomplete="username" placeholder="Your email" aria-label="Email" hidden disabled>
     <input type="password" id="lockInput" class="lock-input" inputmode="numeric" autocomplete="current-password" placeholder="Passcode" aria-label="Passcode" required>
     <button type="submit" class="lock-btn" id="lockBtn">Unlock</button>
     <div class="lock-error" id="lockError" role="alert"></div>
+    <button type="button" class="lock-switch" id="lockSwitch">Have your own login? Sign in with your email</button>
   </form>
 </div>
 
@@ -708,7 +711,7 @@
       <nav class="nav-section" id="lockSection">
         <div class="nav-label">Passcode</div>
         <button type="button" class="nav-item" data-action="change-passcode"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><rect x="3.5" y="8" width="11" height="7.5" rx="1.6" stroke="currentColor" stroke-width="1.5"/><path d="M6 8V5.8a3 3 0 0 1 6 0V8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span><span class="nav-item-label">Change passcode</span></button>
-        <button type="button" class="nav-item" data-action="lock-all"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><path d="M7 3.5H4.5a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1H7M11.5 12.5L15 9l-3.5-3.5M15 9H7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="nav-item-label">Lock all devices</span></button>
+        <button type="button" class="nav-item" id="lockAllNav" data-action="lock-all"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><path d="M7 3.5H4.5a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1H7M11.5 12.5L15 9l-3.5-3.5M15 9H7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="nav-item-label">Lock all devices</span></button>
       </nav>
     </div>
   </aside>
@@ -873,7 +876,7 @@
       <input type="password" id="newPasscode2" class="lock-input" inputmode="numeric" autocomplete="new-password" placeholder="Type it again" aria-label="Confirm new passcode">
       <div class="lock-error" id="passcodeError" role="alert"></div>
       <div class="modal-actions"><button type="submit" class="recap-action primary" id="passcodeSave">Save passcode</button></div>
-      <p class="passcode-note">Devices that are already unlocked stay unlocked. To make everyone enter the new passcode, use “Lock all devices” afterward.</p>
+      <p class="passcode-note" id="passcodeNote">Devices that are already unlocked stay unlocked. To make everyone enter the new passcode, use “Lock all devices” afterward.</p>
     </form>
   </div>
 
@@ -965,6 +968,7 @@ const reviewCard = document.getElementById('reviewCard');
 const reviewNavItem = document.getElementById('reviewNavItem');
 const printBtn = document.getElementById('printBtn');
 const whoToggle = document.getElementById('whoToggle');
+const lockAllNav = document.getElementById('lockAllNav');
 const addForm = document.getElementById('addForm');
 const titleInput = document.getElementById('titleInput');
 const dueInput = document.getElementById('dueInput');
@@ -1195,7 +1199,10 @@ tagMenu.addEventListener('mousedown', async e => {
 const localDateStr = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 const todayStr = () => localDateStr(new Date());
 
-let who = localStorage.getItem('daily-sync-who') || '';
+// A personal login (anyone but the team login) is Sarah's: it only gets her
+// profile. The database enforces that too; this just shapes the screens.
+let onlyProfile = (() => { try { return localStorage.getItem('daily-sync-only') || ''; } catch { return ''; } })();
+let who = onlyProfile || localStorage.getItem('daily-sync-who') || '';
 let search = '';
 let tasks = [];
 // Deletes wait a few seconds behind an "Undo" message before they happen.
@@ -1437,6 +1444,7 @@ const PROFILE_VIEWS = {
 let firstProfileSet = true;
 
 function setWho(val) {
+  if (onlyProfile) val = onlyProfile;
   if (noteTimer) saveNote(); // finish saving under the profile it was typed in
   noteRef = null;
   const switching = firstProfileSet || who !== val;
@@ -1461,6 +1469,8 @@ function setWho(val) {
   addTaskSection.classList.toggle('hide', !val);
   listsSection.classList.toggle('hide', !val);
   searchInput.classList.toggle('hide', !val);
+  whoToggle.style.display = onlyProfile ? 'none' : '';
+  lockAllNav.style.display = onlyProfile ? 'none' : '';
   render();
 }
 whoToggle.addEventListener('click', e => {
@@ -4151,6 +4161,13 @@ function useSession(s) {
   session = s;
   try { localStorage.setItem(AUTH_KEY, s.refresh_token); } catch {}
   sb.realtime.setAuth(s.access_token);
+  const email = (s.user?.email || TEAM_EMAIL).toLowerCase();
+  const only = email === TEAM_EMAIL ? '' : 'sarah';
+  if (only !== onlyProfile) {
+    onlyProfile = only;
+    try { only ? localStorage.setItem('daily-sync-only', only) : localStorage.removeItem('daily-sync-only'); } catch {}
+    setWho(only || who);
+  }
 }
 const badLogin = err => /invalid|expired|revoked|not found|already used/i.test(err?.message || '');
 
@@ -4177,6 +4194,23 @@ async function refreshAuth() {
   } catch {}
 }
 
+// Team passcode (the default) or a personal email + passcode (Sarah's).
+const lockEmail = document.getElementById('lockEmail');
+const lockTeamUser = document.getElementById('lockTeamUser');
+const lockSwitch = document.getElementById('lockSwitch');
+let lockPersonal = false;
+function setLockMode(personal) {
+  lockPersonal = personal;
+  lockEmail.hidden = lockEmail.disabled = !personal;
+  lockTeamUser.disabled = personal;
+  lockEmail.required = personal;
+  document.getElementById('lockSub').textContent = personal ? 'Sign in with your email and passcode' : 'Enter the team passcode';
+  lockSwitch.textContent = personal ? 'Use the team passcode instead' : 'Have your own login? Sign in with your email';
+  lockError.textContent = '';
+}
+lockSwitch.addEventListener('click', () => { setLockMode(!lockPersonal); (lockPersonal && !lockEmail.value ? lockEmail : lockInput).focus(); });
+try { const saved = localStorage.getItem('daily-sync-login-email'); if (saved) { lockEmail.value = saved; setLockMode(true); } } catch {}
+
 function showLock() {
   lockScreen.hidden = false;
   lockError.textContent = '';
@@ -4186,13 +4220,16 @@ function showLock() {
 lockForm.addEventListener('submit', async e => {
   e.preventDefault();
   const password = lockInput.value;
-  if (!password) return;
+  const email = lockPersonal ? lockEmail.value.trim().toLowerCase() : TEAM_EMAIL;
+  if (!password || !email) return;
   lockBtn.disabled = true;
   lockBtn.textContent = 'Unlocking…';
   lockError.textContent = '';
   try {
-    const { data, error } = await withTimeout(sb.auth.signInWithPassword({ email: TEAM_EMAIL, password }), 15000);
-    if (error || !data?.session) { lockError.textContent = "That passcode didn't work. Try again."; lockInput.select(); return; }
+    const { data, error } = await withTimeout(sb.auth.signInWithPassword({ email, password }), 15000);
+    if (error || !data?.session) { lockError.textContent = lockPersonal ? "That email and passcode didn't work. Try again." : "That passcode didn't work. Try again."; lockInput.select(); return; }
+    try { lockPersonal ? localStorage.setItem('daily-sync-login-email', email) : localStorage.removeItem('daily-sync-login-email'); } catch {}
+    clearOfflineCopy(); // never show one login's saved copy to another
     useSession(data.session);
     lockInput.value = '';
     lockScreen.hidden = true;
@@ -4215,16 +4252,20 @@ document.getElementById('passcodeForm').addEventListener('submit', async e => {
   const btn = document.getElementById('passcodeSave');
   btn.disabled = true;
   try {
-    const { error } = await withTimeout(sb.auth.updateUser({ password: a }), 15000);
+    const { error } = await withTimeout(sb.auth.updateUser({ password: a, data: { own_passcode: true } }), 15000);
     if (error) { passcodeError.textContent = error.message; return; }
     passcodeModal.classList.remove('open');
+    if (session?.user) session.user.user_metadata = { ...session.user.user_metadata, own_passcode: true };
     showToast('Passcode changed', null);
   } catch { passcodeError.textContent = "Couldn't reach the server. Try again."; }
   finally { btn.disabled = false; }
 });
 
-function openPasscodeModal() {
+function openPasscodeModal(first) {
   closeSheet();
+  document.getElementById('passcodeTitle').textContent = first ? 'Choose your own passcode' : 'Change passcode';
+  document.getElementById('passcodeNote').textContent = first ? 'This replaces the temporary passcode you were given. Only you will know it.'
+    : onlyProfile ? 'Use it the next time you sign in.' : 'Devices that are already unlocked stay unlocked. To make everyone enter the new passcode, use “Lock all devices” afterward.';
   passcodeError.textContent = '';
   document.getElementById('newPasscode').value = '';
   document.getElementById('newPasscode2').value = '';
@@ -4334,6 +4375,7 @@ async function boot() {
 function startApp() {
   if (appStarted) { retryConnection(); return; }
   appStarted = true;
+  if (onlyProfile && !session?.user?.user_metadata?.own_passcode) setTimeout(() => openPasscodeModal(true), 800);
   // Sessions last an hour; renew well before, and right away when coming
   // back to a tab that slept past that.
   setInterval(refreshAuth, 40 * 60 * 1000);
