@@ -161,3 +161,24 @@ alter table calendar_events enable row level security;
 drop policy if exists "team only" on calendar_events;
 create policy "team only" on calendar_events for all to authenticated using ((auth.jwt() ->> 'email') = 'mary@ccabinet.com') with check ((auth.jwt() ->> 'email') = 'mary@ccabinet.com');
 alter publication supabase_realtime add table calendar_events;
+
+-- 2026-10-29: Sarah's own login (sdenike@ccabinet.com). It can only see and
+-- change Sarah's tasks, lists/notes (sticky_notes) and photos; the team login
+-- keeps its "team only" access to everything. Policies add up (OR), so these
+-- don't change the team's.
+create or replace function public.is_sarah() returns boolean language sql stable
+  as $$ select lower(coalesce(auth.jwt() ->> 'email', '')) = 'sdenike@ccabinet.com' $$;
+drop policy if exists "sarah own" on tasks;
+create policy "sarah own" on tasks for all to authenticated
+  using (public.is_sarah() and assignee = 'sarah') with check (public.is_sarah() and assignee = 'sarah');
+drop policy if exists "sarah own" on sticky_notes;
+create policy "sarah own" on sticky_notes for all to authenticated
+  using (public.is_sarah() and assignee = 'sarah') with check (public.is_sarah() and assignee = 'sarah');
+drop policy if exists "sarah own" on task_photos;
+create policy "sarah own" on task_photos for all to authenticated
+  using (public.is_sarah() and exists (select 1 from tasks t where t.id = task_id and t.assignee = 'sarah'))
+  with check (public.is_sarah() and exists (select 1 from tasks t where t.id = task_id and t.assignee = 'sarah'));
+drop policy if exists "sarah own task-photos" on storage.objects;
+create policy "sarah own task-photos" on storage.objects for all to authenticated
+  using (bucket_id = 'task-photos' and public.is_sarah() and exists (select 1 from public.tasks t where t.id::text = split_part(name, '/', 1) and t.assignee = 'sarah'))
+  with check (bucket_id = 'task-photos' and public.is_sarah() and exists (select 1 from public.tasks t where t.id::text = split_part(name, '/', 1) and t.assignee = 'sarah'));
