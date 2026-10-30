@@ -349,6 +349,9 @@
   .dash-col-head{display:flex;justify-content:space-between;align-items:center;width:100%;background:none;border:none;font-family:inherit;font-size:13.5px;font-weight:800;color:var(--text);padding:4px 6px 8px;cursor:pointer;text-align:left}
   .dash-col-head:disabled{cursor:default}
   .dash-col-top{display:flex;align-items:center;gap:2px}
+  .col-sort{flex:none;background:none;border:1px solid transparent;border-radius:6px;padding:2px 6px;margin:-4px 0 4px 2px;font-family:inherit;font-size:11px;font-weight:700;color:var(--muted);cursor:pointer;opacity:.6}
+  .col-sort:hover{opacity:1;border-color:var(--line);color:var(--text)}
+  body.offline .col-sort, body.offline #sortAzBtn{display:none}
   .dash-col-top .dash-col-head{flex:1;min-width:0}
   .col-grip{flex:none;display:flex;align-items:center;justify-content:center;width:22px;height:28px;margin:-4px -4px 4px 0;color:var(--muted);cursor:grab;touch-action:none;opacity:.45;border-radius:6px}
   .col-grip:hover{opacity:1;color:var(--text);background:var(--hover,rgba(0,0,0,.05))}
@@ -727,11 +730,13 @@
         <div class="meatball-wrap title-meatball" id="tagActions">
           <button type="button" class="icon-btn meatball-btn" data-action="meatball" title="Tag options"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><circle cx="4" cy="9" r="1.4" fill="currentColor"/><circle cx="9" cy="9" r="1.4" fill="currentColor"/><circle cx="14" cy="9" r="1.4" fill="currentColor"/></svg></button>
           <div class="meatball-menu">
+            <button type="button" class="meatball-item" id="sortAzItem" data-action="page-sort">Sort A–Z</button>
             <button type="button" class="meatball-item" data-action="rename-tag">Rename tag</button>
             <button type="button" class="meatball-item danger" data-action="delete-tag">Delete tag</button>
           </div>
         </div>
       </div>
+      <button type="button" id="sortAzBtn" class="print-btn" data-action="page-sort" title="Sort this list A–Z" hidden><svg width="14" height="14" viewBox="0 0 18 18" fill="none"><path d="M5 3v12M2.5 12.5 5 15l2.5-2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M10 7.5 12 3l2 4.5M10.6 6h2.8M10 10h4l-4 5h4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg> A–Z</button>
       <button type="button" id="refreshBtn" class="print-btn refresh-btn" title="Refresh"><svg width="14" height="14" viewBox="0 0 18 18" fill="none"><path d="M14.5 9a5.5 5.5 0 1 1-1.6-3.9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M14.5 3.5V6.5H11.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg> Refresh</button>
       <button type="button" id="printBtn" class="print-btn" title="Print or export"><svg width="14" height="14" viewBox="0 0 18 18" fill="none"><path d="M5 6.5V2.5H13V6.5" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><rect x="2.5" y="6.5" width="13" height="6" rx="1.2" stroke="currentColor" stroke-width="1.5"/><rect x="5" y="10.5" width="8" height="5" stroke="currentColor" stroke-width="1.5"/></svg> Print</button>
       <button type="button" class="m-profile" id="mProfileBtn" data-m-sheet="profile" aria-label="Switch profile"></button>
@@ -976,6 +981,7 @@ const notesInput = document.getElementById('notesInput');
 const notesToggleBtn = document.getElementById('notesToggleBtn');
 const repeatInput = document.getElementById('repeatInput');
 const board = document.getElementById('board');
+const sortAzBtn = document.getElementById('sortAzBtn');
 const reviewList = document.getElementById('reviewList');
 const tagInput = document.getElementById('tagInput');
 const tagMenu = document.getElementById('tagMenu');
@@ -1775,7 +1781,7 @@ function renderMaryDashboard(visible) {
     sec.className = 'dash-col';
     sec.dataset.colId = col.id;
     if (col.noDrop) sec.dataset.noDrop = '1';
-    sec.innerHTML = `<div class="dash-col-top">${colGripHtml()}<button type="button" class="dash-col-head" ${col.view === 'handoffs' ? 'data-dash-view="handoffs"' : `data-dash-list="${escapeAttr(col.viewKey)}" data-dash-type="list"`}><span>${escapeHtml(col.name)}</span><span class="dash-count">${items.length}</span></button></div>`;
+    sec.innerHTML = `<div class="dash-col-top">${colGripHtml()}<button type="button" class="dash-col-head" ${col.view === 'handoffs' ? 'data-dash-view="handoffs"' : `data-dash-list="${escapeAttr(col.viewKey)}" data-dash-type="list"`}><span>${escapeHtml(col.name)}</span><span class="dash-count">${items.length}</span></button>${reorderable && !col.noDrop && items.length > 1 ? '<button type="button" class="col-sort" data-action="col-sort" title="Sort this list A–Z">A–Z</button>' : ''}</div>`;
     const rows = document.createElement('div');
     rows.className = 'dash-rows';
     if (!col.noDrop) rows.dataset.listKey = col.key;
@@ -1844,7 +1850,7 @@ function renderSarahDashboard(visible) {
     const col = document.createElement('section');
     col.className = 'dash-col';
     col.dataset.colId = l.id;
-    col.innerHTML = `<div class="dash-col-top">${colGripHtml()}<button type="button" class="dash-col-head" data-dash-list="${escapeAttr(l.viewKey)}" data-dash-type="${l.view}"><span>${escapeHtml(l.name)}</span><span class="dash-count">${items.length}</span></button></div>`;
+    col.innerHTML = `<div class="dash-col-top">${colGripHtml()}<button type="button" class="dash-col-head" data-dash-list="${escapeAttr(l.viewKey)}" data-dash-type="${l.view}"><span>${escapeHtml(l.name)}</span><span class="dash-count">${items.length}</span></button>${reorderable && items.length > 1 ? '<button type="button" class="col-sort" data-action="col-sort" title="Sort this list A–Z">A–Z</button>' : ''}</div>`;
     const rows = document.createElement('div');
     rows.className = 'dash-rows';
     rows.dataset.listKey = l.key || ''; // '' = To Do (no list)
@@ -1877,7 +1883,7 @@ function renderDashboard() {
     const col = document.createElement('section');
     col.className = 'dash-col';
     if (key) col.dataset.colId = key;
-    col.innerHTML = `<div class="dash-col-top">${key ? colGripHtml() : ''}<button type="button" class="dash-col-head" ${key ? `data-dash-list="${escapeAttr(key)}"` : 'disabled'}><span>${escapeHtml(name)}</span><span class="dash-count">${items.length}</span></button></div>`;
+    col.innerHTML = `<div class="dash-col-top">${key ? colGripHtml() : ''}<button type="button" class="dash-col-head" ${key ? `data-dash-list="${escapeAttr(key)}"` : 'disabled'}><span>${escapeHtml(name)}</span><span class="dash-count">${items.length}</span></button>${reorderable && items.length > 1 ? '<button type="button" class="col-sort" data-action="col-sort" title="Sort this list A–Z">A–Z</button>' : ''}</div>`;
     const rows = document.createElement('div');
     rows.className = 'dash-rows';
     rows.dataset.listKey = key || ''; // '' = No list
@@ -2464,6 +2470,7 @@ function updateActiveNav() {
 const VIEW_TITLES = { today: 'Today', upcoming: 'Upcoming', done: 'Completed', review: 'Daily Review', notes: 'Notes', add: 'Add a Task' };
 
 function render() {
+  sortAzBtn.hidden = true;
   if (dragState) { renderAfterDrag = true; return; } // don't rebuild rows mid-drag
   reorderable = false;
   if (currentView.type !== 'handoffs') handoffsSeenAtOpen = null;
@@ -2512,6 +2519,7 @@ function render() {
   }
   if (who === 'evan') {
     renderTodo();
+    updateSortBtn();
     return;
   }
 
@@ -2606,6 +2614,11 @@ function render() {
   }
 
   renderDetail(who === 'mary' ? taskEl : basicTaskEl);
+  updateSortBtn();
+}
+function updateSortBtn() {
+  sortAzBtn.hidden = !(reorderable && currentView.type !== 'dashboard' && pageSortScope().querySelectorAll('[data-drag]').length > 1);
+  document.getElementById('sortAzItem').hidden = sortAzBtn.hidden;
 }
 
 function groupByTag(list) {
@@ -2793,6 +2806,13 @@ document.body.addEventListener('click', e => {
     return;
   }
   if (e.target.closest('[data-action="change-passcode"]')) { openPasscodeModal(); return; }
+  const colSort = e.target.closest('[data-action="col-sort"]');
+  if (colSort) { if (!blockedOffline()) sortAZ(colSort.closest('.dash-col')); return; }
+  if (e.target.closest('[data-action="page-sort"]')) {
+    document.querySelectorAll('.meatball-wrap.open').forEach(w => w.classList.remove('open'));
+    if (!blockedOffline()) sortAZ(pageSortScope());
+    return;
+  }
   if (e.target.closest('[data-action="lock-all"]')) { lockAllDevices(); return; }
   if (e.target.closest('[data-action="passcode-close"]')) { passcodeModal.classList.remove('open'); return; }
   const discussBtn = e.target.closest('[data-action="discuss"]');
@@ -3515,6 +3535,27 @@ async function saveOrder(ids) {
   const results = await Promise.all(changed.map(ch => sb.from('tasks').update({ position: ch.position }).eq('id', ch.id)));
   const failed = results.find(r => r.error);
   if (failed) alert(`Couldn't save the new order: ${failed.error.message}`);
+}
+
+// "A–Z" arranges a list's open tasks alphabetically by saving that as its
+// dragged order, so it sticks for everyone and can still be dragged after.
+// (Starred tasks stay on top where a list puts them there.)
+// EHL's pages list tasks in #todoList; Mary's and Sarah's in #board.
+const pageSortScope = () => who === 'evan' ? todoList : board;
+function sortAZ(scope) {
+  const containers = [...new Set([...scope.querySelectorAll('[data-drag]')].map(g => g.closest('.row, .todo-row').parentElement))];
+  const before = new Map(tasks.map(t => [t.id, t.position ?? null]));
+  const byTitle = (a, b) => (a.title || '').localeCompare(b.title || '', undefined, { sensitivity: 'base', numeric: true });
+  const ids = containers.flatMap(c => dragRowsIn(c).map(r => tasks.find(t => t.id === r.dataset.id)).filter(Boolean).sort(byTitle).map(t => t.id));
+  if (ids.length < 2) return;
+  saveOrder(ids);
+  showToast('Sorted A–Z', async () => {
+    ids.forEach(id => { const t = tasks.find(x => x.id === id); if (t) t.position = before.get(id); });
+    render();
+    const results = await Promise.all(ids.map(id => sb.from('tasks').update({ position: before.get(id) }).eq('id', id)));
+    const failed = results.find(r => r.error);
+    if (failed) alert(`Couldn't undo: ${failed.error.message}`);
+  });
 }
 
 // --- Meeting mode (Daily Review) ---
