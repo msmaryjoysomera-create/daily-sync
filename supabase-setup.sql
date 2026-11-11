@@ -182,3 +182,39 @@ drop policy if exists "sarah own task-photos" on storage.objects;
 create policy "sarah own task-photos" on storage.objects for all to authenticated
   using (bucket_id = 'task-photos' and public.is_sarah() and exists (select 1 from public.tasks t where t.id::text = split_part(name, '/', 1) and t.assignee = 'sarah'))
   with check (bucket_id = 'task-photos' and public.is_sarah() and exists (select 1 from public.tasks t where t.id::text = split_part(name, '/', 1) and t.assignee = 'sarah'));
+
+-- 2026-11-11: Sarah -> Mary hand-offs ("Done, hand the rest to Mary" on
+-- Sarah's tasks). Sarah's login can't create or see Mary's tasks, so this runs
+-- here: it adds Mary's task (source 'sarah', not in a list, waiting on
+-- <reason>, due on the check-back date) and checks off Sarah's. Only the team
+-- login and Sarah's can call it, and only for an open Sarah task.
+create or replace function public.hand_off_sarah_task(p_task uuid, p_reason text, p_due date, p_notes text, p_done_notes text)
+returns uuid language plpgsql security definer set search_path = public as $$
+declare t tasks; new_id uuid;
+begin
+  if not (public.is_sarah() or lower(coalesce(auth.jwt() ->> 'email', '')) = 'mary@ccabinet.com') then
+    raise exception 'not allowed';
+  end if;
+  select * into t from tasks where id = p_task and assignee = 'sarah' and status <> 'done' for update;
+  if not found then raise exception 'That task is no longer open.'; end if;
+  insert into tasks (title, assignee, tag, due_date, waiting_on, notes, status, source)
+    values (t.title, 'mary', null, p_due, p_reason, p_notes, 'todo', 'sarah') returning id into new_id;
+  update tasks set status = 'done', completed_at = now(), completed_by = 'sarah', notes = p_done_notes, updated_at = now() where id = p_task;
+  return new_id;
+end $$;
+-- Undo (right after): take Mary's copy back off and reopen Sarah's task.
+create or replace function public.undo_sarah_hand_off(p_new uuid, p_task uuid, p_status text, p_notes text)
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  if not (public.is_sarah() or lower(coalesce(auth.jwt() ->> 'email', '')) = 'mary@ccabinet.com') then
+    raise exception 'not allowed';
+  end if;
+  delete from tasks where id = p_new and assignee = 'mary' and source = 'sarah' and created_at > now() - interval '1 hour';
+  update tasks set status = case when p_status in ('todo', 'doing') then p_status else 'todo' end,
+    completed_at = null, completed_by = null, notes = p_notes, updated_at = now()
+    where id = p_task and assignee = 'sarah';
+end $$;
+revoke all on function public.hand_off_sarah_task(uuid, text, date, text, text) from public, anon;
+revoke all on function public.undo_sarah_hand_off(uuid, uuid, text, text) from public, anon;
+grant execute on function public.hand_off_sarah_task(uuid, text, date, text, text) to authenticated;
+grant execute on function public.undo_sarah_hand_off(uuid, uuid, text, text) to authenticated;

@@ -705,6 +705,7 @@
         <button type="button" class="nav-item" data-for="ms" data-view="upcoming"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><rect x="2.5" y="3.5" width="13" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M2.5 7H15.5M6 2V4.5M12 2V4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span><span class="nav-item-label">Upcoming</span><span class="nav-count" id="countUpcoming">0</span></button>
         <button type="button" class="nav-item" data-for="ms" data-view="today"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="3.5" stroke="currentColor" stroke-width="1.5"/><path d="M9 1.5V3.2M9 14.8V16.5M16.5 9H14.8M3.2 9H1.5M14.3 3.7L13.1 4.9M4.9 13.1L3.7 14.3M14.3 14.3L13.1 13.1M4.9 4.9L3.7 3.7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span><span class="nav-item-label">Today</span><span class="nav-count" id="countToday">0</span></button>
         <button type="button" class="nav-item" data-for="mary" data-view="handoffs"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><path d="M3 9.5h8.5M8.5 6l3.5 3.5L8.5 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M14.5 3.5v11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span><span class="nav-item-label">EHL Hand-offs</span><span class="nav-count" id="countHandoffs">0</span></button>
+        <button type="button" class="nav-item" data-for="mary" data-view="sarahhandoffs"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><path d="M3 9.5h8.5M8.5 6l3.5 3.5L8.5 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M14.5 3.5v11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span><span class="nav-item-label">Sarah Hand-offs</span><span class="nav-count" id="countSarahHandoffs">0</span></button>
         <button type="button" class="nav-item" data-for="mary" data-view="pushed"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><rect x="2.5" y="3.5" width="13" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M2.5 7H15.5M6 2V4.5M12 2V4.5M7 11.2h4.5M9.6 9.3l1.9 1.9-1.9 1.9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="nav-item-label">Pushed Out</span><span class="nav-count" id="countPushedMary">0</span></button>
         <button type="button" class="nav-item" data-for="ms" data-view="done"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="7" stroke="currentColor" stroke-width="1.5"/><path d="M5.8 9.2L7.8 11.2L12.2 6.6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="nav-item-label">Completed</span></button>
         <button type="button" class="nav-item" data-for="ms" id="reviewNavItem" data-view="review"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><rect x="4" y="2.8" width="10" height="13" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="6.5" y="1.5" width="5" height="2.6" rx="0.8" stroke="currentColor" stroke-width="1.4"/><path d="M6.3 8.2H11.7M6.3 11H11.7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></span><span class="nav-item-label">Daily Review</span></button>
@@ -1273,14 +1274,16 @@ const REASON_MARK = 'reason'; // EHL's own extra reasons: sticky_notes rows (col
 let handoffDraft = null; // { id, reason, checkBack, note } while EHL fills in the box
 // "New" hand-offs: ones created since Mary last opened the page (per device).
 const HANDOFFS_SEEN_KEY = 'daily-sync-handoffs-seen';
+const SARAH_HANDOFFS_SEEN_KEY = 'daily-sync-sarah-handoffs-seen';
 let handoffsSeenAtOpen = null; // what "seen" was when she opened the page (for the New tags)
-function handoffsSeen() {
+function handoffsSeen(key = HANDOFFS_SEEN_KEY) {
   let v = null;
-  try { v = localStorage.getItem(HANDOFFS_SEEN_KEY); } catch {}
-  if (!v) { v = new Date().toISOString(); try { localStorage.setItem(HANDOFFS_SEEN_KEY, v); } catch {} }
+  try { v = localStorage.getItem(key); } catch {}
+  if (!v) { v = new Date().toISOString(); try { localStorage.setItem(key, v); } catch {} }
   return v;
 }
 const newHandoffs = () => { const seen = handoffsSeen(); return tasks.filter(t => isHandoff(t) && (t.created_at || '') > seen); };
+const newSarahHandoffs = () => { const seen = handoffsSeen(SARAH_HANDOFFS_SEEN_KEY); return tasks.filter(t => isSarahHandoff(t) && (t.created_at || '') > seen); };
 // Repeating tasks: when one is checked off, a fresh copy with the next due
 // date is created (the done one stays in Completed as a record).
 // Repeat rules work like Outlook's: Daily / Weekly / Monthly / Yearly, every N,
@@ -1326,13 +1329,13 @@ function repeatLabel(r, withEnd = false) {
 }
 let addRepeatDraft = null; // the add form's repeat rule, set in the Repeat window
 let repeatEditing = null;  // { target: task id or 'add', rule } while the Repeat window is open
-const DASH_HANDOFFS = '__handoffs__', DASH_UNTAGGED = '__untagged__', DASH_TODO = '__todo__'; // Dashboard column ids that aren't list names
+const DASH_HANDOFFS = '__handoffs__', DASH_SARAH_HANDOFFS = '__sarah_handoffs__', DASH_UNTAGGED = '__untagged__', DASH_TODO = '__todo__'; // Dashboard column ids that aren't list names
 // Push out (EHL and Mary): a task set aside until a date (snooze_until). It keeps
 // its list the whole time -- it's just hidden until that day, then it's back
 // with a "Back" label, even if nobody opened the app in between.
 const isPushed = t => !!t.snooze_until && t.status !== 'done' && t.snooze_until > todayStr();
 // Where a task goes back to (and lives meanwhile).
-const homeListName = t => t.tag || (t.assignee === 'evan' ? 'Tasks' : t.assignee === 'mary' && t.source === 'evan' ? 'EHL Hand-offs' : t.assignee === 'sarah' ? 'To Do' : 'Untagged');
+const homeListName = t => t.tag || (t.assignee === 'evan' ? 'Tasks' : t.assignee === 'mary' && t.source === 'evan' ? 'EHL Hand-offs' : t.assignee === 'mary' && t.source === 'sarah' ? 'Sarah Hand-offs' : t.assignee === 'sarah' ? 'To Do' : 'Untagged');
 const pushDayLabel = d => new Date(d + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
 function backLabel(t) { // "Back today" on the day it returns (and "Back yesterday" / "Back Mon" for two more days)
   if (!t.snooze_until || t.status === 'done' || isPushed(t)) return '';
@@ -1342,6 +1345,9 @@ function backLabel(t) { // "Back today" on the day it returns (and "Back yesterd
   return days === 2 ? 'Back ' + new Date(t.snooze_until + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'short' }) : '';
 }
 const isHandoff = t => t.assignee === 'mary' && t.source === 'evan' && !t.tag && t.status !== 'done' && !isPushed(t);
+// Sarah -> Mary hand-offs work the same way, from Sarah's "Done, hand the rest to Mary".
+const isSarahHandoff = t => t.assignee === 'mary' && t.source === 'sarah' && !t.tag && t.status !== 'done' && !isPushed(t);
+const isAnyHandoff = t => isHandoff(t) || isSarahHandoff(t);
 const CONTACT_ICONS = {
   sf_url: '<svg width="15" height="15" viewBox="0 0 18 18" fill="none"><path d="M5.2 14.5h7.6a3.4 3.4 0 0 0 .5-6.77A4.5 4.5 0 0 0 4.7 6.6 3.95 3.95 0 0 0 5.2 14.5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>',
   phone: '<svg width="15" height="15" viewBox="0 0 18 18" fill="none"><path d="M4 2.8h2.6l1.2 3.1-1.6 1a8.6 8.6 0 0 0 4.9 4.9l1-1.6 3.1 1.2V14a1.4 1.4 0 0 1-1.5 1.4A11.9 11.9 0 0 1 2.6 4.3 1.4 1.4 0 0 1 4 2.8z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>',
@@ -1451,7 +1457,7 @@ setSidebar(isMobile() ? false : localStorage.getItem('daily-sync-sidebar') !== '
 const PROFILE_VIEWS = {
   evan: ['dashboard', 'add', 'important', 'alltasks', 'pushed', 'completed', 'list', 'notes'],
   sarah: ['dashboard', 'add', 'today', 'upcoming', 'done', 'list', 'tag', 'notes'],
-  mary: ['dashboard', 'add', 'today', 'upcoming', 'handoffs', 'pushed', 'done', 'review', 'list', 'notes'],
+  mary: ['dashboard', 'add', 'today', 'upcoming', 'handoffs', 'sarahhandoffs', 'pushed', 'done', 'review', 'list', 'notes'],
 };
 let firstProfileSet = true;
 
@@ -1572,6 +1578,7 @@ function taskEl(task) {
           ${repeatOf(task) ? `<span class="badge recur" title="${escapeAttr(repeatLabel(repeatOf(task), true))}">${ICON_REFRESH} ${escapeHtml(repeatLabel(repeatOf(task)))}</span>` : ''}
           ${task.source === 'claude' ? '<span class="badge claude" title="Added via Claude">✳ via Claude</span>' : ''}
           ${task.source === 'evan' ? '<span class="badge evan" title="Assigned by EHL">From EHL</span>' : ''}
+          ${task.source === 'sarah' ? '<span class="badge evan" title="Handed off by Sarah">From Sarah</span>' : ''}
           ${task.waiting_on ? `<span class="badge waiting">Waiting on: ${escapeHtml(task.waiting_on)}</span>` : ''}
         </div>
         <div class="due-row">
@@ -1613,12 +1620,14 @@ function basicTaskEl(task) {
         <div class="task-meta">
           ${task.source === 'claude' ? '<span class="badge claude" title="Added via Claude">✳ via Claude</span>' : ''}
           ${task.source === 'evan' ? '<span class="badge evan" title="Assigned by EHL">From EHL</span>' : ''}
+          ${task.source === 'sarah' ? '<span class="badge evan" title="Handed off by Sarah">From Sarah</span>' : ''}
           ${task.waiting_on ? `<span class="badge waiting">Waiting on: ${escapeHtml(task.waiting_on)}</span>` : ''}
           ${repeatOf(task) ? `<span class="badge recur" title="${escapeAttr(repeatLabel(repeatOf(task), true))}">${ICON_REFRESH} ${escapeHtml(repeatLabel(repeatOf(task)))}</span>` : ''}
         </div>
         ${task.status !== 'done' ? `<div class="due-row"><span class="due-label">Repeat</span><button type="button" class="repeat-btn" data-action="repeat-edit">${ICON_REFRESH}<span>${escapeHtml(repeatLabel(repeatOf(task), true))}</span></button></div>` : ''}
         <textarea class="task-notes-edit${task.notes ? '' : ' hidden'}" placeholder="+ Add a note…" rows="1">${escapeHtml(task.notes || '')}</textarea>
         ${photoRowHtml(task.id)}
+        ${task.assignee === 'sarah' && task.status !== 'done' ? handoffBoxHtml(task) : ''}
         <div class="task-history">${taskHistoryLine(task)}</div>
       </div>
       <div class="task-actions">
@@ -1765,9 +1774,16 @@ function maryDashColumns(open) {
   const all = [
     ...allTagNames().map(n => ({ id: n, name: n, items: open.filter(t => t.tag === n), key: n, view: 'list', viewKey: n })),
     { id: DASH_HANDOFFS, name: 'EHL Hand-offs', items: open.filter(isHandoff), noDrop: true, view: 'handoffs' },
-    { id: DASH_UNTAGGED, name: 'Untagged', items: open.filter(t => !t.tag && !isHandoff(t)), key: '', view: 'list', viewKey: '' },
+    { id: DASH_SARAH_HANDOFFS, name: 'Sarah Hand-offs', items: open.filter(isSarahHandoff), noDrop: true, view: 'sarahhandoffs' },
+    { id: DASH_UNTAGGED, name: 'Untagged', items: open.filter(t => !t.tag && !isAnyHandoff(t)), key: '', view: 'list', viewKey: '' },
   ];
-  const chosen = maryDashChoices();
+  let chosen = maryDashChoices();
+  // Sarah Hand-offs is newer than Mary's saved choice of lists: show it (after
+  // EHL Hand-offs) until she next changes her lists or their order.
+  if (chosen && !chosen.includes(DASH_SARAH_HANDOFFS) && !dashPrefs().sarahKnown) {
+    const at = chosen.indexOf(DASH_HANDOFFS);
+    chosen = at < 0 ? [...chosen, DASH_SARAH_HANDOFFS] : [...chosen.slice(0, at + 1), DASH_SARAH_HANDOFFS, ...chosen.slice(at + 1)];
+  }
   // The saved list is also the column order (set by dragging a column's grip).
   return chosen ? chosen.map(id => all.find(col => col.id === id)).filter(Boolean) : all.filter(col => col.items.length);
 }
@@ -1787,7 +1803,7 @@ function renderMaryDashboard(visible) {
     sec.className = 'dash-col';
     sec.dataset.colId = col.id;
     if (col.noDrop) sec.dataset.noDrop = '1';
-    sec.innerHTML = `<div class="dash-col-top">${colGripHtml()}<button type="button" class="dash-col-head" ${col.view === 'handoffs' ? 'data-dash-view="handoffs"' : `data-dash-list="${escapeAttr(col.viewKey)}" data-dash-type="list"`}><span>${escapeHtml(col.name)}</span><span class="dash-count">${items.length}</span></button>${reorderable && !col.noDrop && items.length > 1 ? sortSelectHtml('col') : ''}</div>`;
+    sec.innerHTML = `<div class="dash-col-top">${colGripHtml()}<button type="button" class="dash-col-head" ${col.noDrop ? `data-dash-view="${col.view}"` : `data-dash-list="${escapeAttr(col.viewKey)}" data-dash-type="list"`}><span>${escapeHtml(col.name)}</span><span class="dash-count">${items.length}</span></button>${reorderable && !col.noDrop && items.length > 1 ? sortSelectHtml('col') : ''}</div>`;
     const rows = document.createElement('div');
     rows.className = 'dash-rows';
     if (!col.noDrop) rows.dataset.listKey = col.key;
@@ -1808,11 +1824,11 @@ function renderMaryDashboard(visible) {
 function openDashPicker() {
   const open = tasks.filter(t => t.assignee === 'mary' && t.status !== 'done' && !isPushed(t));
   const shown = new Set(maryDashColumns(open).map(c => c.id));
-  const names = { [DASH_HANDOFFS]: 'EHL Hand-offs', [DASH_UNTAGGED]: 'Untagged' };
-  const ids = [...shown, ...[...allTagNames(), DASH_HANDOFFS, DASH_UNTAGGED].filter(id => !shown.has(id))];
+  const names = { [DASH_HANDOFFS]: 'EHL Hand-offs', [DASH_SARAH_HANDOFFS]: 'Sarah Hand-offs', [DASH_UNTAGGED]: 'Untagged' };
+  const ids = [...shown, ...[...allTagNames(), DASH_HANDOFFS, DASH_SARAH_HANDOFFS, DASH_UNTAGGED].filter(id => !shown.has(id))];
   const options = ids.map(id => [id, names[id] || id]);
   document.getElementById('dashPickList').innerHTML = options.map(([id, name]) => {
-    const count = id === DASH_HANDOFFS ? open.filter(isHandoff).length : id === DASH_UNTAGGED ? open.filter(t => !t.tag && !isHandoff(t)).length : open.filter(t => t.tag === id).length;
+    const count = id === DASH_HANDOFFS ? open.filter(isHandoff).length : id === DASH_SARAH_HANDOFFS ? open.filter(isSarahHandoff).length : id === DASH_UNTAGGED ? open.filter(t => !t.tag && !isAnyHandoff(t)).length : open.filter(t => t.tag === id).length;
     return `<label class="dash-pick-item"><input type="checkbox" value="${escapeAttr(id)}"${shown.has(id) ? ' checked' : ''}><span>${escapeHtml(name)}</span><span class="dash-count">${count}</span></label>`;
   }).join('');
   document.getElementById('dashPickModal').classList.add('open');
@@ -1823,7 +1839,7 @@ async function saveDashPicker() {
   document.getElementById('dashPickModal').classList.remove('open');
   saveDashLists(lists);
 }
-function saveDashLists(lists) { return saveDashPrefs({ lists: [...new Set(lists)] }); }
+function saveDashLists(lists) { return saveDashPrefs({ lists: [...new Set(lists)], sarahKnown: true }); }
 async function saveDashPrefs(prefs) {
   if (blockedOffline()) return;
   const body = JSON.stringify(prefs);
@@ -1961,10 +1977,12 @@ function contactRowHtml(task, f) {
   return rows.join('');
 }
 
-function ehlReasons() {
-  const extra = stickyNotes.filter(n => n.color === REASON_MARK && n.title).map(n => n.title);
+// EHL's and Sarah's extra reasons are their own reason rows.
+function handoffReasons(from = 'evan') {
+  const extra = stickyNotes.filter(n => n.color === REASON_MARK && n.title && (n.assignee || 'evan') === from).map(n => n.title);
   return [...new Set([...DEFAULT_REASONS, ...extra])];
 }
+const ehlReasons = () => handoffReasons('evan');
 function handoffDraftFor(id) {
   if (!handoffDraft || handoffDraft.id !== id) {
     handoffDraft = { id, reason: null, checkBack: localDateStr(addBusinessDays(new Date(), 3)), note: '' };
@@ -1978,7 +1996,7 @@ function handoffBoxHtml(task) {
       <div class="todo-handoff-label">Done, hand the rest to Mary</div>
       <div class="handoff-sub">Waiting on…</div>
       <div class="handoff-chips">
-        ${ehlReasons().map(r => `<button type="button" class="handoff-chip${d.reason === r ? ' on' : ''}" data-action="handoff-reason" data-reason="${escapeAttr(r)}">${escapeHtml(r)}</button>`).join('')}
+        ${handoffReasons(task.assignee).map(r => `<button type="button" class="handoff-chip${d.reason === r ? ' on' : ''}" data-action="handoff-reason" data-reason="${escapeAttr(r)}">${escapeHtml(r)}</button>`).join('')}
         <button type="button" class="handoff-chip add" data-action="handoff-new-reason">+ New</button>
       </div>
       <label class="handoff-row">Check back <input type="date" class="handoff-date" value="${d.checkBack}"></label>
@@ -2154,12 +2172,40 @@ async function handOffToMary(id, reason, checkBack, note) {
   });
 }
 
-async function addHandoffReason(name) {
+// Sarah's login can't create or see Mary's tasks, so her hand-off runs in the
+// database (hand_off_sarah_task): it adds Mary's task to "Sarah Hand-offs" and
+// checks off Sarah's, in one step.
+async function handOffSarahToMary(id, reason, checkBack, note) {
+  if (blockedOffline()) return;
+  const t = tasks.find(x => x.id === id);
+  if (!t || !reason) return;
+  const day = new Date().toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  const due = checkBack || localDateStr(addBusinessDays(new Date(), 3));
+  const dueLabelText = new Date(due + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+  const notes = [t.notes, note?.trim(), `Sarah completed this on ${day}, waiting on ${reason.toLowerCase()}. Check back ${dueLabelText}.`].filter(Boolean).join('\n');
+  const doneNotes = [t.notes, `→ Sent to Mary's Sarah Hand-offs on ${day} (waiting on ${reason.toLowerCase()})`].filter(Boolean).join('\n');
+  const before = { status: t.status, notes: t.notes };
+  const { data: newId, error } = await sb.rpc('hand_off_sarah_task', { p_task: id, p_reason: reason, p_due: due, p_notes: notes, p_done_notes: doneNotes });
+  if (error) { alert(`Couldn't hand this off: ${error.message}`); render(); return; }
+  handoffDraft = null;
+  selectedTaskId = null;
+  Object.assign(t, { status: 'done', completed_at: new Date().toISOString(), completed_by: 'sarah', notes: doneNotes });
+  render();
+  showToast("Sent to Mary's Sarah Hand-offs", async () => {
+    Object.assign(t, { status: before.status, completed_at: null, completed_by: null, notes: before.notes });
+    tasks = tasks.filter(x => x.id !== newId);
+    render();
+    const { error: undoErr } = await sb.rpc('undo_sarah_hand_off', { p_new: newId, p_task: id, p_status: before.status, p_notes: before.notes });
+    if (undoErr) alert(`Couldn't undo: ${undoErr.message}`);
+  });
+}
+
+async function addHandoffReason(name, from = 'evan') {
   name = name.trim();
   if (!name || blockedOffline()) return null;
-  const existing = ehlReasons().find(r => r.toLowerCase() === name.toLowerCase());
+  const existing = handoffReasons(from).find(r => r.toLowerCase() === name.toLowerCase());
   if (existing) return existing;
-  const { data, error } = await sb.from('sticky_notes').insert({ assignee: 'evan', color: REASON_MARK, title: name, body: null }).select().single();
+  const { data, error } = await sb.from('sticky_notes').insert({ assignee: from, color: REASON_MARK, title: name, body: null }).select().single();
   if (error) { alert(error.message); return null; }
   if (!stickyNotes.some(n => n.id === data.id)) stickyNotes.push(data);
   return name;
@@ -2249,7 +2295,7 @@ document.addEventListener('keydown', async e => {
     if (e.key !== 'Enter') return;
     e.preventDefault();
     const id = e.target.closest('.task').dataset.id;
-    const reason = await addHandoffReason(e.target.value);
+    const reason = await addHandoffReason(e.target.value, tasks.find(t => t.id === id)?.assignee === 'sarah' ? 'sarah' : 'evan');
     if (reason) handoffDraftFor(id).reason = reason;
     todoForceDetail = true;
     render();
@@ -2287,7 +2333,7 @@ function renderMobileChrome() {
   const tabs = mobileTabs();
   const tabViews = tabs.map(t => t.view).filter(Boolean);
   const activeTab = tabViews.includes(currentView.type) ? currentView.type : currentView.type === 'list' ? 'lists' : 'more';
-  const moreDot = who === 'mary' && currentView.type !== 'handoffs' && newHandoffs().length > 0;
+  const moreDot = who === 'mary' && ((currentView.type !== 'handoffs' && newHandoffs().length > 0) || (currentView.type !== 'sarahhandoffs' && newSarahHandoffs().length > 0));
   mTabbar.innerHTML = tabs.map(t => `<button type="button" class="m-tab${(t.view || t.sheet) === activeTab ? ' active' : ''}" ${t.view ? `data-m-view="${t.view}"` : `data-m-sheet="${t.sheet}"`}>${t.icon}<span>${t.label}</span>${t.sheet === 'more' && moreDot ? '<i class="m-dot"></i>' : ''}</button>`).join('');
   const noFab = !who || currentView.type === 'add' || (who === 'evan' && currentView.type === 'completed');
   mFab.classList.toggle('hide', noFab);
@@ -2444,7 +2490,7 @@ function renderListsNav() {
       const count = mine.filter(t => (t.tag || '') === name).length;
       listsNav.appendChild(listNavItemEl(name, name, count, i));
     });
-    const untaggedCount = mine.filter(t => !t.tag && t.source !== 'evan').length;
+    const untaggedCount = mine.filter(t => !t.tag && t.source !== 'evan' && t.source !== 'sarah').length;
     listsNav.appendChild(listNavItemEl('', 'Untagged', untaggedCount, names.length));
     listsNav.appendChild(newListButton());
   }
@@ -2465,6 +2511,8 @@ function updateNavCounts() {
   const hc = document.getElementById('countHandoffs');
   const fresh = currentView.type === 'handoffs' ? 0 : newHandoffs().length;
   hc.textContent = fresh ? `${fresh} new` : tasks.filter(isHandoff).length;
+  const freshSarah = currentView.type === 'sarahhandoffs' ? 0 : newSarahHandoffs().length;
+  document.getElementById('countSarahHandoffs').textContent = freshSarah ? `${freshSarah} new` : tasks.filter(isSarahHandoff).length;
   hc.classList.toggle('new', !!fresh);
 }
 
@@ -2565,6 +2613,11 @@ function render() {
     try { localStorage.setItem(HANDOFFS_SEEN_KEY, new Date().toISOString()); } catch {}
     const list = visible.filter(isHandoff).sort(byDue);
     renderTaskList(list, groupByWaiting, search ? noMatch : 'Nothing handed off right now');
+  } else if (currentView.type === 'sarahhandoffs') {
+    viewTitleEl.textContent = 'Sarah Hand-offs';
+    try { localStorage.setItem(SARAH_HANDOFFS_SEEN_KEY, new Date().toISOString()); } catch {}
+    const list = visible.filter(isSarahHandoff).sort(byDue);
+    renderTaskList(list, l => groupByWaiting(l, 'sarah'), search ? noMatch : 'Nothing handed off from Sarah right now');
   } else if (currentView.type === 'review') {
     viewTitleEl.textContent = 'Daily Review';
     reviewCard.style.display = '';
@@ -2615,7 +2668,7 @@ function render() {
     } else {
       viewTitleEl.textContent = key || 'Untagged';
       reorderable = !search;
-      const list = visible.filter(t => t.status !== 'done' && (t.tag || '') === key && !(key === '' && isHandoff(t)))
+      const list = visible.filter(t => t.status !== 'done' && (t.tag || '') === key && !(key === '' && isAnyHandoff(t)))
         .sort((a, b) => pinFirst(a, b) || byPosition(false)(a, b) || a.created_at.localeCompare(b.created_at));
       renderTaskList(list, null, search ? noMatch : 'Nothing in this list yet');
     }
@@ -2634,16 +2687,17 @@ function groupByTag(list) {
   return [
     ...allTagNames().map(name => ({ label: name, items: list.filter(t => t.tag === name) })),
     { label: 'EHL Hand-offs', items: list.filter(t => !t.tag && t.source === 'evan' && t.assignee === 'mary') },
-    { label: 'Untagged', items: list.filter(t => !t.tag && !(t.source === 'evan' && t.assignee === 'mary')) },
+    { label: 'Sarah Hand-offs', items: list.filter(t => !t.tag && t.source === 'sarah' && t.assignee === 'mary') },
+    { label: 'Untagged', items: list.filter(t => !t.tag && !((t.source === 'evan' || t.source === 'sarah') && t.assignee === 'mary')) },
   ];
 }
 
 // EHL Hand-offs page: grouped by what Mary is waiting on.
-function groupByWaiting(list) {
-  const reasons = [...new Set([...ehlReasons(), ...list.map(t => t.waiting_on).filter(Boolean)])];
+function groupByWaiting(list, from = 'evan') {
+  const reasons = [...new Set([...handoffReasons(from), ...list.map(t => t.waiting_on).filter(Boolean)])];
   return [
     ...reasons.map(r => ({ label: r, items: list.filter(t => t.waiting_on === r) })),
-    { label: 'Assigned by EHL', items: list.filter(t => !t.waiting_on) },
+    { label: from === 'sarah' ? 'From Sarah' : 'Assigned by EHL', items: list.filter(t => !t.waiting_on) },
   ];
 }
 
@@ -2716,7 +2770,7 @@ function renderTaskList(list, groupBy, emptyText, collapsible = false) {
     if (g.label !== null && collapsible) {
       section.classList.add('collapsible');
       section.classList.toggle('open', open);
-      const sortable = open && !search && g.items.length > 1 && g.label !== 'EHL Hand-offs';
+      const sortable = open && !search && g.items.length > 1 && g.label !== 'EHL Hand-offs' && g.label !== 'Sarah Hand-offs';
       section.innerHTML = `<div class="row-group-top"><button type="button" class="row-group-head" data-action="toggle-group" data-label="${escapeHtml(g.label)}">${ICON_CHEVRON}${escapeHtml(g.label)}<span class="count">${g.items.length}</span></button>${sortable ? sortSelectHtml('group') : ''}</div>`;
     } else if (g.label !== null) {
       section.innerHTML = `<div class="row-group-head">${escapeHtml(g.label)}<span class="count">${g.items.length}</span></div>`;
@@ -2752,7 +2806,8 @@ function renderDetail(cardFor) {
   // under someone mid-typing or with its menu open.
   const active = document.activeElement;
   const editing = active && detailPane.contains(active) && active.matches('textarea, input:not([type]), input[type=text]');
-  if (task && detailPane.dataset.showing === task.id && (editing || detailPane.querySelector('.meatball-wrap.open'))) return;
+  if (!todoForceDetail && task && detailPane.dataset.showing === task.id && (editing || detailPane.querySelector('.meatball-wrap.open'))) return;
+  todoForceDetail = false;
 
   if (!task || detailPane.dataset.showing !== task.id) dueEditingId = null; // picked another task: back to "None"
   detailPane.dataset.showing = task ? task.id : '';
@@ -2947,7 +3002,8 @@ document.body.addEventListener('click', e => {
     const d = handoffDraftFor(id);
     if (!d.reason) return;
     sendBtn.disabled = true;
-    handOffToMary(id, d.reason, d.checkBack, d.note);
+    if (tasks.find(t => t.id === id)?.assignee === 'sarah') handOffSarahToMary(id, d.reason, d.checkBack, d.note);
+    else handOffToMary(id, d.reason, d.checkBack, d.note);
     return;
   }
   const assignBtn = e.target.closest('[data-action="assign"]');

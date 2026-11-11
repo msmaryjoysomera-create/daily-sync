@@ -46,6 +46,23 @@ window.fetch = async (input, init = {}) => {
       user: { id: 'u1', email: window.__login, aud: 'authenticated', role: 'authenticated', user_metadata: window.__userMeta || {} } });
   }
   if (url.pathname.startsWith('/storage/v1/')) return json({ Key: url.pathname.split('/object/')[1] || 'mock' }); // photo uploads
+  if (url.pathname.includes('/rpc/')) { // stand-ins for the database functions
+    const fn = url.pathname.split('/').pop(), b = JSON.parse(init.body || '{}'), now = new Date().toISOString();
+    if (fn === 'hand_off_sarah_task') {
+      const t = window.__db.tasks.find(x => x.id === b.p_task && x.assignee === 'sarah' && x.status !== 'done');
+      if (!t) return json({ message: 'That task is no longer open.' }, 400);
+      const id = 'h' + (++__n);
+      window.__db.tasks.push({ id, title: t.title, assignee: 'mary', tag: null, due_date: b.p_due, waiting_on: b.p_reason, notes: b.p_notes, status: 'todo', source: 'sarah', created_at: now, updated_at: now, pinned: false, steps: [], position: null });
+      Object.assign(t, { status: 'done', completed_at: now, completed_by: 'sarah', notes: b.p_done_notes });
+      return json(id);
+    }
+    if (fn === 'undo_sarah_hand_off') {
+      window.__db.tasks = window.__db.tasks.filter(x => !(x.id === b.p_new && x.source === 'sarah'));
+      const t = window.__db.tasks.find(x => x.id === b.p_task);
+      if (t) Object.assign(t, { status: b.p_status || 'todo', completed_at: null, completed_by: null, notes: b.p_notes });
+      return json(null);
+    }
+  }
   const table = url.pathname.split('/').pop();
   const rows = window.__db[table] || (window.__db[table] = []);
   const method = (init.method || 'GET').toUpperCase();
