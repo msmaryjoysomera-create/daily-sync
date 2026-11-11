@@ -351,6 +351,9 @@
   .dash-col-top{display:flex;align-items:center;gap:2px}
   .col-sort{flex:none;background:none;border:1px solid transparent;border-radius:6px;padding:2px 6px;margin:-4px 0 4px 2px;font-family:inherit;font-size:11px;font-weight:700;color:var(--muted);cursor:pointer;opacity:.6}
   .col-sort:hover{opacity:1;border-color:var(--line);color:var(--text)}
+  .row-group-top{display:flex;align-items:center}
+  .row-group-top .row-group-head{flex:1;min-width:0}
+  .row-group-top .col-sort{margin:0 4px 0 0}
   body.offline .col-sort, body.offline #sortAzBtn{display:none}
   .dash-col-top .dash-col-head{flex:1;min-width:0}
   .col-grip{flex:none;display:flex;align-items:center;justify-content:center;width:22px;height:28px;margin:-4px -4px 4px 0;color:var(--muted);cursor:grab;touch-action:none;opacity:.45;border-radius:6px}
@@ -2562,7 +2565,8 @@ function render() {
   } else if (currentView.type === 'review') {
     viewTitleEl.textContent = 'Daily Review';
     reviewCard.style.display = '';
-    const list = visible.filter(t => t.status !== 'done').sort(byDue);
+    // Each list keeps its own order here (what dragging or A–Z set).
+    const list = visible.filter(t => t.status !== 'done').sort((a, b) => pinFirst(a, b) || byPosition(false)(a, b) || a.created_at.localeCompare(b.created_at));
     const allOpen = tasks.filter(t => t.assignee === who && t.status !== 'done' && !isPushed(t));
     const cal = who === 'mary' ? calendarSinceSync() : null;
     meetingCount.textContent = `${allOpen.filter(t => discussedToday.has(t.id)).length} of ${allOpen.length} tasks` +
@@ -2709,7 +2713,8 @@ function renderTaskList(list, groupBy, emptyText, collapsible = false) {
     if (g.label !== null && collapsible) {
       section.classList.add('collapsible');
       section.classList.toggle('open', open);
-      section.innerHTML = `<button type="button" class="row-group-head" data-action="toggle-group" data-label="${escapeHtml(g.label)}">${ICON_CHEVRON}${escapeHtml(g.label)}<span class="count">${g.items.length}</span></button>`;
+      const sortable = open && !search && g.items.length > 1 && g.label !== 'EHL Hand-offs';
+      section.innerHTML = `<div class="row-group-top"><button type="button" class="row-group-head" data-action="toggle-group" data-label="${escapeHtml(g.label)}">${ICON_CHEVRON}${escapeHtml(g.label)}<span class="count">${g.items.length}</span></button>${sortable ? '<button type="button" class="col-sort" data-action="group-sort" title="Sort this list A–Z">A–Z</button>' : ''}</div>`;
     } else if (g.label !== null) {
       section.innerHTML = `<div class="row-group-head">${escapeHtml(g.label)}<span class="count">${g.items.length}</span></div>`;
     }
@@ -2809,6 +2814,11 @@ document.body.addEventListener('click', e => {
   if (e.target.closest('[data-action="change-passcode"]')) { openPasscodeModal(); return; }
   const colSort = e.target.closest('[data-action="col-sort"]');
   if (colSort) { if (!blockedOffline()) sortAZ(colSort.closest('.dash-col')); return; }
+  const groupSort = e.target.closest('[data-action="group-sort"]');
+  if (groupSort) {
+    if (!blockedOffline()) sortIdsAZ([[...groupSort.closest('.row-group').querySelectorAll('.row')].map(r => r.dataset.id)]);
+    return;
+  }
   if (e.target.closest('[data-action="page-sort"]')) {
     document.querySelectorAll('.meatball-wrap.open').forEach(w => w.classList.remove('open'));
     if (!blockedOffline()) sortAZ(pageSortScope());
@@ -3545,9 +3555,13 @@ async function saveOrder(ids) {
 const pageSortScope = () => who === 'evan' ? todoList : board;
 function sortAZ(scope) {
   const containers = [...new Set([...scope.querySelectorAll('[data-drag]')].map(g => g.closest('.row, .todo-row').parentElement))];
+  sortIdsAZ(containers.map(c => dragRowsIn(c).map(r => r.dataset.id)));
+}
+// groups: lists of task ids; each is sorted on its own.
+function sortIdsAZ(groups) {
   const before = new Map(tasks.map(t => [t.id, t.position ?? null]));
   const byTitle = (a, b) => (a.title || '').localeCompare(b.title || '', undefined, { sensitivity: 'base', numeric: true });
-  const ids = containers.flatMap(c => dragRowsIn(c).map(r => tasks.find(t => t.id === r.dataset.id)).filter(Boolean).sort(byTitle).map(t => t.id));
+  const ids = groups.flatMap(g => g.map(id => tasks.find(t => t.id === id)).filter(Boolean).sort(byTitle).map(t => t.id));
   if (ids.length < 2) return;
   saveOrder(ids);
   showToast('Sorted A–Z', async () => {
