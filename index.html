@@ -354,6 +354,8 @@
   .row-group-top{display:flex;align-items:center}
   .row-group-top .row-group-head{flex:1;min-width:0}
   .row-group-top .col-sort{margin:0 4px 0 0}
+  select.col-sort{border-color:var(--line);background:var(--card);opacity:.85;padding:2px 4px}
+  select.sort-by-page{font-family:inherit;cursor:pointer}
   body.offline .col-sort, body.offline #sortAzBtn{display:none}
   .dash-col-top .dash-col-head{flex:1;min-width:0}
   .col-grip{flex:none;display:flex;align-items:center;justify-content:center;width:22px;height:28px;margin:-4px -4px 4px 0;color:var(--muted);cursor:grab;touch-action:none;opacity:.45;border-radius:6px}
@@ -733,13 +735,14 @@
         <div class="meatball-wrap title-meatball" id="tagActions">
           <button type="button" class="icon-btn meatball-btn" data-action="meatball" title="List options"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><circle cx="4" cy="9" r="1.4" fill="currentColor"/><circle cx="9" cy="9" r="1.4" fill="currentColor"/><circle cx="14" cy="9" r="1.4" fill="currentColor"/></svg></button>
           <div class="meatball-menu">
-            <button type="button" class="meatball-item" id="sortAzItem" data-action="page-sort">Sort A–Z</button>
+            <button type="button" class="meatball-item sort-item" data-action="page-sort" data-mode="az">Sort by A–Z</button>
+            <button type="button" class="meatball-item sort-item" data-action="page-sort" data-mode="date">Sort by date entered</button>
             <button type="button" class="meatball-item" data-action="rename-tag">Rename list</button>
             <button type="button" class="meatball-item danger" data-action="delete-tag">Delete list</button>
           </div>
         </div>
       </div>
-      <button type="button" id="sortAzBtn" class="print-btn" data-action="page-sort" title="Sort this list A–Z" hidden><svg width="14" height="14" viewBox="0 0 18 18" fill="none"><path d="M5 3v12M2.5 12.5 5 15l2.5-2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M10 7.5 12 3l2 4.5M10.6 6h2.8M10 10h4l-4 5h4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg> A–Z</button>
+      <select id="sortAzBtn" class="print-btn sort-by-page" data-sort="page" aria-label="Sort this list" hidden><option value="" selected hidden>Sort by</option><option value="az">A–Z</option><option value="date">Date entered</option></select>
       <button type="button" id="refreshBtn" class="print-btn refresh-btn" title="Refresh"><svg width="14" height="14" viewBox="0 0 18 18" fill="none"><path d="M14.5 9a5.5 5.5 0 1 1-1.6-3.9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M14.5 3.5V6.5H11.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg> Refresh</button>
       <button type="button" id="printBtn" class="print-btn" title="Print or export"><svg width="14" height="14" viewBox="0 0 18 18" fill="none"><path d="M5 6.5V2.5H13V6.5" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><rect x="2.5" y="6.5" width="13" height="6" rx="1.2" stroke="currentColor" stroke-width="1.5"/><rect x="5" y="10.5" width="8" height="5" stroke="currentColor" stroke-width="1.5"/></svg> Print</button>
       <button type="button" class="m-profile" id="mProfileBtn" data-m-sheet="profile" aria-label="Switch profile"></button>
@@ -1784,7 +1787,7 @@ function renderMaryDashboard(visible) {
     sec.className = 'dash-col';
     sec.dataset.colId = col.id;
     if (col.noDrop) sec.dataset.noDrop = '1';
-    sec.innerHTML = `<div class="dash-col-top">${colGripHtml()}<button type="button" class="dash-col-head" ${col.view === 'handoffs' ? 'data-dash-view="handoffs"' : `data-dash-list="${escapeAttr(col.viewKey)}" data-dash-type="list"`}><span>${escapeHtml(col.name)}</span><span class="dash-count">${items.length}</span></button>${reorderable && !col.noDrop && items.length > 1 ? '<button type="button" class="col-sort" data-action="col-sort" title="Sort this list A–Z">A–Z</button>' : ''}</div>`;
+    sec.innerHTML = `<div class="dash-col-top">${colGripHtml()}<button type="button" class="dash-col-head" ${col.view === 'handoffs' ? 'data-dash-view="handoffs"' : `data-dash-list="${escapeAttr(col.viewKey)}" data-dash-type="list"`}><span>${escapeHtml(col.name)}</span><span class="dash-count">${items.length}</span></button>${reorderable && !col.noDrop && items.length > 1 ? sortSelectHtml('col') : ''}</div>`;
     const rows = document.createElement('div');
     rows.className = 'dash-rows';
     if (!col.noDrop) rows.dataset.listKey = col.key;
@@ -1853,7 +1856,7 @@ function renderSarahDashboard(visible) {
     const col = document.createElement('section');
     col.className = 'dash-col';
     col.dataset.colId = l.id;
-    col.innerHTML = `<div class="dash-col-top">${colGripHtml()}<button type="button" class="dash-col-head" data-dash-list="${escapeAttr(l.viewKey)}" data-dash-type="${l.view}"><span>${escapeHtml(l.name)}</span><span class="dash-count">${items.length}</span></button>${reorderable && items.length > 1 ? '<button type="button" class="col-sort" data-action="col-sort" title="Sort this list A–Z">A–Z</button>' : ''}</div>`;
+    col.innerHTML = `<div class="dash-col-top">${colGripHtml()}<button type="button" class="dash-col-head" data-dash-list="${escapeAttr(l.viewKey)}" data-dash-type="${l.view}"><span>${escapeHtml(l.name)}</span><span class="dash-count">${items.length}</span></button>${reorderable && items.length > 1 ? sortSelectHtml('col') : ''}</div>`;
     const rows = document.createElement('div');
     rows.className = 'dash-rows';
     rows.dataset.listKey = l.key || ''; // '' = To Do (no list)
@@ -1886,7 +1889,7 @@ function renderDashboard() {
     const col = document.createElement('section');
     col.className = 'dash-col';
     if (key) col.dataset.colId = key;
-    col.innerHTML = `<div class="dash-col-top">${key ? colGripHtml() : ''}<button type="button" class="dash-col-head" ${key ? `data-dash-list="${escapeAttr(key)}"` : 'disabled'}><span>${escapeHtml(name)}</span><span class="dash-count">${items.length}</span></button>${reorderable && items.length > 1 ? '<button type="button" class="col-sort" data-action="col-sort" title="Sort this list A–Z">A–Z</button>' : ''}</div>`;
+    col.innerHTML = `<div class="dash-col-top">${key ? colGripHtml() : ''}<button type="button" class="dash-col-head" ${key ? `data-dash-list="${escapeAttr(key)}"` : 'disabled'}><span>${escapeHtml(name)}</span><span class="dash-count">${items.length}</span></button>${reorderable && items.length > 1 ? sortSelectHtml('col') : ''}</div>`;
     const rows = document.createElement('div');
     rows.className = 'dash-rows';
     rows.dataset.listKey = key || ''; // '' = No list
@@ -2623,7 +2626,7 @@ function render() {
 }
 function updateSortBtn() {
   sortAzBtn.hidden = !(reorderable && currentView.type !== 'dashboard' && pageSortScope().querySelectorAll('[data-drag]').length > 1);
-  document.getElementById('sortAzItem').hidden = sortAzBtn.hidden;
+  document.querySelectorAll('#tagActions .sort-item').forEach(b => { b.hidden = sortAzBtn.hidden; });
 }
 
 function groupByTag(list) {
@@ -2714,7 +2717,7 @@ function renderTaskList(list, groupBy, emptyText, collapsible = false) {
       section.classList.add('collapsible');
       section.classList.toggle('open', open);
       const sortable = open && !search && g.items.length > 1 && g.label !== 'EHL Hand-offs';
-      section.innerHTML = `<div class="row-group-top"><button type="button" class="row-group-head" data-action="toggle-group" data-label="${escapeHtml(g.label)}">${ICON_CHEVRON}${escapeHtml(g.label)}<span class="count">${g.items.length}</span></button>${sortable ? '<button type="button" class="col-sort" data-action="group-sort" title="Sort this list A–Z">A–Z</button>' : ''}</div>`;
+      section.innerHTML = `<div class="row-group-top"><button type="button" class="row-group-head" data-action="toggle-group" data-label="${escapeHtml(g.label)}">${ICON_CHEVRON}${escapeHtml(g.label)}<span class="count">${g.items.length}</span></button>${sortable ? sortSelectHtml('group') : ''}</div>`;
     } else if (g.label !== null) {
       section.innerHTML = `<div class="row-group-head">${escapeHtml(g.label)}<span class="count">${g.items.length}</span></div>`;
     }
@@ -2812,16 +2815,10 @@ document.body.addEventListener('click', e => {
     return;
   }
   if (e.target.closest('[data-action="change-passcode"]')) { openPasscodeModal(); return; }
-  const colSort = e.target.closest('[data-action="col-sort"]');
-  if (colSort) { if (!blockedOffline()) sortAZ(colSort.closest('.dash-col')); return; }
-  const groupSort = e.target.closest('[data-action="group-sort"]');
-  if (groupSort) {
-    if (!blockedOffline()) sortIdsAZ([[...groupSort.closest('.row-group').querySelectorAll('.row')].map(r => r.dataset.id)]);
-    return;
-  }
-  if (e.target.closest('[data-action="page-sort"]')) {
+  const pageSort = e.target.closest('[data-action="page-sort"]');
+  if (pageSort) {
     document.querySelectorAll('.meatball-wrap.open').forEach(w => w.classList.remove('open'));
-    if (!blockedOffline()) sortAZ(pageSortScope());
+    if (!blockedOffline()) sortList(pageSortScope(), pageSort.dataset.mode);
     return;
   }
   if (e.target.closest('[data-action="lock-all"]')) { lockAllDevices(); return; }
@@ -3202,7 +3199,15 @@ function renumberAfterDelete(ta, linesBefore) {
 }
 
 document.body.addEventListener('change', e => {
-  if (e.target.classList.contains('cal-range')) {
+  if (e.target.matches('select[data-sort]')) {
+    // "Sort by" is a one-time arrange, so the menu goes back to its label.
+    const sel = e.target, mode = sel.value;
+    sel.value = '';
+    if (!mode || blockedOffline()) return;
+    if (sel.dataset.sort === 'col') sortList(sel.closest('.dash-col'), mode);
+    else if (sel.dataset.sort === 'group') sortIds([[...sel.closest('.row-group').querySelectorAll('.row')].map(r => r.dataset.id)], mode);
+    else sortList(pageSortScope(), mode);
+  } else if (e.target.classList.contains('cal-range')) {
     const today = todayStr();
     setCalRange(e.target.value === 'custom' && !calRange.from ? { kind: 'custom', from: today, to: today } : { kind: e.target.value });
   } else if (e.target.classList.contains('cal-from') || e.target.classList.contains('cal-to')) {
@@ -3548,23 +3553,28 @@ async function saveOrder(ids) {
   if (failed) alert(`Couldn't save the new order: ${failed.error.message}`);
 }
 
-// "A–Z" arranges a list's open tasks alphabetically by saving that as its
-// dragged order, so it sticks for everyone and can still be dragged after.
-// (Starred tasks stay on top where a list puts them there.)
+// "Sort by" (A–Z or date entered) arranges a list's open tasks by saving that
+// as its dragged order, so it sticks for everyone and can still be dragged
+// after. (Starred tasks stay on top where a list puts them there.)
+function sortSelectHtml(kind) {
+  return `<select class="col-sort" data-sort="${kind}" aria-label="Sort this list"><option value="" selected hidden>Sort by</option><option value="az">A–Z</option><option value="date">Date entered</option></select>`;
+}
 // EHL's pages list tasks in #todoList; Mary's and Sarah's in #board.
 const pageSortScope = () => who === 'evan' ? todoList : board;
-function sortAZ(scope) {
+function sortList(scope, mode) {
   const containers = [...new Set([...scope.querySelectorAll('[data-drag]')].map(g => g.closest('.row, .todo-row').parentElement))];
-  sortIdsAZ(containers.map(c => dragRowsIn(c).map(r => r.dataset.id)));
+  sortIds(containers.map(c => dragRowsIn(c).map(r => r.dataset.id)), mode);
 }
-// groups: lists of task ids; each is sorted on its own.
-function sortIdsAZ(groups) {
+// groups: lists of task ids; each is sorted on its own. Date entered = oldest first.
+function sortIds(groups, mode) {
   const before = new Map(tasks.map(t => [t.id, t.position ?? null]));
-  const byTitle = (a, b) => (a.title || '').localeCompare(b.title || '', undefined, { sensitivity: 'base', numeric: true });
-  const ids = groups.flatMap(g => g.map(id => tasks.find(t => t.id === id)).filter(Boolean).sort(byTitle).map(t => t.id));
+  const compare = mode === 'date'
+    ? (a, b) => (a.created_at || '').localeCompare(b.created_at || '')
+    : (a, b) => (a.title || '').localeCompare(b.title || '', undefined, { sensitivity: 'base', numeric: true });
+  const ids = groups.flatMap(g => g.map(id => tasks.find(t => t.id === id)).filter(Boolean).sort(compare).map(t => t.id));
   if (ids.length < 2) return;
   saveOrder(ids);
-  showToast('Sorted A–Z', async () => {
+  showToast(mode === 'date' ? 'Sorted by date entered' : 'Sorted A–Z', async () => {
     ids.forEach(id => { const t = tasks.find(x => x.id === id); if (t) t.position = before.get(id); });
     render();
     const results = await Promise.all(ids.map(id => sb.from('tasks').update({ position: before.get(id) }).eq('id', id)));
