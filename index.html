@@ -728,11 +728,11 @@
         <div class="view-title" id="viewTitleEl">Today</div>
         <input type="text" class="view-title-edit" id="tagRenameInput" autocomplete="off" aria-label="Tag name">
         <div class="meatball-wrap title-meatball" id="tagActions">
-          <button type="button" class="icon-btn meatball-btn" data-action="meatball" title="Tag options"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><circle cx="4" cy="9" r="1.4" fill="currentColor"/><circle cx="9" cy="9" r="1.4" fill="currentColor"/><circle cx="14" cy="9" r="1.4" fill="currentColor"/></svg></button>
+          <button type="button" class="icon-btn meatball-btn" data-action="meatball" title="List options"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><circle cx="4" cy="9" r="1.4" fill="currentColor"/><circle cx="9" cy="9" r="1.4" fill="currentColor"/><circle cx="14" cy="9" r="1.4" fill="currentColor"/></svg></button>
           <div class="meatball-menu">
             <button type="button" class="meatball-item" id="sortAzItem" data-action="page-sort">Sort A–Z</button>
-            <button type="button" class="meatball-item" data-action="rename-tag">Rename tag</button>
-            <button type="button" class="meatball-item danger" data-action="delete-tag">Delete tag</button>
+            <button type="button" class="meatball-item" data-action="rename-tag">Rename list</button>
+            <button type="button" class="meatball-item danger" data-action="delete-tag">Delete list</button>
           </div>
         </div>
       </div>
@@ -1083,7 +1083,7 @@ async function renameTag(oldName, newName) {
   const clash = findTag(newName);
   const row = tagRows().find(n => n.title === oldName);
   if (clash && clash.toLowerCase() !== oldName.toLowerCase()) {
-    if (!confirm(`A tag named "${clash}" already exists. Move all "${oldName}" tasks into "${clash}"?`)) return;
+    if (!confirm(`A list named "${clash}" already exists. Move all "${oldName}" tasks into "${clash}"?`)) return;
     newName = clash;
     if (row) {
       const { error } = await sb.from('sticky_notes').delete().eq('id', row.id);
@@ -1117,7 +1117,7 @@ async function renameTag(oldName, newName) {
 async function deleteTag(name) {
   if (blockedOffline()) return;
   const count = tasks.filter(t => t.tag === name && ownsTask(t)).length;
-  const kind = who === 'evan' ? 'list' : 'tag';
+  const kind = 'list';
   const where = who === 'evan' ? 'Tasks' : 'Untagged';
   const msg = count
     ? `Delete the "${name}" ${kind}?\n\nIts ${count} task${count === 1 ? '' : 's'} will move to ${where}. No tasks will be deleted.`
@@ -2415,7 +2415,7 @@ function newListButton() {
 }
 
 function renderListsNav() {
-  // Don't wipe the "New list" name box while Evan is typing in it.
+  // Don't wipe the "New list" name box while someone is typing in it.
   if (listsNav.contains(document.activeElement) && document.activeElement.matches('.new-list-input')) return;
   listsNav.innerHTML = '';
   if (!who) return;
@@ -2440,6 +2440,7 @@ function renderListsNav() {
     });
     const untaggedCount = mine.filter(t => !t.tag && t.source !== 'evan').length;
     listsNav.appendChild(listNavItemEl('', 'Untagged', untaggedCount, names.length));
+    listsNav.appendChild(newListButton());
   }
 }
 
